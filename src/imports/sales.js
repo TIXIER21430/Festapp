@@ -21,11 +21,12 @@ export function importSalesHistory(text) {
   if(rows.length<2)throw new Error("Le fichier doit contenir un en-tête et des lignes.");
   // Fichier économat : première colonne produit, colonnes suivantes = manifestations.
   const headers=rows[0].map(x=>x.trim());
+  const productColumn=(!headers[0] || /^unnamed:/i.test(headers[0])) && /^(boisson|produit|article)$/i.test(headers[1]||"") ? 1 : 0;
   const records=[];
   for(const row of rows.slice(1)){
-    const product=(row[0]||"").trim();
+    const product=(row[productColumn]||"").trim();
     if(!product||/^unnamed:/i.test(product))continue;
-    for(let i=1;i<headers.length;i++){
+    for(let i=productColumn+1;i<headers.length;i++){
       const value=(row[i]||"").trim();
       if(value&&headers[i]&&!/^unnamed:/i.test(headers[i]))records.push({product,event:headers[i],quantityText:value});
     }
