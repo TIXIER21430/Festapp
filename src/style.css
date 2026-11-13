@@ -93,3 +93,36 @@ footer{color:#66738b}
 .photo-grid figcaption{font-size:12px;color:#65718d;word-break:break-word;padding:5px 0}
 @media(max-width:700px){.home-tiles{gap:12px}.home-tile{min-height:170px;padding:15px;border-radius:21px}.home-tile strong{font-size:21px}.home-tile small{font-size:13px}.tile-emoji{width:43px;height:43px;font-size:23px}.home-quick{grid-template-columns:repeat(2,minmax(0,1fr))}.home-quick button{min-height:70px}.communication-grid{grid-template-columns:1fr}.communication-wide{grid-column:1}.photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-section,.panel,.communication-panel{padding:16px}.hero{padding:20px}}
 @media(max-width:365px){.home-tile{min-height:180px}.home-tile strong{font-size:18px}.tile-arrow{bottom:9px;right:10px}.home-tile small{font-size:12px}}
+
+
+/* Fiches manifestations et check-lists mobiles */
+.checklist-panel{background:#fff;border-radius:24px;padding:24px;box-shadow:0 8px 26px rgba(38,48,98,.06);color:#1a2545;margin:16px 0}
+.checklist-panel>.heading{flex-wrap:wrap}
+.checklist-panel>.heading h2{font-size:24px;margin:0}
+.checklist-panel>label{display:block;max-width:520px;margin:20px 0}
+.event-detail{display:flex;justify-content:space-between;align-items:center;gap:16px;border-radius:20px;background:linear-gradient(110deg,#6c4ce0,#926bdc);color:white;padding:20px;margin:18px 0 10px}
+.event-detail h3{font-size:23px;margin:0 0 6px}
+.event-detail p{margin:0;color:#f0eaff}
+.event-progress{text-align:right;display:grid;gap:4px;min-width:95px}
+.event-progress strong{font-size:32px}
+.event-progress span{font-size:12px}
+.progress-track{height:14px;border-radius:30px;background:#ebe8fb;overflow:hidden;margin:10px 0 22px}
+.progress-track span{display:block;height:100%;background:#39bc7c;border-radius:30px;transition:width .2s}
+.checklist-template,.checklist-form{background:#f5f7ff;border-radius:19px;padding:19px;margin:16px 0}
+.checklist-template h3,.checklist-form h3{margin:0 0 12px}
+.checklist-actions{display:flex;align-items:end;flex-wrap:wrap;gap:12px}
+.checklist-actions label{flex:1;min-width:190px}
+.checklist-template small{display:block;color:#626f88;margin-top:10px}
+.checklist-fields{display:grid;grid-template-columns:2fr 1fr 1fr;gap:11px;margin-bottom:12px}
+.checklist-items{display:grid;gap:10px}
+.checklist-items article{display:flex;align-items:center;justify-content:space-between;gap:12px;background:#f6f8fe;border:1px solid #e0e6f2;padding:14px;border-radius:16px}
+.checklist-items article.is-complete{background:#e9faef;border-color:#9bddb1}
+.checklist-check{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.checklist-check input[type=checkbox]{width:24px;height:24px;flex:none;min-height:24px;accent-color:#21a667;margin:0}
+.checklist-check span{display:grid;gap:3px}
+.checklist-check strong{font-size:15px;color:#1b2845;overflow-wrap:anywhere}
+.checklist-check small{font-size:12px;color:#58667e}
+.checklist-item-actions{display:flex;align-items:center;gap:8px}
+.checklist-item-actions select{min-width:125px;margin:0}
+.checklist-items article.is-complete .checklist-check strong{text-decoration:line-through;color:#49735d}
+@media(max-width:700px){.checklist-panel{padding:16px}.checklist-fields{grid-template-columns:1fr}.event-detail{padding:15px}.event-detail h3{font-size:18px}.event-progress strong{font-size:25px}.checklist-items article{align-items:stretch;flex-direction:column}.checklist-item-actions{justify-content:space-between}.checklist-item-actions select{flex:1}.checklist-item-actions button{flex:1}}
