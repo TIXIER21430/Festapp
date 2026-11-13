@@ -56,3 +56,11 @@ Le nouvel onglet `Communication` permet d'ouvrir une manifestation depuis les do
 Ce n'est **pas une IA connectée**, une bibliothèque de photos durable ni un système de publication automatique sur la Page du comité. La génération par API IA, les photos partagées et la validation des publications sont inscrites au plan de développement.
 
 La démo publique ne doit contenir aucune donnée réelle de bénévoles ou de participants ni photo personnelle sensible.
+
+### Fiches manifestations / préparation
+
+L'onglet **Préparation** propose des fiches par manifestation existante, trois modèles de check-lists (générale, buvette/restauration, marché de Noël), des tâches personnalisées, un responsable, une échéance, un statut et une barre d'avancement. Les modèles ne rajoutent pas les tâches dont le libellé existe déjà pour la manifestation.
+
+Les tâches de préparation sont sauvegardées localement sous `checklists` dans la même sauvegarde JSON que les autres rubriques. Les anciennes sauvegardes sans `checklists` restent lisibles. Pour éviter une confusion entre deux éditions annuelles d'une manifestation homonyme, une future version doit relier chaque tâche à l'identifiant unique de la manifestation plutôt qu'à son seul nom.
+
+**À tester manuellement :** modèles ajoutés une seule fois, tâche cochée/décochée, statut En cours, changement de manifestation, export CSV, sauvegarde/restauration, affichage sur smartphone. Aucune synchronisation entre membres n'est active.
