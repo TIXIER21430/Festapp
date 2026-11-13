@@ -1,0 +1,22 @@
+name: Vérification FESTAPP
+on:
+  pull_request:
+  push:
+    branches:
+      - "feat/**"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: Installer les dépendances
+        run: npm install --no-audit --no-fund
+      - name: Vérifier les modules
+        run: node --test tests/*.test.js
+      - name: Compiler FESTAPP
+        run: npm run build
