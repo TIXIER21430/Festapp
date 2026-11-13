@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
+import {ecocupBalance} from "./ecocupBalance.js";
 
 const categories=[
 {key:"events",title:"Manifestations",icon:"🎉",fields:["Nom","Date","Lieu"]},
@@ -25,6 +26,7 @@ function App(){
  const [filter,setFilter]=useState("");
  useEffect(()=>{localStorage.setItem(storageKey,JSON.stringify(data))},[data]);
  const current=categories.find(c=>c.key===tab);
+ const cupStatus=ecocupBalance(data.ecocups||[],0,100);
  const records=(data[tab]||[]).filter(r=>r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
  function add(e){e.preventDefault();if(!form[0].trim())return;setData(d=>({...d,[tab]:[...(d[tab]||[]),{id:crypto.randomUUID(),values:form.map(x=>x.trim())}]}));setForm(["","",""])}
  function remove(id){if(!confirm("Supprimer cette fiche ?"))return;setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
