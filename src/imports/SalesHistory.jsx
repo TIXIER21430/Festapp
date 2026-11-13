@@ -1,7 +1,8 @@
 import React,{useState} from "react";
 import {importSalesHistory} from "./sales.js";
+import {initialSalesHistory} from "./initialSales.js";
 const KEY="festapp-sales-history-v1";
-function load(){try{return JSON.parse(localStorage.getItem(KEY)||"[]")}catch{return []}}
+function load(){try{return JSON.parse(localStorage.getItem(KEY)||"null")||initialSalesHistory}catch{return []}}
 export default function SalesHistory(){
  const [records,setRecords]=useState(load),[event,setEvent]=useState(""),[error,setError]=useState("");
  async function upload(e){const file=e.target.files?.[0];if(!file)return;setError("");try{
