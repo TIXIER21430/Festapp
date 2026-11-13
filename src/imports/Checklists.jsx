@@ -5,7 +5,7 @@ function read(){try{return JSON.parse(localStorage.getItem(KEY)||"null")}catch{r
 export default function Checklists(){
  const [tasks,setTasks]=useState(read),[event,setEvent]=useState("Saint-Laurent"),[newTask,setNewTask]=useState("");
  const all=tasks||[];
- const events=[...new Set(["Saint-Laurent","Marché de Noël",...all.map(t=>t.event)])];
+ const events=[...new Set([...taskTemplates.map(t=>t.event),...all.map(t=>t.event)])];
  const visible=all.filter(t=>t.event===event),done=visible.filter(t=>t.done).length;
  function save(next){localStorage.setItem(KEY,JSON.stringify(next));setTasks(next)}
  function initialize(){if(tasks?.length&&!confirm("Réimporter les modèles ? Les coches actuelles seront perdues."))return;save(taskTemplates.map(t=>({...t})))}
