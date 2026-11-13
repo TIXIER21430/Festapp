@@ -1,0 +1,11 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import {makeBackup,validateBackup} from '../src/backup.js';
+const sample = {events:[{id:'a',values:['Fête','2027-01-01','Liernais']}]};
+test('round trip without changing source',()=>{const raw=makeBackup(sample);assert.deepEqual({...validateBackup(raw)},sample);assert.deepEqual(sample.events[0].values,['Fête','2027-01-01','Liernais']);});
+test('reject malformed JSON',()=>assert.throws(()=>validateBackup('{')));
+test('reject unknown version',()=>assert.throws(()=>validateBackup(JSON.stringify({format:'festapp-demo-backup',version:2,data:sample}))));
+test('reject unknown modules',()=>assert.throws(()=>makeBackup({secret:[]})));
+test('reject duplicate ids',()=>assert.throws(()=>makeBackup({events:[sample.events[0],sample.events[0]]})));
+test('reject malformed row',()=>assert.throws(()=>makeBackup({events:[{id:'a',values:['x',null,'z']}]})));
+test('reject excessive payload',()=>assert.throws(()=>validateBackup('x'.repeat(5_000_001))));
