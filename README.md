@@ -32,3 +32,15 @@ npm run build
 ```
 
 Éviter les fusions automatiques dans `main` avant revue et tests.
+
+## Démonstration et tests
+
+Sur une branche de travail, GitHub Actions lance les tests métier (`npm test`) puis la compilation (`npm run build`). Le résultat compilé est conservé dans un artefact nommé `festapp-demo` pendant 14 jours.
+
+- Pour un test local : `npm install`, puis `npm run dev` et ouvrir l'adresse affichée par Vite.
+- Pour tester le résultat compilé : `npm run build`, puis `npx vite preview` et ouvrir l'adresse affichée.
+- La compilation utilise des chemins relatifs pour permettre un hébergement sous un sous-dossier.
+- L'artefact téléchargeable n'est **pas** un site hébergé : l'accès par URL publique nécessite encore la configuration du déploiement.
+- **Ne pas saisir de données personnelles réelles** dans un site de démonstration public non protégé. Les données de test restent dans le navigateur utilisé.
+
+Avant de déclarer la première version prête, vérifier sur ordinateur et smartphone : navigation, ajout/suppression, sauvegarde/restauration, écocups, filtres annuaire, mailing CCI, finance, bénévoles et tâches, puis revue de confidentialité et déploiement.
