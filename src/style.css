@@ -2,3 +2,5 @@
 .ecocup-summary{margin:12px 0 20px;padding:14px;border:1px solid #455673;border-radius:12px;background:#202f45}.ecocup-summary p{margin:8px 0 12px}.ecocup-summary label{max-width:210px}
 
 .backup-tools{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:-7px 0 18px}.backup-tools small{color:#b6c5dd;font-size:12px}.backup-tools button{font-size:13px}@media(max-width:650px){.backup-tools button{width:100%}}
+
+.contact-tools{display:flex;flex-wrap:wrap;align-items:end;gap:12px;padding:14px;background:#202f45;border-radius:12px;margin:12px 0 18px}.contact-tools label{min-width:190px}.contact-tools .note{width:100%;margin:0}.contact-tools button{max-width:100%}@media(max-width:650px){.contact-tools label,.contact-tools button{width:100%}}
