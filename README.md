@@ -44,3 +44,15 @@ Sur une branche de travail, GitHub Actions lance les tests métier (`npm test`) 
 - **Ne pas saisir de données personnelles réelles** dans un site de démonstration public non protégé. Les données de test restent dans le navigateur utilisé.
 
 Avant de déclarer la première version prête, vérifier sur ordinateur et smartphone : navigation, ajout/suppression, sauvegarde/restauration, écocups, filtres annuaire, mailing CCI, finance, bénévoles et tâches, puis revue de confidentialité et déploiement.
+
+## Refonte colorée et feuille de route
+
+Consulter [la feuille de route validée](docs/ROADMAP.md). La refonte privilégie des cartes d'accueil colorées et de grands boutons, inspirées des maquettes retenues par le comité.
+
+### Première brique : Communication
+
+Le nouvel onglet `Communication` permet d'ouvrir une manifestation depuis les données locales, de choisir un objectif et un ton, de générer un **brouillon par modèles locaux**, de le modifier, de le copier et d'ouvrir Facebook séparément. Une sélection de photos permet leur aperçu **dans le navigateur uniquement**. Les images ne sont ni téléversées ni conservées.
+
+Ce n'est **pas une IA connectée**, une bibliothèque de photos durable ni un système de publication automatique sur la Page du comité. La génération par API IA, les photos partagées et la validation des publications sont inscrites au plan de développement.
+
+La démo publique ne doit contenir aucune donnée réelle de bénévoles ou de participants ni photo personnelle sensible.
