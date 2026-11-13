@@ -23,10 +23,22 @@ function App(){
  const [tab,setTab]=useState("events");
  const [form,setForm]=useState(["","",""]);
  const [filter,setFilter]=useState("");
+ const [ecocupThreshold,setEcocupThreshold]=useState(()=>{const n=Number(localStorage.getItem("festapp-ecocups-seuil"));return Number.isFinite(n)&&n>=0?n:100});
  useEffect(()=>{localStorage.setItem(storageKey,JSON.stringify(data))},[data]);
+ useEffect(()=>{localStorage.setItem("festapp-ecocups-seuil",String(ecocupThreshold))},[ecocupThreshold]);
+ const ecocupMovements=(data.ecocups||[]).filter(r=>r.values[0]==="Entrée"||r.values[0]==="Sortie");
+ const ecocupBalance=ecocupMovements.reduce((sum,r)=>sum+(r.values[0]==="Entrée"?1:-1)*Number(r.values[1]||0),0);
+ const invalidEcocupHistory=(data.ecocups||[]).length!==ecocupMovements.length;
  const current=categories.find(c=>c.key===tab);
  const records=(data[tab]||[]).filter(r=>r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
- function add(e){e.preventDefault();if(!form[0].trim())return;setData(d=>({...d,[tab]:[...(d[tab]||[]),{id:crypto.randomUUID(),values:form.map(x=>x.trim())}]}));setForm(["","",""])}
+ function add(e){e.preventDefault();if(!form[0].trim())return;
+  if(tab==="ecocups"){
+   const quantity=Number(form[1]);
+   if(!["Entrée","Sortie"].includes(form[0])||!Number.isSafeInteger(quantity)||quantity<=0){alert("Choisissez Entrée ou Sortie et une quantité entière positive.");return}
+   if(form[0]==="Sortie"&&quantity>ecocupBalance){alert("Stock insuffisant : impossible de sortir plus d’écocups que le solde disponible.");return}
+  }
+  setData(d=>({...d,[tab]:[...(d[tab]||[]),{id:crypto.randomUUID(),values:form.map(x=>x.trim())}]}));setForm(["","",""])}
+
  function remove(id){if(!confirm("Supprimer cette fiche ?"))return;setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
  function exportCsv(){const rows=[current.fields,...(data[tab]||[]).map(r=>r.values)];const csv="\uFEFF"+rows.map(row=>row.map(x=>'"'+String(x||"").replaceAll('"','""')+'"').join(";")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="festapp-"+tab+".csv";a.click();URL.revokeObjectURL(a.href)}
  return <main>
@@ -34,8 +46,8 @@ function App(){
  <section className="hero"><h1>Organisons nos fêtes !</h1><p>Manifestations, bénévoles, stocks et bilans au même endroit.</p><strong>⚠ Données enregistrées uniquement sur cet appareil, non partagées avec le bureau.</strong></section>
  <nav aria-label="Modules">{categories.map(c=><button key={c.key} className={tab===c.key?"active":""} onClick={()=>{setTab(c.key);setForm(["","",""]);setFilter("")}}>{c.icon} {c.title}</button>)}</nav>
  <section className="panel"><div className="heading"><h2>{current.icon} {current.title}</h2><button className="secondary" onClick={exportCsv}>Exporter CSV</button></div>
- {tab==="ecocups"&&<p className="note">Enregistrez les mouvements d'écocups. Le suivi des consignes et l'alerte automatique seront connectés à la base partagée.</p>}
- <form onSubmit={add}><div className="fields">{current.fields.map((label,i)=><label key={label}>{label}<input required={i===0} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/></label>)}</div><button type="submit">+ Ajouter</button></form>
+ {tab==="ecocups"&&<div className="ecocup-summary"><p><strong>Stock calculé : {ecocupBalance} écocups</strong> — {ecocupBalance<=ecocupThreshold?"⚠ Stock au seuil ou en dessous":"✓ Stock au-dessus du seuil"}</p><label>Seuil d’alerte<input type="number" min="0" step="1" value={ecocupThreshold} onChange={e=>{const n=Number(e.target.value);if(Number.isSafeInteger(n)&&n>=0)setEcocupThreshold(n)}}/></label><p className="note">Enregistrez d’abord une entrée pour le stock initial, puis les entrées et sorties. Le solde est recalculé automatiquement. Données conservées sur cet appareil uniquement.</p>{invalidEcocupHistory&&<p className="note">⚠ Des anciennes fiches au format libre ne sont pas comptabilisées. Vérifiez-les et ressaisissez leurs mouvements.</p>}</div>}
+ <form onSubmit={add}><div className="fields">{current.fields.map((label,i)=><label key={label}>{label}{tab==="ecocups"&&i===0?<select required value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))}><option value="">Choisir un mouvement</option><option value="Entrée">Entrée (+)</option><option value="Sortie">Sortie (−)</option></select>:<input required={i===0||(tab==="ecocups"&&i===1)} type={tab==="ecocups"&&i===1?"number":"text"} min={tab==="ecocups"&&i===1?"1":undefined} step={tab==="ecocups"&&i===1?"1":undefined} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/>}</label>)}</div><button type="submit">+ Ajouter</button></form>
  <label className="search">Rechercher<input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filtrer les fiches…"/></label>
  <div className="records">{records.length?records.map(r=><article key={r.id}><div><strong>{r.values[0]}</strong><p>{r.values.slice(1).filter(Boolean).join(" · ")||"Aucune précision"}</p></div><button className="delete" onClick={()=>remove(r.id)} aria-label={"Supprimer "+r.values[0]}>Supprimer</button></article>):<p>Aucune fiche pour le moment.</p>}</div>
  </section><footer>Prototype local • aucune donnée synchronisée • TIXAPP reste indépendant</footer>
