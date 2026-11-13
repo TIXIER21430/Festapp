@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
+import Recipes from "./recipes/Recipes.jsx";
 
 const categories=[
 {key:"events",title:"Manifestations",icon:"🎉",fields:["Nom","Date","Lieu"]},
@@ -35,10 +36,10 @@ function App(){
  <nav aria-label="Modules">{categories.map(c=><button key={c.key} className={tab===c.key?"active":""} onClick={()=>{setTab(c.key);setForm(["","",""]);setFilter("")}}>{c.icon} {c.title}</button>)}</nav>
  <section className="panel"><div className="heading"><h2>{current.icon} {current.title}</h2><button className="secondary" onClick={exportCsv}>Exporter CSV</button></div>
  {tab==="ecocups"&&<p className="note">Enregistrez les mouvements d'écocups. Le suivi des consignes et l'alerte automatique seront connectés à la base partagée.</p>}
- <form onSubmit={add}><div className="fields">{current.fields.map((label,i)=><label key={label}>{label}<input required={i===0} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/></label>)}</div><button type="submit">+ Ajouter</button></form>
+ {tab==="recipes"?<Recipes/>:<><form onSubmit={add}><div className="fields">{current.fields.map((label,i)=><label key={label}>{label}<input required={i===0} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/></label>)}</div><button type="submit">+ Ajouter</button></form>
  <label className="search">Rechercher<input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filtrer les fiches…"/></label>
  <div className="records">{records.length?records.map(r=><article key={r.id}><div><strong>{r.values[0]}</strong><p>{r.values.slice(1).filter(Boolean).join(" · ")||"Aucune précision"}</p></div><button className="delete" onClick={()=>remove(r.id)} aria-label={"Supprimer "+r.values[0]}>Supprimer</button></article>):<p>Aucune fiche pour le moment.</p>}</div>
- </section><footer>Prototype local • aucune donnée synchronisée • TIXAPP reste indépendant</footer>
+ </>}</section><footer>Prototype local • aucune donnée synchronisée • TIXAPP reste indépendant</footer>
  </main>
 }
 createRoot(document.getElementById("root")).render(<App/>);
