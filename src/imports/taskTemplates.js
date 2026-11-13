@@ -1,0 +1,38 @@
+// Tâches opérationnelles issues de la checklist Saint-Laurent du Drive du Comité.
+// Aucune coordonnée personnelle n'est incluse. Les tâches importées sont des modèles
+// à réinitialiser pour chaque nouvelle édition, pas un état d'avancement réel.
+export const taskTemplates=[
+["Saint-Laurent","Avant","Réserver DJ"],["Saint-Laurent","Avant","Réserver chapiteau"],
+["Saint-Laurent","Avant","Organiser les manèges"],["Saint-Laurent","Avant","Trouver les animations du samedi et du dimanche"],
+["Saint-Laurent","Avant","Trouver le traiteur du dimanche"],["Saint-Laurent","Avant","Imprimer et distribuer les affiches"],
+["Saint-Laurent","Avant","Communiquer sur Facebook"],["Saint-Laurent","Avant","Demander l'autorisation du bal"],
+["Saint-Laurent","Avant","Commander le fond de caisse"],["Saint-Laurent","Avant","Réserver une remorque frigorifique"],
+["Saint-Laurent","Avant","Demander les barrières à la mairie"],["Saint-Laurent","Avant","Imprimer les tarifs buvette"],
+["Saint-Laurent","Avant","Poser les banderoles"],["Saint-Laurent","Avant","Commander les boissons"],
+["Saint-Laurent","Avant","Commander la nourriture et le pain"],["Saint-Laurent","Avant","Acheter le charbon et le gaz"],
+["Saint-Laurent","Avant","Acheter les lots des tournois"],
+["Saint-Laurent","Mardi ou mercredi","Monter le chapiteau"],["Saint-Laurent","Mardi ou mercredi","Monter les lumières"],
+["Saint-Laurent","Veille","Mettre boissons et nourriture au frais"],["Saint-Laurent","Veille","Préparer la buvette chevaux"],
+["Saint-Laurent","Veille","Installer barnums, mange-debout, cendriers et poubelles"],
+["Saint-Laurent","Veille","Installer tables et bancs"],["Saint-Laurent","Veille","Préparer nappes et couverts"],
+["Saint-Laurent","Veille","Préparer la pâte à crêpes"],["Saint-Laurent","Veille","Installer barrières et estrade"],
+["Saint-Laurent","Jour J","Chercher le pain"],["Saint-Laurent","Jour J","Installer la buvette, la tireuse et le café"],
+["Saint-Laurent","Jour J","Installer crêpière et affichage des tarifs"],
+["Saint-Laurent","Jour J","Installer les tableaux électriques"],
+["Saint-Laurent","Jour J","Installer barbecue et friteuse"],
+["Saint-Laurent","Jour J","Préparer le service et afficher la licence"],
+["Saint-Laurent","Soir","Tenir la buvette et servir les repas"],
+["Saint-Laurent","Soir","Protéger les structures gonflables avant le feu"],
+["Saint-Laurent","Dimanche","Préparer la salle et le tournoi de boules"],
+["Saint-Laurent","Dimanche","Sortir les poubelles"],
+["Saint-Laurent","Après","Démonter le chapiteau"],
+["Saint-Laurent","Après","Retirer ou remplacer les affiches"],
+["Saint-Laurent","Après","Ranger et nettoyer le matériel et les locaux"],
+["Marché de Noël","Préparation","Prévoir les branchements électriques des stands"],
+["Marché de Noël","Préparation","Prévoir les sapins de décoration"],
+["Marché de Noël","Préparation","Installer le barnum de buvette"],
+["Marché de Noël","Préparation","Commander les écocups de Noël"],
+["Marché de Noël","Préparation","Effectuer la déclaration SACEM"],
+["Marché de Noël","Préparation","Vérifier le stock avant les achats alimentaires"],
+["Marché de Noël","Préparation","Préparer les ingrédients pour la pâte à crêpes"]
+].map(([event,phase,title],i)=>({id:"template-"+i,event,phase,title,done:false,source:"Drive Comité"}));
