@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
+import { csvDocument } from "./csv.js";
 
 const categories=[
 {key:"events",title:"Manifestations",icon:"🎉",fields:["Nom","Date","Lieu"]},
@@ -28,7 +29,7 @@ function App(){
  const records=(data[tab]||[]).filter(r=>r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
  function add(e){e.preventDefault();if(!form[0].trim())return;setData(d=>({...d,[tab]:[...(d[tab]||[]),{id:crypto.randomUUID(),values:form.map(x=>x.trim())}]}));setForm(["","",""])}
  function remove(id){if(!confirm("Supprimer cette fiche ?"))return;setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
- function exportCsv(){const rows=[current.fields,...(data[tab]||[]).map(r=>r.values)];const csv="\uFEFF"+rows.map(row=>row.map(x=>'"'+String(x||"").replaceAll('"','""')+'"').join(";")).join("\r\n");const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="festapp-"+tab+".csv";a.click();URL.revokeObjectURL(a.href)}
+ function exportCsv(){const rows=[current.fields,...(data[tab]||[]).map(r=>r.values)];const csv=csvDocument(current.fields,(data[tab]||[]).map(r=>r.values));const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.download="festapp-"+tab+".csv";a.click();URL.revokeObjectURL(a.href)}
  return <main>
  <header><div>🎆 FEST'APP <small>Comité des fêtes de Liernais</small></div><span className="demo">Mode démonstration</span></header>
  <section className="hero"><h1>Organisons nos fêtes !</h1><p>Manifestations, bénévoles, stocks et bilans au même endroit.</p><strong>⚠ Données enregistrées uniquement sur cet appareil, non partagées avec le bureau.</strong></section>
