@@ -42,7 +42,7 @@ function App(){
  <header><div>🎆 FEST'APP <small>Comité des fêtes de Liernais</small></div><span className="demo">Mode démonstration</span></header>
  <section className="hero"><h1>Organisons nos fêtes !</h1><p>Manifestations, bénévoles, stocks et bilans au même endroit.</p><strong>⚠ Données enregistrées uniquement sur cet appareil, non partagées avec le bureau.</strong></section>
  <nav aria-label="Modules">{categories.map(c=><button key={c.key} className={tab===c.key?"active":""} onClick={()=>{setTab(c.key);setForm(["","",""]);setFilter("")}}>{c.icon} {c.title}</button>)}</nav>
- <section className="panel"><div className="heading"><h2>{current.icon} {current.title}</h2><button className="secondary" onClick={exportCsv}>Exporter CSV</button></div>
+ <section className="panel"><div className="heading"><h2>{current.icon} {current.title}</h2>{!["recipes","history","drive","checklists","archives"].includes(tab)&&<button className="secondary" onClick={exportCsv}>Exporter CSV</button>}</div>
  {tab==="ecocups"&&<p className="note">Enregistrez les mouvements d'écocups. Le suivi des consignes et l'alerte automatique seront connectés à la base partagée.</p>}
  {tab==="recipes"?<Recipes/>:tab==="history"?<SalesHistory/>:tab==="drive"?<DriveDocuments/>:tab==="checklists"?<Checklists/>:tab==="archives"?<Archives/>:<><form onSubmit={add}><div className="fields">{current.fields.map((label,i)=><label key={label}>{label}<input required={i===0} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/></label>)}</div><button type="submit">+ Ajouter</button></form>
  <label className="search">Rechercher<input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filtrer les fiches…"/></label>
