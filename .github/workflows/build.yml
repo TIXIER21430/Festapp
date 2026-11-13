@@ -22,5 +22,13 @@ jobs:
           node-version: '22'
       - name: Installer les dépendances
         run: npm install --no-audit --no-fund
+      - name: Tester les règles métier
+        run: npm test
       - name: Compiler l'application
         run: npm run build
+      - name: Préparer un artefact de démonstration
+        uses: actions/upload-artifact@v4
+        with:
+          name: festapp-demo
+          path: dist/
+          retention-days: 14
