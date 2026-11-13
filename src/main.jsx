@@ -1,6 +1,7 @@
 import React,{useEffect,useRef,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
+import { parseAmount, financeNature, eventDate } from "./domain.js";
 
 const categories=[
 {key:"events",title:"Manifestations",icon:"🎉",fields:["Nom","Date","Lieu"]},
@@ -18,15 +19,6 @@ const eventNames=["Concours de belote","Carnaval","Chasse aux œufs","Fête des 
 const seed={events:eventNames.map((name,i)=>({id:"seed-"+i,values:[name,"",""]}))};
 const storageKey="festapp-demo-v1";
 const euros=new Intl.NumberFormat("fr-FR",{style:"currency",currency:"EUR"});
-function parseAmount(value){const v=String(value||"").trim().replace(",",".");if(!/^\d+(?:\.\d{1,2})?$/.test(v))return null;const n=Number(v);return Number.isSafeInteger(Math.round(n*100))?n:null}
-function financeNature(value){const v=String(value||"").trim().toLowerCase();return v==="recette"?"Recette":v==="dépense"||v==="depense"?"Dépense":null}
-function eventDate(value){
- const text=String(value||"").trim();
- const match=/^(\d{4})-(\d{2})-(\d{2})$/.exec(text);
- if(!match)return null;
- const d=new Date(Number(match[1]),Number(match[2])-1,Number(match[3]));
- return d.getFullYear()===Number(match[1])&&d.getMonth()===Number(match[2])-1&&d.getDate()===Number(match[3])?d:null;
-}
 function load(){try{return {...seed,...JSON.parse(localStorage.getItem(storageKey)||"{}")}}catch{return seed}}
 function App(){
  const [data,setData]=useState(load);
