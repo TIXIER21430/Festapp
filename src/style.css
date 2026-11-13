@@ -22,3 +22,74 @@
 @media(max-width:700px){.dashboard-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-section{padding:14px}}
 
 .record-actions{display:flex;align-items:center;justify-content:flex-end;gap:8px;flex-wrap:wrap}.record-actions button{white-space:nowrap}@media(max-width:650px){.record-actions{flex-direction:column;align-items:stretch}}
+
+
+/* Design FEST'APP 2026 : grand accueil mobile, couleurs inspirées des maquettes 2 et 3. */
+:root{color:#14213d;background:#f5f7fe;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+body{background:#f5f7fe}
+main{max-width:1160px;padding:18px 16px 32px}
+header{color:#17234b;font-size:29px}
+header small{color:#65718e;font-size:14px}
+.demo{background:#fff7da;color:#735300;border-color:#efca53;font-weight:750}
+.hero{background:linear-gradient(105deg,#5134a9,#7653d7);border-radius:26px;box-shadow:0 14px 30px rgba(65,46,131,.12);margin:18px 0 23px;padding:24px 28px;color:white}
+.hero p{color:#f2eeff}
+.hero strong{display:block;color:#fff8d5;line-height:1.5}
+.home-shortcuts{padding:6px 0 22px}
+.home-heading h2{font-size:26px;letter-spacing:-.5px;margin:6px 0}
+.home-heading p{color:#586680;margin:0 0 18px}
+.home-tiles{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.home-tile{min-height:205px;text-align:left;position:relative;border-radius:26px;padding:22px;color:white;display:flex;flex-direction:column;align-items:flex-start;justify-content:flex-start;gap:9px;box-shadow:0 12px 24px rgba(46,56,113,.10);transition:transform .16s ease,box-shadow .16s ease}
+.home-tile:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(46,56,113,.14)}
+.home-tile:focus-visible,.home-quick button:focus-visible{outline:4px solid #241562;outline-offset:3px}
+.home-tile strong{font-size:clamp(20px,3.5vw,30px);line-height:1.13;letter-spacing:-.4px}
+.home-tile small{font-size:16px;font-weight:620;color:#fff;opacity:.94}
+.tile-emoji{display:flex;align-items:center;justify-content:center;width:52px;height:52px;background:rgba(255,255,255,.21);border-radius:16px;font-size:29px}
+.tile-arrow{position:absolute;bottom:17px;right:19px;border-radius:50%;background:rgba(255,255,255,.22);padding:6px 13px;font-size:21px}
+.tile-events{background:linear-gradient(135deg,#ff6885,#f73371)}
+.tile-shifts{background:linear-gradient(135deg,#35a9ff,#116edb)}
+.tile-ecocups{background:linear-gradient(135deg,#47cd79,#08a55d)}
+.tile-finance{background:linear-gradient(135deg,#ffc347,#f2a500);color:#342208}
+.tile-finance small{color:#342208}
+.home-quick{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:16px}
+.home-quick button{min-height:88px;background:#ece5ff;color:#34266a;border-radius:20px;padding:14px;font-size:17px;font-weight:800;white-space:normal}
+.home-quick button:nth-child(2){background:#e0efff;color:#16477a}
+.home-quick button:nth-child(3){background:#ffdfed;color:#8f285a}
+.home-quick button:nth-child(4){background:#e0faeb;color:#125e39}
+.dashboard-section,.panel,.communication-panel{background:#fff;color:#192445;border-radius:24px;padding:24px;box-shadow:0 8px 26px rgba(38,48,98,.06)}
+.dashboard-section{margin-bottom:20px}
+.dashboard-kpis button{background:#f1effe;color:#263464;border-radius:18px;min-height:98px}
+.dashboard-kpis span{color:#536381;font-size:13px}
+.upcoming-events article,.records article{background:#f5f7fc;color:#14213d;border-radius:16px;padding:17px}
+.records p,.upcoming-events p{color:#69738d}
+nav{gap:9px;padding:5px 0 16px}
+nav button{background:#fff;color:#465172;border:1px solid #e2e6f0;min-height:50px;padding:13px 17px;border-radius:16px}
+nav button.active{background:#5944c7;color:white;border-color:#5944c7}
+button{border-radius:14px;min-height:44px;background:#5944c7}
+.secondary{background:#efedfb;color:#45349d}
+.delete{background:#ffe4e8;color:#aa2641}
+label{color:#4b5874;font-size:14px;font-weight:640}
+input,select,textarea{background:#fff;color:#1a2545;border:1px solid #cdd5e4;border-radius:13px;padding:13px;font:inherit;min-height:45px}
+textarea{display:block;width:100%;resize:vertical;margin-top:6px}
+input:focus,select:focus,textarea:focus{outline:3px solid #bdadff;outline-offset:0}
+.note{background:#f3f3ff;color:#4d5575;line-height:1.5}
+.finance-summary,.shift-summary,.contact-tools,.ecocup-summary{background:#f4f6fe;border-color:#dce2f3;color:#23304d}
+.finance-kpis>div,.finance-events article{background:white}
+.finance-kpis span,.finance-events span{color:#65718d}
+.backup-tools small{color:#62708b}
+footer{color:#66738b}
+.communication-panel{margin:16px 0}
+.communication-panel h2{font-size:25px}
+.draft-pill{background:#f4ecff;color:#5e3a99;padding:7px 13px;border-radius:99px;font-size:13px;font-weight:750}
+.communication-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin:18px 0}
+.communication-wide{grid-column:1/-1}
+.communication-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:15px 0}
+.communication-link{display:inline-flex;align-items:center;justify-content:center;padding:12px 17px;border-radius:14px;color:#fff;background:#116bd9;text-decoration:none;font-weight:700;min-height:44px}
+.communication-preview{background:#f6f7ff;border-radius:20px;padding:16px;margin-top:18px}
+.communication-preview textarea{line-height:1.6}
+.photo-preview{border-top:1px solid #e3e8f2;margin-top:24px;padding-top:12px}
+.photo-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:16px 0}
+.photo-grid figure{margin:0;min-width:0}
+.photo-grid img{display:block;width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px}
+.photo-grid figcaption{font-size:12px;color:#65718d;word-break:break-word;padding:5px 0}
+@media(max-width:700px){.home-tiles{gap:12px}.home-tile{min-height:170px;padding:15px;border-radius:21px}.home-tile strong{font-size:21px}.home-tile small{font-size:13px}.tile-emoji{width:43px;height:43px;font-size:23px}.home-quick{grid-template-columns:repeat(2,minmax(0,1fr))}.home-quick button{min-height:70px}.communication-grid{grid-template-columns:1fr}.communication-wide{grid-column:1}.photo-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.dashboard-section,.panel,.communication-panel{padding:16px}.hero{padding:20px}}
+@media(max-width:365px){.home-tile{min-height:180px}.home-tile strong{font-size:18px}.tile-arrow{bottom:9px;right:10px}.home-tile small{font-size:12px}}
