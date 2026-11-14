@@ -9,10 +9,10 @@ test('six collections MVP exportables', () => {
   }
 });
 test('CSV with BOM, separator, CRLF and escaping', () => {
-  const csv = exportMvpCsv('benevoles', [{ id: '1', nom: 'A;"B"\\nC' }]);
-  assert.ok(csv.startsWith('\\uFEFF'));
-  assert.ok(csv.includes('"A;""B""\\nC"'));
-  assert.ok(csv.endsWith('\\r\\n'));
+  const csv = exportMvpCsv('benevoles', [{ id: '1', nom: 'A;"B"\nC' }]);
+  assert.ok(csv.startsWith('\uFEFF'));
+  assert.ok(csv.includes('"A;""B""\nC"'));
+  assert.ok(csv.endsWith('\r\n'));
 });
 test('neutralizes spreadsheet formulas and leading whitespace', () => {
   const csv = exportMvpCsv('benevoles', [{ id: '=1+1', nom: '  @SUM(1)', prenom: '+cmd', email: '-1' }]);
@@ -27,5 +27,5 @@ test('rejects unknown collection, malformed rows and separator', () => {
   assert.throws(() => exportMvpCsv('autre', []));
   assert.throws(() => exportMvpCsv('groupes', {}));
   assert.throws(() => exportMvpCsv('groupes', [null]));
-  assert.throws(() => exportMvpCsv('groupes', [], { separator: '\\t' }));
+  assert.throws(() => exportMvpCsv('groupes', [], { separator: '\t' }));
 });
