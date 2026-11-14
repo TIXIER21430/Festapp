@@ -29,3 +29,16 @@ test('rejects unknown collection, malformed rows and separator', () => {
   assert.throws(() => exportMvpCsv('groupes', [null]));
   assert.throws(() => exportMvpCsv('groupes', [], { separator: '\t' }));
 });
+
+test('rejects nested data and non-finite numbers instead of silently corrupting CSV', () => {
+  for (const value of [{ detail: 'texte' }, ['a', 'b'], NaN, Infinity, -Infinity, Symbol('x')]) {
+    assert.throws(() => exportMvpCsv('benevoles', [{ id: '1', nom: value }]), TypeError);
+  }
+});
+test('exports valid scalar values and leaves input unchanged', () => {
+  const row = Object.freeze({ id: 123, nom: 'Comité', telephone: 0, prenom: false });
+  const csv = exportMvpCsv('benevoles', [row]);
+  assert.ok(csv.includes('"123";"Comité";"false"'));
+  assert.ok(csv.includes('"0"'));
+  assert.equal(row.nom, 'Comité');
+});
