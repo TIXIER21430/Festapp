@@ -12,6 +12,11 @@ export const MVP_CSV_COLUMNS = Object.freeze({
 const FORMULA_PREFIX = /^[\s\u0000-\u001f]*[=+@-]/u;
 function safeCell(value) {
   if (value == null) return '';
+  // Reject values that cannot be faithfully represented as a single CSV cell.
+  if (typeof value === 'object' || typeof value === 'function' || typeof value === 'symbol' ||
+      (typeof value === 'number' && !Number.isFinite(value))) {
+    throw new TypeError('Valeur CSV non scalaire ou non finie');
+  }
   const text = typeof value === 'string' ? value : String(value);
   // Prefix dangerous cells with an apostrophe; preserve original data in memory.
   const protectedText = FORMULA_PREFIX.test(text) ? "'" + text : text;
