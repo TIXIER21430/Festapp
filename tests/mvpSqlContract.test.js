@@ -31,3 +31,27 @@ test('ecocup RPC checks authorization, idempotency, row lock and negative balanc
 test('tasks reference events by stable UUID', () => {
   assert.match(normalized, /event_id uuid not null references public\.fest_events\(id\)/);
 });
+
+test('membership roles cannot be assigned by client policies', () => {
+  const policies = [...normalized.matchAll(/create\s+policy\s+\w+\s+on\s+public\.fest_members\s+for\s+(\w+)/g)].map(m => m[1]);
+  assert.deepEqual(policies, ['select']);
+  assert.match(normalized, /fest_members_self_read[\s\S]*?user_id\s*=\s*\(select auth\.uid\(\)\)/);
+});
+test('contact records have no reader or anonymous access', () => {
+  const readPolicy = normalized.match(/create policy fest_people_read[\s\S]*?(?=create policy|-- aucun|alter table|commit;)/)?.[0] ?? '';
+  assert.match(readPolicy, /to authenticated/);
+  assert.match(readPolicy, /'admin','editor'/);
+  assert.doesNotMatch(readPolicy, /'reader'/);
+});
+test('ecocup tables expose no direct client write policies', () => {
+  for (const table of ['fest_ecocup_inventory', 'fest_ecocup_movements']) {
+    const policies = [...normalized.matchAll(new RegExp('create\\s+policy\\s+\\w+\\s+on\\s+public\\.' + table + '\\s+for\\s+(\\w+)', 'g'))].map(m => m[1]);
+    assert.deepEqual(policies, ['select'], table);
+  }
+});
+test('ecocup idempotency validates the original actor and payload', () => {
+  assert.match(normalized, /v_previous\.inventory_id\s*<>\s*p_inventory/);
+  assert.match(normalized, /v_previous\.delta\s*<>\s*p_delta/);
+  assert.match(normalized, /v_previous\.event_id\s+is distinct from\s+p_event/);
+  assert.match(normalized, /v_previous\.actor_id\s*<>\s*v_actor/);
+});
