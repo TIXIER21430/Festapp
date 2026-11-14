@@ -12,3 +12,20 @@ test("identifiants doublons interdits",()=>assert.throws(()=>summarizeEcocups([m
 test("quantités invalides interdites",()=>{for(const q of ["0","-1","1.5","1e3","abc","9007199254740993"])assert.throws(()=>summarizeEcocups([move("a","entrée",q)]));});
 test("paramètres invalides interdits",()=>assert.throws(()=>summarizeEcocups([],{openingBalance:-1})));
 test("entrée ne modifie pas la source",()=>{const rows=[move("a","entrée","2")];const before=JSON.stringify(rows);summarizeEcocups(rows);assert.equal(JSON.stringify(rows),before);});
+
+test("quantité minimale pour lever l'alerte, seuil inclus",()=>{
+ assert.equal(summarizeEcocups([],{openingBalance:9,alertThreshold:10}).minimumToClearAlert,2);
+ assert.equal(summarizeEcocups([],{openingBalance:10,alertThreshold:10}).minimumToClearAlert,1);
+ assert.equal(summarizeEcocups([],{openingBalance:11,alertThreshold:10}).minimumToClearAlert,0);
+});
+test("seuil maximal ne produit pas de quantité non sûre",()=>{
+ const result=summarizeEcocups([],{openingBalance:0,alertThreshold:Number.MAX_SAFE_INTEGER});
+ assert.equal(result.alert,true);
+ assert.equal(result.minimumToClearAlert,null);
+});
+test("calcul de réapprovisionnement ne modifie pas les mouvements",()=>{
+ const rows=[move("a","sortie","3")];
+ const original=JSON.stringify(rows);
+ assert.equal(summarizeEcocups(rows,{openingBalance:10,alertThreshold:8}).minimumToClearAlert,2);
+ assert.equal(JSON.stringify(rows),original);
+});
