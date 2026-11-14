@@ -23,5 +23,10 @@ export function summarizeEcocups(movements, {openingBalance = 0, alertThreshold 
     balance = next;
     history.push({id:row.id,kind,quantity,event,balance});
   }
-  return {balance,alert:balance <= alertThreshold,history};
+  // Quantity needed to move strictly above the warning threshold. Null means
+  // the configured threshold is already the largest safe integer.
+  const alert = balance <= alertThreshold;
+  const minimumToClearAlert = !alert ? 0 : alertThreshold === Number.MAX_SAFE_INTEGER
+    ? null : alertThreshold - balance + 1;
+  return {balance,alert,minimumToClearAlert,history};
 }
