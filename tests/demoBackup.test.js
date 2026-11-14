@@ -1,0 +1,12 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import {createDemoBackup,parseDemoBackup,previewDemoBackup} from "../src/lib/demoBackup.js";
+const sample={events:[{id:"seed-0",values:["Marché de Noël","2026-12-01","Liernais"]}],contacts:[{id:"a",values:["Élodie","Bénévole","élodie@example.org"]}]};
+test("backup roundtrip preserves accents and IDs",()=>assert.deepEqual(parseDemoBackup(createDemoBackup(sample)),sample));
+test("preview counts records without applying changes",()=>assert.deepEqual(previewDemoBackup(createDemoBackup(sample)).records,2));
+test("unknown format rejected",()=>assert.throws(()=>parseDemoBackup('{"format":"other","version":1,"exportedAt":"2026-01-01","data":{}}')));
+test("duplicate IDs rejected",()=>assert.throws(()=>createDemoBackup({events:[sample.events[0],sample.events[0]]})));
+test("invalid record shapes rejected",()=>assert.throws(()=>createDemoBackup({events:[{id:"x",values:["a"]}]})));
+test("unknown categories rejected",()=>assert.throws(()=>createDemoBackup({admin:[{id:"x",values:["a","b","c"]}]})));
+test("invalid JSON rejected",()=>assert.throws(()=>parseDemoBackup("{")));
+test("backup does not mutate source",()=>{const before=JSON.stringify(sample);createDemoBackup(sample);assert.equal(JSON.stringify(sample),before)});
