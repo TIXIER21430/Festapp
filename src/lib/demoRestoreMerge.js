@@ -7,9 +7,10 @@ export function mergeDemoBackupWithoutOverwrite(currentData, backupJson) {
   const current = validateDemoData(currentData);
   const plan = planDemoRestore(current, backupJson);
   if (!plan.safeToAppend) {
-    const error = new Error("Restore blocked: existing identifiers would be overwritten");
+    const error = new Error("Restore blocked: conflicting identifiers or category capacity exceeded");
     error.code = "DEMO_RESTORE_CONFLICT";
     error.conflicts = plan.conflicts;
+    error.capacityExceeded = plan.capacityExceeded;
     throw error;
   }
   const result = {...current};
