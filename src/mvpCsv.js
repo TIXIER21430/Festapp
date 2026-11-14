@@ -9,7 +9,7 @@ export const MVP_CSV_COLUMNS = Object.freeze({
   ecocups: ['id', 'date', 'type', 'quantite', 'manifestation_id'],
 });
 
-const FORMULA_PREFIX = /^[\\s\\u0000-\\u001f]*[=+@-]/u;
+const FORMULA_PREFIX = /^[\s\u0000-\u001f]*[=+@-]/u;
 function safeCell(value) {
   if (value == null) return '';
   const text = typeof value === 'string' ? value : String(value);
@@ -27,5 +27,5 @@ export function exportMvpCsv(collection, rows, { separator = ';' } = {}) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) throw new TypeError('Fiche CSV invalide');
     lines.push(columns.map((key) => safeCell(row[key])).join(separator));
   }
-  return '\\uFEFF' + lines.join('\\r\\n') + '\\r\\n';
+  return '\uFEFF' + lines.join('\r\n') + '\r\n';
 }
