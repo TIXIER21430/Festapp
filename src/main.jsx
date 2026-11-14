@@ -2,6 +2,7 @@ import React,{useEffect,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
 import {buildCsv} from "./lib/csv.js";
+import {summarizeEcocups} from "./lib/ecocupDemoBalance.js";
 import {createDemoBackup,previewDemoBackup} from "./lib/demoBackup.js";
 
 const categories=[
@@ -26,6 +27,15 @@ function App(){
  const [form,setForm]=useState(["","",""]);
  const [filter,setFilter]=useState("");
  const [backupPreview,setBackupPreview]=useState("");
+ const [ecocupOpening,setEcocupOpening]=useState("0");
+ const [ecocupThreshold,setEcocupThreshold]=useState("100");
+ let ecocupSummary=null,ecocupError="";
+ if(tab==="ecocups"){
+  try{
+   if(!/^(0|[1-9][0-9]*)$/.test(ecocupOpening)||!/^(0|[1-9][0-9]*)$/.test(ecocupThreshold)) throw new TypeError("Saisissez des nombres entiers positifs.");
+   ecocupSummary=summarizeEcocups(data.ecocups||[],{openingBalance:Number(ecocupOpening),alertThreshold:Number(ecocupThreshold)});
+  }catch(e){ecocupError=e.message||"Mouvements invalides";}
+ }
  useEffect(()=>{localStorage.setItem(storageKey,JSON.stringify(data))},[data]);
  const current=categories.find(c=>c.key===tab);
  const records=(data[tab]||[]).filter(r=>r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
