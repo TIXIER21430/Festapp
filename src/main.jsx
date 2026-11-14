@@ -2,6 +2,7 @@ import React,{useEffect,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
 import {buildCsv} from "./lib/csv.js";
+import {createDemoBackup,previewDemoBackup} from "./lib/demoBackup.js";
 
 const categories=[
 {key:"events",title:"Manifestations",icon:"🎉",fields:["Nom","Date","Lieu"]},
@@ -24,15 +25,19 @@ function App(){
  const [tab,setTab]=useState("events");
  const [form,setForm]=useState(["","",""]);
  const [filter,setFilter]=useState("");
+ const [backupPreview,setBackupPreview]=useState("");
  useEffect(()=>{localStorage.setItem(storageKey,JSON.stringify(data))},[data]);
  const current=categories.find(c=>c.key===tab);
  const records=(data[tab]||[]).filter(r=>r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
  function add(e){e.preventDefault();if(!form[0].trim())return;setData(d=>({...d,[tab]:[...(d[tab]||[]),{id:crypto.randomUUID(),values:form.map(x=>x.trim())}]}));setForm(["","",""])}
  function remove(id){if(!confirm("Supprimer cette fiche ?"))return;setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
+ function exportBackup(){const json=createDemoBackup(data);const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="festapp-demo-sauvegarde-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+ async function inspectBackup(e){const file=e.target.files?.[0];if(!file)return;try{if(file.size>10_000_000)throw new Error("Fichier trop volumineux");const result=previewDemoBackup(await file.text());setBackupPreview(`Sauvegarde valide : ${result.records} fiches dans ${result.categories} catégories. Aucune donnée importée.`)}catch{setBackupPreview("Sauvegarde invalide ou incompatible. Aucune donnée modifiée.")}finally{e.target.value=""}}
  function exportCsv(){const rows=(data[tab]||[]).map(r=>r.values);const csv=buildCsv(current.fields,rows);const a=document.createElement("a");const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.href=url;a.download="festapp-"+tab+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
  return <main>
  <header><div>🎆 FEST'APP <small>Comité des fêtes de Liernais</small></div><span className="demo">Mode démonstration</span></header>
  <section className="hero"><h1>Organisons nos fêtes !</h1><p>Manifestations, bénévoles, stocks et bilans au même endroit.</p><strong>⚠ Données enregistrées uniquement sur cet appareil, non partagées avec le bureau.</strong></section>
+ <section className="panel" aria-label="Sauvegarde de démonstration"><div className="heading"><h2>💾 Sauvegarde locale</h2><button className="secondary" onClick={exportBackup}>Télécharger JSON</button></div><p>Conservez une copie de vos fiches de démonstration. La vérification d’un fichier ne restaure ni ne remplace aucune donnée.</p><label>Vérifier une sauvegarde JSON<input type="file" accept=".json,application/json" onChange={inspectBackup}/></label>{backupPreview&&<p role="status">{backupPreview}</p>}</section>
  <nav aria-label="Modules">{categories.map(c=><button key={c.key} className={tab===c.key?"active":""} onClick={()=>{setTab(c.key);setForm(["","",""]);setFilter("")}}>{c.icon} {c.title}</button>)}</nav>
  <section className="panel"><div className="heading"><h2>{current.icon} {current.title}</h2><button className="secondary" onClick={exportCsv}>Exporter CSV</button></div>
  {tab==="ecocups"&&<p className="note">Enregistrez les mouvements d'écocups. Le suivi des consignes et l'alerte automatique seront connectés à la base partagée.</p>}
