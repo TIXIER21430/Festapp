@@ -1,0 +1,28 @@
+# Procédure de sauvegarde et de restauration — démonstration FEST'APP
+
+> **Périmètre : données locales de démonstration uniquement.** Cette procédure ne sauvegarde pas Supabase et n'autorise aucune écriture sur une base réelle.
+
+## Sauvegarde avant essai
+1. Depuis l'interface de démonstration, exporter la sauvegarde JSON via la fonction dédiée.
+2. Conserver deux copies datées dans des emplacements distincts et protégés (les contacts contiennent des données personnelles).
+3. Vérifier que le JSON contient `format: "festapp-demo-backup"`, `version: 1`, `exportedAt` et `data`.
+4. Prévisualiser le nombre d'enregistrements par catégorie avant toute tentative de restauration. Ne jamais confondre une sauvegarde de démonstration avec une sauvegarde de production.
+
+## Restauration en environnement isolé
+1. Travailler sur un profil de navigateur de test, sans session Supabase de production.
+2. Conserver une copie de l'état de test actuel avant import.
+3. Valider le JSON avec `parseDemoBackup` / `previewDemoBackup`. Un fichier invalide, trop volumineux ou d'une version inconnue doit être refusé.
+4. Vérifier les mouvements écocups avec `inspectEcocupBackup`, en renseignant **explicitement** le stock initial et le seuil correspondant à la sauvegarde. Ces réglages ne sont pas inclus dans le format actuel.
+5. Contrôler les doublons et les liens manifestations–tâches. Ne pas corriger automatiquement les correspondances ambiguës.
+6. Importer uniquement dans un jeu de test, puis comparer les nombres d'enregistrements et le stock final attendu.
+7. En cas d'écart, interrompre l'essai et revenir à la copie précédente. Ne jamais écraser des données réelles.
+
+## Avant une mise en service partagée (non réalisée)
+- Créer un projet Supabase de test indépendant, avec clés et utilisateurs de test distincts.
+- Prévoir migrations **additives** versionnées, RLS activée et tests d'autorisation (10 membres du bureau ; bénévoles sans accès).
+- Définir sauvegarde transactionnelle côté serveur, procédure de restauration testée et journal d'audit.
+- Prévoir une transaction serveur atomique pour chaque mouvement écocup afin d'éviter les stocks négatifs en accès simultané.
+- Vérifier les droits d'export des coordonnées et les durées de conservation RGPD.
+- Exiger validation explicite avant toute modification d'une base réelle, fusion, déploiement ou service payant.
+
+**Limitation actuelle :** le format de sauvegarde de démonstration ne transporte pas le stock initial ni le seuil d'alerte écocups. Une restauration du stock sans ces valeurs vérifiées est potentiellement trompeuse.
