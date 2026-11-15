@@ -21,5 +21,8 @@ export function planDemoRestore(current, backupJson) {
       added++;
     }
   }
-  // Keep the preview within the same per-category limit as demo backups.\n  // Reject the entire preview instead of returning an unusable partial merge.\n  validateDemoData(merged);\n  return {data:merged,added,conflicts,requiresConfirmation:true};
+  // Keep the preview within the same per-category limit as demo backups. 
+  // Reject the entire preview instead of returning an unusable partial merge. 
+  validateDemoData(merged); 
+  return {data:merged,added,conflicts,requiresConfirmation:true};
 }
