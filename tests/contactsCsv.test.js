@@ -19,3 +19,16 @@ test('refuse catégories inconnues et ne modifie pas les contacts', () => {
   const contacts = Object.freeze([Object.freeze({kind:'group',display_name:'Groupe'})]);
   assert.ok(exportContactsCsv(contacts).includes('Groupe'));
 });
+
+test('neutralise les formules précédées de blancs Unicode ou de tabulations', () => {
+  const csv = exportContactsCsv([{
+    kind: 'volunteer',
+    display_name: '\t=HYPERLINK("https://example.invalid")',
+    email: '\u00a0+1+1',
+    phone: '\uFEFF@SUM(1)',
+    notes: '\u200B-2'
+  }]);
+  for (const value of ["'\t=HYPERLINK", "'\u00a0+1+1", "'\uFEFF@SUM", "'\u200B-2"]) {
+    assert.ok(csv.includes(value), `formule non neutralisée : ${JSON.stringify(value)}`);
+  }
+});
