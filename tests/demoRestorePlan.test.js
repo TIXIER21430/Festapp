@@ -35,3 +35,22 @@ test("rejects invalid current data and malformed backups", () => {
   assert.throws(()=>planDemoRestore({events:[{id:"bad"}]},createDemoBackup({})));
   assert.throws(()=>planDemoRestore({},'{bad json'));
 });
+
+test("refuses an append that would exceed category capacity without changing either input", () => {
+  const current={events:Array.from({length:9999},(_,i)=>row("existing-"+i))};
+  const backup=createDemoBackup({events:[row("new-1"),row("new-2")]});
+  const before=JSON.stringify(current);
+  const plan=planDemoRestore(current,backup);
+  assert.equal(plan.safeToAppend,false);
+  assert.deepEqual(plan.capacityExceeded,[{category:"events",finalCount:10001,maximum:10000}]);
+  assert.equal(plan.counts.events.addable,2);
+  assert.equal(JSON.stringify(current),before);
+});
+test("accepts exact capacity and counts conflicts only once", () => {
+  const current={events:Array.from({length:9999},(_,i)=>row("existing-"+i))};
+  const plan=planDemoRestore(current,createDemoBackup({events:[row("existing-1"),row("new")]}));
+  assert.deepEqual(plan.capacityExceeded,[]);
+  assert.equal(plan.counts.events.addable,1);
+  assert.equal(plan.counts.events.conflicts,1);
+  assert.equal(plan.safeToAppend,false);
+});
