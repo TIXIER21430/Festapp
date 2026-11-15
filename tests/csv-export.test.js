@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { exportCsv, FESTAPP_CSV_COLUMNS } from '../src/csv-export.js';
 test('CSV Excel FR: BOM, semicolon, CRLF and accents', () => {
   const csv=exportCsv([{key:'name',label:'Nom'}],[{name:'Marché de Noël'}]);
-  assert.equal(csv,'\\uFEFF"Nom"\\r\\n"Marché de Noël"\\r\\n');
+  assert.equal(csv,'\uFEFF"Nom"\r\n"Marché de Noël"\r\n');
 });
 test('quotes and separators escaped',()=>{
   assert.match(exportCsv([{key:'v',label:'Valeur'}],[{v:'a;"b"'}]), /"a;""b"""/);
