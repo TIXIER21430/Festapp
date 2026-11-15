@@ -4,7 +4,8 @@ import "./style.css";
 import {buildCsv} from "./lib/csv.js";
 import {summarizeEcocups} from "./lib/ecocupDemoBalance.js";
 import {ECOCUP_DEMO_SETTINGS_KEY,parseDemoEcocupSettings,serializeDemoEcocupSettings} from "./lib/ecocupDemoSettings.js";
-import {createDemoBackup,previewDemoBackup} from "./lib/demoBackup.js";
+import {createDemoBackup} from "./lib/demoBackup.js";
+import {inspectDemoBackupReadiness} from "./lib/demoBackupReadiness.js";
 
 const categories=[
 {key:"events",title:"Manifestations",icon:"🎉",fields:["Nom","Date","Lieu"]},
@@ -46,7 +47,7 @@ function App(){
  function add(e){e.preventDefault();if(!form[0].trim())return;setData(d=>({...d,[tab]:[...(d[tab]||[]),{id:crypto.randomUUID(),values:form.map(x=>x.trim())}]}));setForm(["","",""])}
  function remove(id){if(!confirm("Supprimer cette fiche ?"))return;setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
  function exportBackup(){const json=createDemoBackup(data);const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="festapp-demo-sauvegarde-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
- async function inspectBackup(e){const file=e.target.files?.[0];if(!file)return;try{if(file.size>10_000_000)throw new Error("Fichier trop volumineux");const result=previewDemoBackup(await file.text());setBackupPreview(`Sauvegarde valide : ${result.records} fiches dans ${result.categories} catégories. Aucune donnée importée.`)}catch{setBackupPreview("Sauvegarde invalide ou incompatible. Aucune donnée modifiée.")}finally{e.target.value=""}}
+ async function inspectBackup(e){const file=e.target.files?.[0];if(!file)return;try{if(file.size>10_000_000)throw new Error("Fichier trop volumineux");const result=inspectDemoBackupReadiness(await file.text());const missing=result.missingCategories.length?` Catégories absentes : ${result.missingCategories.join(", ")}.`:"";const empty=result.emptyCategories.length?` Catégories vides : ${result.emptyCategories.join(", ")}.`:"";setBackupPreview(`Sauvegarde de démonstration valide : ${result.recordCount} fiches. ${missing}${empty} ${result.hasContactData?"Coordonnées présentes : fichier à conserver de façon privée.":""} Aucune donnée importée ni envoyée.`)}catch{setBackupPreview("Sauvegarde invalide ou incompatible. Aucune donnée modifiée.")}finally{e.target.value=""}}
  function exportCsv(){const rows=(data[tab]||[]).map(r=>r.values);const csv=buildCsv(current.fields,rows);const a=document.createElement("a");const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.href=url;a.download="festapp-"+tab+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
  return <main>
  <header><div>🎆 FEST'APP <small>Comité des fêtes de Liernais</small></div><span className="demo">Mode démonstration</span></header>
