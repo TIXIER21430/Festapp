@@ -84,6 +84,6 @@ begin
   end loop;
 end $$;
 
--- Intentionally no INSERT of demo records and no API grants here.
+-- IMPORTANT: direct writes to ecocup movements are forbidden until an atomic\n-- SECURITY DEFINER RPC with locking, idempotency and balance checks is tested.\n-- These REVOKEs apply even if broad table grants exist elsewhere.\nrevoke insert, update, delete on public.fest_ecocup_movements from anon, authenticated;\nrevoke insert, update, delete on public.fest_ecocup_settings from anon, authenticated;\n\n-- Intentionally no INSERT of demo records and no new API grants here.
 -- Validate the Data API grants and RLS with two test users (member/non-member)
 -- and an anonymous request in an isolated environment before production use.
