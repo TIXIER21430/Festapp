@@ -6,7 +6,7 @@ const KINDS = new Set(['volunteer', 'exhibitor', 'group']);
 function csvCell(value) {
   const raw = String(value ?? '');
   // Empêche l'exécution de formules dans Excel/LibreOffice, même après espaces.
-  const safe = /^[\\s\\uFEFF\\u200B]*[=+@-]/u.test(raw) ? "'" + raw : raw;
+  const safe = /^[\s\uFEFF\u200B]*[=+@-]/u.test(raw) ? "'" + raw : raw;
   return '"' + safe.replaceAll('"', '""') + '"';
 }
 
