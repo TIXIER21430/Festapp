@@ -35,3 +35,18 @@ test('alerts at threshold inclusively', () => {
 test('rejects unbounded input', () => {
   assert.throws(() => previewEcocupImport(Array(10001).fill(null)), TypeError);
 });
+
+test('normalizes whitespace in existing and incoming movement identifiers', () => {
+  const result = previewEcocupImport([
+    { id: ' x ', type: 'achat', quantity: 2 },
+    { id: 'y', type: 'achat', quantity: 1 },
+    { id: ' y ', type: 'retour', quantity: 1 }
+  ], { existingIds: ['x'], initialStock: 10 });
+  assert.equal(result.accepted, false);
+  assert.deepEqual(result.errors.map(e => e.index), [0, 2]);
+  assert.equal(result.projectedStock, null);
+});
+test('rejects malformed existing identifiers rather than silently bypassing duplicate checks', () => {
+  assert.throws(() => previewEcocupImport([], { existingIds: [null] }), TypeError);
+  assert.throws(() => previewEcocupImport([], { existingIds: ['  '] }), TypeError);
+});
