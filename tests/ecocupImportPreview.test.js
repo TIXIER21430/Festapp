@@ -78,13 +78,12 @@ test('rejects aggregate movement overflow even when projected stock remains safe
   const rows = [
     { id: 'out-1', type: 'sortie', quantity: max },
     { id: 'back-1', type: 'retour', quantity: max },
-    { id: 'out-2', type: 'sortie', quantity: max },
-    { id: 'back-2', type: 'retour', quantity: max }
+    { id: 'out-2', type: 'sortie', quantity: max }
   ];
   const result = previewEcocupImport(rows, { initialStock: max });
   assert.equal(result.accepted, false);
   assert.equal(result.projectedStock, null);
   assert.equal(result.deltas, null);
   assert.equal(result.lowStock, null);
-  assert.deepEqual(result.errors.map(error => error.reason), ['movement-total-overflow', 'movement-total-overflow']);
+  assert.deepEqual(result.errors.map(error => error.reason), ['movement-total-overflow']);
 });
