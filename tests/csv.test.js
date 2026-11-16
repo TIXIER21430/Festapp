@@ -28,3 +28,12 @@ test("invisible Unicode marks cannot conceal spreadsheet formulas", () => {
   }
   assert.equal(escapeCsvCell("\u200BJean"), "\"\u200BJean\"");
 });
+
+test("bidi controls and soft hyphen cannot hide a formula", () => {
+  for (const mark of ["\u00AD", "\u034F", "\u202A", "\u202B", "\u202C", "\u202D", "\u202E", "\u2066", "\u2067", "\u2068", "\u2069"]) {
+    const value = mark + "=2+2";
+    assert.equal(escapeCsvCell(value), "\"" + "'" + value + "\"");
+    assert.equal(escapeCsvCell("  " + value), "\"" + "'" + "  " + value + "\"");
+    assert.equal(escapeCsvCell(mark + "Marie"), "\"" + mark + "Marie\"");
+  }
+});
