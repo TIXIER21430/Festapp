@@ -36,3 +36,21 @@ test('rejects movement IDs differing only by surrounding whitespace', () => {
     { id: ' stock-1 ', kind: 'return', quantity: 1 }
   ] }), /duplicate/);
 });
+
+test('rejects canonically equivalent Unicode movement IDs in the durable ledger', () => {
+  const movements = [
+    { id: 'caf\u00e9', kind: 'purchase', quantity: 5 },
+    { id: ' cafe\u0301 ', kind: 'return', quantity: 1 }
+  ];
+  assert.throws(() => summarizeEcocups({ movements }), /duplicate/);
+});
+
+test('accepts distinct Unicode movement IDs without altering the source records', () => {
+  const movements = [
+    { id: 'caf\u00e9', kind: 'purchase', quantity: 5 },
+    { id: 'the\u0301', kind: 'return', quantity: 1 }
+  ];
+  const original = JSON.stringify(movements);
+  assert.equal(summarizeEcocups({ movements }).available, 6);
+  assert.equal(JSON.stringify(movements), original);
+});
