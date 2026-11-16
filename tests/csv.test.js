@@ -20,3 +20,11 @@ test("mismatched records fail instead of silently losing fields", () => {
   assert.throws(() => buildCsv(["a", "b"], [["only one"]]), RangeError);
   assert.throws(() => buildCsv("a", []), TypeError);
 });
+
+test("invisible Unicode marks cannot conceal spreadsheet formulas", () => {
+  for (const mark of ["\u200B", "\u200C", "\u200D", "\u200E", "\u200F", "\u2060", "\uFEFF"]) {
+    const value = mark + "=1+1";
+    assert.equal(escapeCsvCell(value), "\"\'" + value + "\"");
+  }
+  assert.equal(escapeCsvCell("\u200BJean"), "\"\u200BJean\"");
+});
