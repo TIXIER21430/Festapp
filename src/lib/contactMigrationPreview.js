@@ -19,11 +19,15 @@ const phonePattern = /^\+?[0-9][0-9 .()\-]{5,23}$/u;
 export function previewContactMigration(demoData) {
   const data = validateDemoData(demoData);
   const accepted = [], review = [];
+  const seenIds = new Set();
   for (const row of data.contacts || []) {
     const [rawName,rawKind,rawContact] = row.values;
     const name = rawName.trim(), kind = kinds.get(normalize(rawKind));
     const contact = rawContact.trim();
     const reasons = [];
+    // A repeated source ID could overwrite another contact in a later import.
+    if (seenIds.has(row.id)) reasons.push("Identifiant source dupliqué");
+    seenIds.add(row.id);
     if (!name || name.length > 200) reasons.push("Nom manquant ou trop long");
     if (!kind) reasons.push("Catégorie inconnue");
     let email = null, phone = null;
