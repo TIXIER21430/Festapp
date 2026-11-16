@@ -27,3 +27,10 @@ test('draft explicitly forbids browser writes to ecocup ledger', () => {
   assert.match(sql, /revoke insert, update, delete on public\.fest_ecocup_movements from anon, authenticated;/i);
   assert.match(sql, /revoke insert, update, delete on public\.fest_ecocup_settings from anon, authenticated;/i);
 });
+
+test('ecocup draft rejects inconsistent stock signs and mismatched correction magnitudes', () => {
+  assert.match(sql, /constraint fest_ecocup_movement_sign_consistency check/i);
+  assert.match(sql, /kind in \('achat','retour'\) and signed_delta = quantity/i);
+  assert.match(sql, /kind in \('sortie','perte'\) and signed_delta = -quantity/i);
+  assert.match(sql, /kind = 'correction' and abs\(signed_delta::bigint\) = quantity::bigint/i);
+});
