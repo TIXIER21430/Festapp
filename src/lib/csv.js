@@ -2,7 +2,8 @@
 // Prefix spreadsheet formulas to prevent CSV injection when a file is opened in Excel.
 export function escapeCsvCell(value) {
   const raw = String(value ?? "");
-  const dangerous = /^[\s\uFEFF]*[=+\-@\t\r\n]/u.test(raw);
+  // Invisible Unicode format marks may precede a spreadsheet formula.
+  const dangerous = /^[\s\uFEFF\u200B-\u200F\u2060]*[=+\-@\t\r\n]/u.test(raw);
   const safe = dangerous ? "'" + raw : raw;
   return '"' + safe.replaceAll('"', '""') + '"';
 }
