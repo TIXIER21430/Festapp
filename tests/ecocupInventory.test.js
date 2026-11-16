@@ -29,3 +29,10 @@ test('requires audit reason for signed stock corrections', () => {
   assert.throws(() => summarizeEcocups({ opening: 10, movements: [{ id: 'x', kind: 'adjustment', quantity: -2 }] }), /reason/);
   assert.equal(summarizeEcocups({ opening: 10, movements: [{ id: 'x', kind: 'adjustment', quantity: -2, reason: 'Inventaire' }] }).available, 8);
 });
+
+test('rejects movement IDs differing only by surrounding whitespace', () => {
+  assert.throws(() => summarizeEcocups({ movements: [
+    { id: 'stock-1', kind: 'purchase', quantity: 5 },
+    { id: ' stock-1 ', kind: 'return', quantity: 1 }
+  ] }), /duplicate/);
+});
