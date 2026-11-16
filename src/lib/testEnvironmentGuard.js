@@ -8,7 +8,7 @@ export function assertIsolatedTestBackend({ url, expectedProjectRef, confirmedTe
   let parsed;
   try { parsed = new URL(url); } catch { throw new Error('URL Supabase TEST invalide'); }
   if (parsed.protocol !== 'https:' || parsed.username || parsed.password ||
-      parsed.hostname !== ref + '.supabase.co' || parsed.pathname !== '/' ||
+      parsed.hostname !== ref + '.supabase.co' || parsed.port !== '' || parsed.pathname !== '/' ||
       parsed.search || parsed.hash) throw new Error('URL Supabase différente du projet TEST confirmé');
   return { projectRef: ref, url: parsed.origin };
 }
