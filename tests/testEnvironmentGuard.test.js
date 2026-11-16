@@ -15,3 +15,12 @@ test('rejects other project, local and spoofed URLs', () => {
   assert.throws(()=>assertIsolatedTestBackend({url:bad,expectedProjectRef:ref,confirmedTestProject:true}),bad);
  }
 });
+
+test('rejects malformed project references and alternate ports', () => {
+ for (const badRef of ['', 'short', 'ABCDEFGHIJKLMNOPQRST', 'abcdefghijklmnopqrs-', 'abcdefghijklmnopqrstu', 'abcdefghijklmnopqrs ' + 'x']) {
+  assert.throws(() => assertIsolatedTestBackend({url, expectedProjectRef:badRef, confirmedTestProject:true}), badRef);
+ }
+ for (const badUrl of [url + ':444', url + ':8443', url + '/path', url + '#fragment', url + '?token=secret']) {
+  assert.throws(() => assertIsolatedTestBackend({url:badUrl, expectedProjectRef:ref, confirmedTestProject:true}), badUrl);
+ }
+});
