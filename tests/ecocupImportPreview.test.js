@@ -87,3 +87,21 @@ test('rejects aggregate movement overflow even when projected stock remains safe
   assert.equal(result.lowStock, null);
   assert.deepEqual(result.errors.map(error => error.reason), ['movement-total-overflow']);
 });
+
+test('treats canonically equivalent Unicode movement IDs as duplicates', () => {
+  const composed = '\u00e9cocup';
+  const decomposed = 'e\u0301cocup';
+  const result = previewEcocupImport([
+    { id: ` ${decomposed} `, type: 'achat', quantity: 2 }
+  ], { existingIds: [composed], initialStock: 4 });
+  assert.equal(result.accepted, false);
+  assert.equal(result.projectedStock, null);
+  assert.deepEqual(result.errors.map(error => error.reason), ['duplicate-or-missing-id']);
+  const withinBatch = previewEcocupImport([
+    { id: composed, type: 'achat', quantity: 1 },
+    { id: decomposed, type: 'retour', quantity: 1 }
+  ]);
+  assert.equal(withinBatch.accepted, false);
+  assert.equal(withinBatch.projectedStock, null);
+  assert.deepEqual(withinBatch.errors.map(error => error.index), [1]);
+});
