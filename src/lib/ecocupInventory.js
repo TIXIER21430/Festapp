@@ -15,10 +15,10 @@ export function summarizeEcocups({ opening = 0, threshold = 0, movements = [] } 
   const ids = new Set();
   let available = opening;
   for (const movement of movements) {
-    if (!movement || typeof movement.id !== 'string' || !movement.id.trim() || ids.has(movement.id.trim())) {
+    if (!movement || typeof movement.id !== 'string' || !movement.id.trim() || ids.has(movement.id.trim().normalize('NFC'))) {
       throw new Error('Missing or duplicate movement ID');
     }
-    ids.add(movement.id.trim());
+    ids.add(movement.id.trim().normalize('NFC'));
     if (!kinds.has(movement.kind)) throw new Error('Unknown movement kind');
     const quantity = integer(movement.quantity, 'quantity');
     if (movement.kind === 'adjustment') {
