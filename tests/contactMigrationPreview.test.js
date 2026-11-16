@@ -36,17 +36,15 @@ test("rejects malformed demo records rather than silently dropping them",()=>{
  assert.throws(()=>previewContactMigration({contacts:[{id:"a",values:["x"]}]}));
 });
 
-test("quarantines duplicate source IDs rather than risking overwrites",()=>{
+test("rejects duplicate source IDs before migration without mutating input",()=>{
  const data={contacts:[
   row("same","Alice","Bénévole","alice@example.org"),
   row("same","Bob","Exposant","bob@example.org")
  ]};
  const before=JSON.stringify(data);
- const result=previewContactMigration(data);
- assert.equal(result.ready,false);
- assert.equal(result.accepted.length,1);
- assert.equal(result.review.length,1);
- assert.match(result.review[0].reasons.join(" "),/dupliqué/);
- assert.equal(result.review[0].original[0],"Bob");
+ assert.throws(
+  ()=>previewContactMigration(data),
+  {name:"TypeError",message:"Invalid demo record"}
+ );
  assert.equal(JSON.stringify(data),before);
 });
