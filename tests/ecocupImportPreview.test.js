@@ -50,3 +50,25 @@ test('rejects malformed existing identifiers rather than silently bypassing dupl
   assert.throws(() => previewEcocupImport([], { existingIds: [null] }), TypeError);
   assert.throws(() => previewEcocupImport([], { existingIds: ['  '] }), TypeError);
 });
+
+test('rejects integer overflow without returning an actionable projected balance', () => {
+  const result = previewEcocupImport(
+    [{ id: 'overflow', type: 'achat', quantity: 1 }],
+    { initialStock: Number.MAX_SAFE_INTEGER }
+  );
+  assert.equal(result.accepted, false);
+  assert.equal(result.projectedStock, null);
+  assert.equal(result.lowStock, null);
+  assert.equal(result.deltas, null);
+  assert.equal(result.errors[0].reason, 'negative-or-overflow-stock');
+});
+test('never exposes a partial accepted balance when a later row is invalid', () => {
+  const result = previewEcocupImport([
+    { id: 'valid', type: 'achat', quantity: 20 },
+    { id: 'invalid', type: 'sortie', quantity: 1000 }
+  ], { initialStock: 10 });
+  assert.equal(result.accepted, false);
+  assert.equal(result.projectedStock, null);
+  assert.equal(result.deltas, null);
+  assert.equal(result.lowStock, null);
+});
