@@ -21,6 +21,8 @@ export function previewEcocupImport(rows, { existingIds = [], initialStock = 0, 
     if (type === 'correction') { errors.push({ index, reason: 'correction-requires-manual-review' }); continue; }
     const delta = type === 'achat' || type === 'retour' ? quantity : -quantity;
     if (!Number.isSafeInteger(stock + delta) || stock + delta < 0) { errors.push({ index, reason: 'negative-or-overflow-stock' }); continue; }
+    // Keep aggregate exports exact even when the running stock remains within bounds.
+    if (!Number.isSafeInteger(deltas[type] + delta)) { errors.push({ index, reason: 'movement-total-overflow' }); continue; }
     stock += delta;
     deltas[type] += delta;
   }
