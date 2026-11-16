@@ -35,3 +35,18 @@ test("does not mutate original demo data or create remote records",()=>{
 test("rejects malformed demo records rather than silently dropping them",()=>{
  assert.throws(()=>previewContactMigration({contacts:[{id:"a",values:["x"]}]}));
 });
+
+test("quarantines duplicate source IDs rather than risking overwrites",()=>{
+ const data={contacts:[
+  row("same","Alice","Bénévole","alice@example.org"),
+  row("same","Bob","Exposant","bob@example.org")
+ ]};
+ const before=JSON.stringify(data);
+ const result=previewContactMigration(data);
+ assert.equal(result.ready,false);
+ assert.equal(result.accepted.length,1);
+ assert.equal(result.review.length,1);
+ assert.match(result.review[0].reasons.join(" "),/dupliqué/);
+ assert.equal(result.review[0].original[0],"Bob");
+ assert.equal(JSON.stringify(data),before);
+});
