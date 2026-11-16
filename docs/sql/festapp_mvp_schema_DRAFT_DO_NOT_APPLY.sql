@@ -48,7 +48,14 @@ create table if not exists public.fest_ecocup_movements (
   kind text not null check (kind in ('achat','sortie','retour','perte','correction')),
   quantity integer not null check (quantity > 0),
   -- signed_delta is explicit for audited corrections; other types are derived by app logic.
+  -- Positive stock movements must increase stock; outgoing movements decrease it.
+  -- Corrections may be signed, but their magnitude must match the recorded quantity.
   signed_delta integer not null check (signed_delta <> 0),
+  constraint fest_ecocup_movement_sign_consistency check (
+    (kind in ('achat','retour') and signed_delta = quantity)
+    or (kind in ('sortie','perte') and signed_delta = -quantity)
+    or (kind = 'correction' and abs(signed_delta::bigint) = quantity::bigint)
+  ),
   note text not null default '',
   created_at timestamptz not null default now(),
   created_by uuid references auth.users(id)
