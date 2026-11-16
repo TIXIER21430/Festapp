@@ -6,15 +6,16 @@ export function previewEcocupImport(rows, { existingIds = [], initialStock = 0, 
   if (!Array.isArray(rows) || rows.length > MAX_ROWS) throw new TypeError('Invalid movement list');
   if (!Number.isSafeInteger(initialStock) || initialStock < 0) throw new TypeError('Invalid initial stock');
   if (!Number.isSafeInteger(threshold) || threshold < 0) throw new TypeError('Invalid threshold');
-  const seen = new Set(existingIds);
+  if (!Array.isArray(existingIds) || existingIds.some(id => typeof id !== 'string' || !id.trim())) throw new TypeError('Invalid existing movement IDs');
+  const seen = new Set(existingIds.map(id => id.trim()));
   const errors = [];
   let stock = initialStock;
   const deltas = { achat: 0, sortie: 0, retour: 0, perte: 0, correction: 0 };
   for (const [index, row] of rows.entries()) {
     if (!row || typeof row !== 'object' || Array.isArray(row)) { errors.push({ index, reason: 'invalid-row' }); continue; }
     const { id, type, quantity } = row;
-    if (typeof id !== 'string' || !id.trim() || seen.has(id)) { errors.push({ index, reason: 'duplicate-or-missing-id' }); continue; }
-    seen.add(id);
+    if (typeof id !== 'string' || !id.trim() || seen.has(id.trim())) { errors.push({ index, reason: 'duplicate-or-missing-id' }); continue; }
+    seen.add(id.trim());
     if (!TYPES.has(type) || !Number.isSafeInteger(quantity) || quantity <= 0) { errors.push({ index, reason: 'invalid-movement' }); continue; }
     // Corrections require an explicitly signed delta; quantity remains positive for other types.
     if (type === 'correction') { errors.push({ index, reason: 'correction-requires-manual-review' }); continue; }
