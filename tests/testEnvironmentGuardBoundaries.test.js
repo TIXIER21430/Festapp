@@ -36,3 +36,16 @@ test('TEST backend guard rejects URL credentials, fragments, queries and alterna
     }), invalidUrl);
   }
 });
+
+test('TEST backend guard rejects a valid but different project reference', () => {
+  const differentRef = '12345678901234567890';
+  assert.throws(() => assertIsolatedTestBackend({
+    url, expectedProjectRef: differentRef, confirmedTestProject: true,
+  }), /projet TEST confirmé/);
+});
+
+test('TEST backend guard does not mutate supplied configuration', () => {
+  const config = Object.freeze({ url, expectedProjectRef: ref, confirmedTestProject: true });
+  assert.deepEqual(assertIsolatedTestBackend(config), { projectRef: ref, url });
+  assert.deepEqual(config, { url, expectedProjectRef: ref, confirmedTestProject: true });
+});
