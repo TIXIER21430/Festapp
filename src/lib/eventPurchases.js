@@ -1,6 +1,6 @@
 // Suggestions are deliberately not purchase orders or automatic stock movements.
 const RULES=[
- {match:/écocups|eco cups/i,item:"Écocups",quantity:"À vérifier"},
+ {match:/écocups|ecocups|eco cups/i,item:"Écocups",quantity:"À vérifier"},
  {match:/\bgaz\b/i,item:"Bouteilles de gaz",quantity:"À vérifier"},
  {match:/\bpain\b/i,item:"Pain",quantity:"À préciser"},
  {match:/charbon/i,item:"Charbon",quantity:"À préciser"},
