@@ -74,3 +74,14 @@ test("combined invisible controls cannot bypass formula escaping", () => {
   const invisibleOnly = "\u200B\u202E\u2060";
   assert.equal(escapeCsvCell(invisibleOnly + "Association"), '"' + invisibleOnly + 'Association"');
 });
+
+
+test("Arabic letter mark and Mongolian vowel separator cannot conceal formulas", () => {
+  for (const mark of ["\u061C", "\u180E"]) {
+    for (const operator of ["=", "+", "-", "@"]) {
+      const value = mark + operator + "1";
+      assert.equal(escapeCsvCell(value), '"\'' + value + '"');
+    }
+    assert.equal(escapeCsvCell(mark + "Association"), '"' + mark + 'Association"');
+  }
+});
