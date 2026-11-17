@@ -88,7 +88,7 @@ function App(){
  useEffect(()=>{try{localStorage.setItem(ECOCUP_DEMO_SETTINGS_KEY,serializeDemoEcocupSettings(ecocupSettings))}catch{/* Keep invalid input visible for correction, never overwrite saved valid settings. */}},[ecocupSettings]);
  useEffect(()=>{if(demoReadOnly)return;try{localStorage.setItem(VOLUNTEER_NEEDS_KEY,JSON.stringify(volunteerNeeds));setNeedsWarning("");}catch{setNeedsWarning("Impossible de sauvegarder les besoins sur cet appareil.");}},[volunteerNeeds]);
  const selectedOverview=eventOverview(data,overviewEvent,eventOptions.find(r=>r.values[0]===overviewEvent)?.id||null);
- const checklistTemplateName=overviewEvent.replace(/\\s+20\\d{2}$/,"");
+ const checklistTemplateName=overviewEvent.replace(/\s+20\d{2}$/,"");
  const volunteers=volunteerChoices(data.contacts||[]);
  const volunteerPosts=["🍹 Bar","🍳 Cuisine","👋 Accueil","🧹 Installation","🎟️ Entrées","📦 Logistique"];
  const printEvent=eventOptions.find(r=>r.id===recordEventId);
