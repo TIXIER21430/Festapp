@@ -13,12 +13,13 @@ function memoryStorage(initial=null){
 }
 test("new demo starts with seed without a warning",()=>{
   const result=readDemoStorage(memoryStorage(),seed);
-  assert.deepEqual(result,{data:seed,warning:""});
+  assert.deepEqual(result,{data:seed,warning:"",readOnly:false});
 });
 test("valid saved data remains available and seed categories are preserved",()=>{
   const store=memoryStorage(JSON.stringify({contacts:[{id:"a",values:["Alice","bénévole","0600000000"]}]}));
   const result=readDemoStorage(store,seed);
   assert.equal(result.warning,"");
+  assert.equal(result.readOnly,false);
   assert.equal(result.data.contacts[0].values[0],"Alice");
   assert.deepEqual(result.data.events,seed.events);
 });
@@ -26,6 +27,7 @@ test("corrupt stored data is never erased on read",()=>{
   const store=memoryStorage("{bad");
   const result=readDemoStorage(store,seed);
   assert.match(result.warning,/Impossible de lire/);
+  assert.equal(result.readOnly,true);
   assert.deepEqual(result.data,seed);
   assert.equal(store.current(),"{bad");
 });
