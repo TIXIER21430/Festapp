@@ -1,4 +1,4 @@
-import React,{useEffect,useState} from "react";
+import React,{useEffect,useRef,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
 import {buildCsv} from "./lib/csv.js";
@@ -29,6 +29,7 @@ function App(){
  const [initialStorage]=useState(load);
  const [data,setData]=useState(initialStorage.data);
  const [storageWarning,setStorageWarning]=useState(initialStorage.warning);
+ const initialRender=useRef(true);
  const [tab,setTab]=useState("events");
  const [form,setForm]=useState(["","",""]);
  const [filter,setFilter]=useState("");
@@ -46,7 +47,7 @@ function App(){
    ecocupSummary=summarizeEcocups(data.ecocups||[],{openingBalance:Number(ecocupOpening),alertThreshold:Number(ecocupThreshold)});
   }catch(e){ecocupError=e.message||"Mouvements invalides";}
  }
- useEffect(()=>{const result=writeDemoStorage(localStorage,data);setStorageWarning(result.warning||"")},[data]);
+ useEffect(()=>{if(initialRender.current){initialRender.current=false;return;}const result=writeDemoStorage(localStorage,data);setStorageWarning(result.warning||"")},[data]);
  useEffect(()=>{try{localStorage.setItem(ECOCUP_DEMO_SETTINGS_KEY,serializeDemoEcocupSettings(ecocupSettings))}catch{/* Keep invalid input visible for correction, never overwrite saved valid settings. */}},[ecocupSettings]);
  const current=categories.find(c=>c.key===tab);
  const records=(data[tab]||[]).filter(r=>r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
