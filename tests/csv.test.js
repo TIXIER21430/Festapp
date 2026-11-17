@@ -85,3 +85,13 @@ test("Arabic letter mark and Mongolian vowel separator cannot conceal formulas",
     assert.equal(escapeCsvCell(mark + "Association"), '"' + mark + 'Association"');
   }
 });
+
+test("deprecated directional controls and interlinear annotations cannot conceal formulas", () => {
+  for (const mark of ["\u206A", "\u206B", "\u206C", "\u206D", "\u206E", "\u206F", "\uFFF9", "\uFFFA", "\uFFFB"]) {
+    for (const operator of ["=", "+", "-", "@"]) {
+      const value = mark + operator + "1";
+      assert.equal(escapeCsvCell(value), '"\'' + value + '"');
+    }
+    assert.equal(escapeCsvCell(mark + "Association"), '"' + mark + "Association" + '"');
+  }
+});
