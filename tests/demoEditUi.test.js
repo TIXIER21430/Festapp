@@ -13,7 +13,7 @@ test("editing can be cancelled and is disabled in read-only recovery mode",()=>{
  assert.match(app,/disabled=\{demoReadOnly\} onClick=\{\(\)=>beginEdit\(r\)\}/);
 });
 test("switching module clears the pending edit",()=>{
- assert.match(app,/setTab\(c\.key\);setContactType\("tous"\);setEditingId\(null\)/);
+ assert.match(app,/setTab\(c\.key\);setRecipeOutput\(""\);setContactType\("tous"\);setEditingId\(null\)/);
 });
 test("ecocup edits recalculate balance excluding the old movement",()=>{
  assert.match(app,/data\.ecocups\|\|\[\]\)\.filter\(r=>r\.id!==editingId\)/);
