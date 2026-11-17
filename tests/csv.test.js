@@ -37,3 +37,19 @@ test("bidi controls and soft hyphen cannot hide a formula", () => {
     assert.equal(escapeCsvCell(mark + "Marie"), "\"" + mark + "Marie\"");
   }
 });
+
+test("contact export preserves accents, separators and phone numbers as text", () => {
+  const csv = buildCsv(["Nom", "Téléphone", "Email"], [
+    ["Léa; Martin", "06 01 02 03 04", "lea@example.fr"],
+    ['Association "Les Amis"', "+33123456789", "contact@example.fr"],
+  ]);
+  assert.ok(csv.startsWith("\uFEFF"));
+  assert.ok(csv.includes('"Léa; Martin";"06 01 02 03 04";"lea@example.fr"'));
+  assert.ok(csv.includes('"Association ""Les Amis""";"\'+33123456789";"contact@example.fr"'));
+});
+
+test("spreadsheet formulas in column headers are escaped too", () => {
+  const csv = buildCsv(["=HYPERLINK(\"https://example.org\")", "Nom"], [["ok", "Marie"]]);
+  assert.ok(csv.startsWith("\uFEFF\"'=HYPERLINK("));
+  assert.ok(csv.endsWith('\r\n"ok";"Marie"'));
+});
