@@ -53,3 +53,21 @@ test("spreadsheet formulas in column headers are escaped too", () => {
   assert.ok(csv.startsWith("\uFEFF\"'=HYPERLINK("));
   assert.ok(csv.endsWith('\r\n"ok";"Marie"'));
 });
+
+test("CSV export does not mutate source contact records", () => {
+  const headers = Object.freeze(["Nom", "Téléphone"]);
+  const row = Object.freeze(["=2+2", "06 12 34 56 78"]);
+  const records = Object.freeze([row]);
+  const csv = buildCsv(headers, records);
+  assert.ok(csv.includes('"\'=2+2";"06 12 34 56 78"'));
+  assert.deepEqual(headers, ["Nom", "Téléphone"]);
+  assert.deepEqual(records, [["=2+2", "06 12 34 56 78"]]);
+});
+
+test("combined invisible controls cannot bypass formula escaping", () => {
+  const prefix = "\u200B\u202E\u2060\t";
+  for (const operator of ["=", "+", "-", "@"]) {
+    assert.equal(escapeCsvCell(prefix + operator + "1"), '"\'' + prefix + operator + '1"');
+  }
+  assert.equal(escapeCsvCell(prefix + "Association"), '"' + prefix + 'Association"');
+});
