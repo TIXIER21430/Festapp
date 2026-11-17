@@ -69,5 +69,8 @@ test("combined invisible controls cannot bypass formula escaping", () => {
   for (const operator of ["=", "+", "-", "@"]) {
     assert.equal(escapeCsvCell(prefix + operator + "1"), '"\'' + prefix + operator + '1"');
   }
-  assert.equal(escapeCsvCell(prefix + "Association"), '"' + prefix + 'Association"');
+  // A leading tab is itself spreadsheet-sensitive, even without a formula operator.
+  assert.equal(escapeCsvCell(prefix + "Association"), '"\'' + prefix + 'Association"');
+  const invisibleOnly = "\u200B\u202E\u2060";
+  assert.equal(escapeCsvCell(invisibleOnly + "Association"), '"' + invisibleOnly + 'Association"');
 });
