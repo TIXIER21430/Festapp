@@ -10,7 +10,7 @@ test("print action requires an event with assignments",()=>{
 test("print sheet uses only selected event's volunteer schedule",()=>{
  assert.match(app,/const printSchedule=printEvent\?volunteerSchedule\(data\.shifts\|\|\[\],printEvent\.id\):null/);
  const sheet=app.slice(app.indexOf('<section className="print-sheet"'));
- assert.match(sheet,/printSchedule\.scheduled/);
+ assert.match(sheet,/printSchedule\?\.scheduled/);
  assert.match(sheet,/printSchedule\.unscheduled/);
  assert.doesNotMatch(sheet,/data\.contacts|volunteers\.map/);
 });
