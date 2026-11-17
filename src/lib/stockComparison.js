@@ -16,3 +16,14 @@ export function compareShoppingWithStock(shopping,stock,eventId){
   return {id:row.id,name,needed,available,toBuy,status};
  });
 }
+
+export function summarizeStockComparison(rows){
+ if(!Array.isArray(rows))throw new TypeError("Invalid stock comparison");
+ return rows.reduce((summary,row)=>{
+  summary.total++;
+  if(row.status==="Stock théoriquement suffisant")summary.sufficient++;
+  else if(row.status==="Complément à prévoir")summary.shortage++;
+  else summary.verify++;
+  return summary;
+ },{total:0,sufficient:0,shortage:0,verify:0});
+}
