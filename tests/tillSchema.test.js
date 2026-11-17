@@ -10,6 +10,7 @@ test("shared till draft enables RLS and only grants authenticated members",()=>{
  assert.doesNotMatch(sql,/create policy[^;]+to anon/i);
 });
 test("draft is additive and cannot destroy data",()=>{
- assert.doesNotMatch(sql,/\b(drop|truncate|delete from)\b/i);
+ const executableSql=sql.replace(/^\s*--.*$/gm,"");
+ assert.doesNotMatch(executableSql,/\b(drop|truncate|delete\s+from)\b/i);
  assert.match(sql,/updated_by\s+uuid\s+not null/i);
 });
