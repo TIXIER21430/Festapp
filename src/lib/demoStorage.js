@@ -7,12 +7,12 @@ export function readDemoStorage(storage, seed = {}) {
   const fallback = validateDemoData(seed);
   try {
     const raw = storage.getItem(DEMO_STORAGE_KEY);
-    if (raw === null) return {data:fallback,warning:""};
+    if (raw === null) return {data:fallback,warning:"",readOnly:false};
     const parsed = JSON.parse(raw);
     const saved = validateDemoData(parsed);
-    return {data:{...fallback,...saved},warning:""};
+    return {data:{...fallback,...saved},warning:"",readOnly:false};
   } catch {
-    return {data:fallback,warning:"Impossible de lire les fiches locales. Les données enregistrées n'ont pas été effacées : vérifiez le stockage de cet appareil avant toute modification."};
+    return {data:fallback,warning:"Impossible de lire les fiches locales. Les données enregistrées n'ont pas été effacées : la démonstration est verrouillée en lecture seule pour protéger la sauvegarde existante.",readOnly:true};
   }
 }
 
