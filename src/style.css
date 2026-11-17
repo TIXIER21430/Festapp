@@ -36,3 +36,5 @@
 .shared-session{display:inline-block;background:#d3f5d7;color:#223b2b;border-radius:14px;padding:12px 16px;font-weight:750}
 
 .event-phase-list{display:grid;gap:12px;margin:18px 0}.event-phase{border:1px solid #b9d6e8;border-radius:16px;padding:12px;background:#f0f9ff;color:#233147}.event-phase summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;min-height:46px}.event-phase summary span{font-size:.9rem}.phase-items{display:grid;gap:8px;padding-top:12px}.phase-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:white;color:#233147;cursor:pointer;min-height:52px}.phase-item input{width:23px;height:23px;flex-shrink:0}.phase-item:has(input:checked) span{text-decoration:line-through;opacity:.65}
+
+.stock-comparison{display:grid;gap:8px;margin-top:12px}.stock-comparison-item{display:grid;gap:4px;padding:12px;border-radius:12px;background:#fff;color:#233147}.stock-comparison-item span{font-weight:600}.stock-comparison-item small{font-size:.88rem}
