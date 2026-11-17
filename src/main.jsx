@@ -5,6 +5,7 @@ import {buildCsv} from "./lib/csv.js";
 import {summarizeEcocups} from "./lib/ecocupDemoBalance.js";
 import {ECOCUP_DEMO_SETTINGS_KEY,parseDemoEcocupSettings,serializeDemoEcocupSettings} from "./lib/ecocupDemoSettings.js";
 import {createDemoBackup} from "./lib/demoBackup.js";
+import {readDemoStorage,writeDemoStorage} from "./lib/demoStorage.js";
 import {inspectDemoBackupReadiness} from "./lib/demoBackupReadiness.js";
 import {planDemoRestore} from "./lib/demoRestorePlan.js";
 import {applyDemoRestore} from "./lib/applyDemoRestore.js";
@@ -23,10 +24,11 @@ const categories=[
 ];
 const eventNames=["Concours de belote","Carnaval","Chasse aux œufs","Fête des voisins","Fanfare","Vide-grenier","Saint-Laurent","Halloween","Marché de Noël"];
 const seed={events:eventNames.map((name,i)=>({id:"seed-"+i,values:[name,"",""]}))};
-const storageKey="festapp-demo-v1";
-function load(){try{return {...seed,...JSON.parse(localStorage.getItem(storageKey)||"{}")}}catch{return seed}}
+function load(){return readDemoStorage(localStorage,seed)}
 function App(){
- const [data,setData]=useState(load);
+ const [initialStorage]=useState(load);
+ const [data,setData]=useState(initialStorage.data);
+ const [storageWarning,setStorageWarning]=useState(initialStorage.warning);
  const [tab,setTab]=useState("events");
  const [form,setForm]=useState(["","",""]);
  const [filter,setFilter]=useState("");
@@ -44,7 +46,7 @@ function App(){
    ecocupSummary=summarizeEcocups(data.ecocups||[],{openingBalance:Number(ecocupOpening),alertThreshold:Number(ecocupThreshold)});
   }catch(e){ecocupError=e.message||"Mouvements invalides";}
  }
- useEffect(()=>{localStorage.setItem(storageKey,JSON.stringify(data))},[data]);
+ useEffect(()=>{const result=writeDemoStorage(localStorage,data);setStorageWarning(result.warning||"")},[data]);
  useEffect(()=>{try{localStorage.setItem(ECOCUP_DEMO_SETTINGS_KEY,serializeDemoEcocupSettings(ecocupSettings))}catch{/* Keep invalid input visible for correction, never overwrite saved valid settings. */}},[ecocupSettings]);
  const current=categories.find(c=>c.key===tab);
  const records=(data[tab]||[]).filter(r=>r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
@@ -63,6 +65,7 @@ function App(){
  function exportCsv(){const rows=(data[tab]||[]).map(r=>r.values);const csv=buildCsv(current.fields,rows);const a=document.createElement("a");const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));a.href=url;a.download="festapp-"+tab+".csv";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
  return <main>
  <header><div>🎆 FEST'APP <small>Comité des fêtes de Liernais</small></div><span className="demo">Mode démonstration</span></header>
+ {storageWarning&&<p role="alert" className="note">⚠ {storageWarning}</p>}
  <section className="hero"><h1>Organisons nos fêtes !</h1><p>Manifestations, bénévoles, stocks et bilans au même endroit.</p><strong>⚠ Données enregistrées uniquement sur cet appareil, non partagées avec le bureau.</strong></section>
  <section className="panel" aria-label="Sauvegarde de démonstration"><div className="heading"><h2>💾 Sauvegarde locale</h2><button className="secondary" onClick={exportBackup}>Télécharger JSON</button></div><p>Conservez une copie de vos fiches de démonstration. La vérification d’un fichier ne restaure ni ne remplace aucune donnée.</p><label>Vérifier une sauvegarde JSON<input type="file" accept=".json,application/json" onChange={inspectBackup}/></label>{backupPreview&&<p role="status">{backupPreview}</p>}{restoreCandidate&&<button type="button" onClick={restoreBackup}>Confirmer l’ajout des fiches manquantes</button>}</section>
  <nav aria-label="Modules">{categories.map(c=><button key={c.key} className={tab===c.key?"active":""} onClick={()=>{setTab(c.key);setForm(["","",""]);setFilter("");setFormError("")}}>{c.icon} {c.title}</button>)}</nav>
@@ -72,7 +75,7 @@ function App(){
  {tab==="contacts"&&<p className="note">Pour distinguer bénévoles, exposants et groupes, renseignez la catégorie dans chaque fiche (par exemple « bénévole », « exposant » ou « groupe »). L’export CSV concerne uniquement cet appareil.</p>}
  <label className="search">Rechercher<input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filtrer les fiches…"/></label>
  <div className="records">{records.length?records.map(r=><article key={r.id}><div><strong>{r.values[0]}</strong><p>{r.values.slice(1).filter(Boolean).join(" · ")||"Aucune précision"}</p></div><button className="delete" onClick={()=>remove(r.id)} aria-label={"Supprimer "+r.values[0]}>Supprimer</button></article>):<p>Aucune fiche pour le moment.</p>}</div>
- </section><footer>Prototype local • aucune donnée synchronisée • TIXAPP reste indépendant</footer>
+ </section><footer>Prototype local • aucune donnée synchronisée</footer>
  </main>
 }
 createRoot(document.getElementById("root")).render(<App/>);
