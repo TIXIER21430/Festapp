@@ -38,3 +38,20 @@
 .event-phase-list{display:grid;gap:12px;margin:18px 0}.event-phase{border:1px solid #b9d6e8;border-radius:16px;padding:12px;background:#f0f9ff;color:#233147}.event-phase summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;min-height:46px}.event-phase summary span{font-size:.9rem}.phase-items{display:grid;gap:8px;padding-top:12px}.phase-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;background:white;color:#233147;cursor:pointer;min-height:52px}.phase-item input{width:23px;height:23px;flex-shrink:0}.phase-item:has(input:checked) span{text-decoration:line-through;opacity:.65}
 
 .stock-comparison{display:grid;gap:8px;margin-top:12px}.stock-comparison-item{display:grid;gap:4px;padding:12px;border-radius:12px;background:#fff;color:#233147}.stock-comparison-item span{font-weight:600}.stock-comparison-item small{font-size:.88rem}
+
+/* FEST'APP: colorful, easy-to-read mobile stock preparation */
+.stock-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;margin:16px 0}
+.stock-summary-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;text-align:center;min-height:105px;border-radius:18px;padding:12px;color:#1c2638}
+.stock-summary-tile strong{font-size:clamp(26px,5vw,38px);line-height:1}
+.stock-summary-tile span{font-weight:750;font-size:13px}
+.stock-summary-tile.ok{background:#baf1d2}.stock-summary-tile.warn{background:#ffe0a1}.stock-summary-tile.unknown{background:#c7e6ff}
+.stock-comparison-item{display:flex;align-items:center;gap:12px;min-height:86px;border:2px solid transparent;border-radius:16px;padding:14px}
+.stock-comparison-item.stock-ok{border-color:#47b878;background:#edfff4}
+.stock-comparison-item.stock-warn{border-color:#f3a73c;background:#fff5e5}
+.stock-comparison-item.stock-unknown{border-color:#7bbbe8;background:#f1f9ff}
+.stock-status-icon{display:grid;place-items:center;flex:none;width:44px;height:44px;border-radius:14px;background:#203049;color:white;font-size:24px;font-weight:900}
+.stock-ok .stock-status-icon{background:#177548}.stock-warn .stock-status-icon{background:#ad650c}.stock-unknown .stock-status-icon{background:#22649b}
+.stock-item-content{display:grid;gap:5px;min-width:0;overflow-wrap:anywhere}.stock-item-content strong{font-size:17px}.stock-item-content small{font-size:13px}
+.purchase-assistant>button,.next-edition>button{min-height:56px;border-radius:16px;font-size:15px;padding:14px 18px}
+.event-phase summary{min-height:54px}.phase-item{min-height:58px;font-size:15px}.phase-item input{width:26px;height:26px;accent-color:#e6007e}
+@media(max-width:420px){.stock-summary{gap:6px}.stock-summary-tile{padding:8px;min-height:96px}.stock-summary-tile span{font-size:11px}.stock-comparison-item{padding:11px}.stock-status-icon{width:38px;height:38px}}
