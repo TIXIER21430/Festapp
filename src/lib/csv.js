@@ -3,7 +3,7 @@
 export function escapeCsvCell(value) {
   const raw = String(value ?? "");
   // Invisible Unicode format marks and bidi controls may precede a spreadsheet formula.
-  const dangerous = /^[\s\uFEFF\u00AD\u034F\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069]*[=+\-@\t\r\n]/u.test(raw);
+  const dangerous = /^[\s\uFEFF\u00AD\u034F\u061C\u180E\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069]*[=+\-@\t\r\n]/u.test(raw);
   const safe = dangerous ? "'" + raw : raw;
   return '"' + safe.replaceAll('"', '""') + '"';
 }
