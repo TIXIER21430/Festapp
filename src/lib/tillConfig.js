@@ -27,3 +27,13 @@ export function eventTillProducts(event,config){
 export function saveTillConfig(storage,config){
  storage.setItem(TILL_CONFIG_KEY,JSON.stringify(validateTillConfig(config)));
 }
+
+export function exportTillConfig(config){
+ return JSON.stringify({format:"festapp-till-menus",version:1,menus:validateTillConfig(config)},null,2);
+}
+export function importTillConfig(raw){
+ if(typeof raw!=="string"||raw.length>100000)throw new TypeError("Invalid menu file");
+ const parsed=JSON.parse(raw);
+ if(!parsed||parsed.format!=="festapp-till-menus"||parsed.version!==1||!Object.hasOwn(parsed,"menus"))throw new TypeError("Unsupported menu file");
+ return validateTillConfig(parsed.menus);
+}
