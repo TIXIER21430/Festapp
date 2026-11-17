@@ -5,6 +5,7 @@ import { readFileSync } from "node:fs";
 // Guardrails for the local-only MVP. These checks deliberately inspect the
 // shipped entrypoint, not a test fixture. They do not validate Supabase RLS.
 const app = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
+const storage = readFileSync(new URL("../src/lib/demoStorage.js", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
 test("demo UI clearly identifies device-only storage", () => {
@@ -14,8 +15,10 @@ test("demo UI clearly identifies device-only storage", () => {
 });
 
 test("demo records stay in the explicitly named local namespace", () => {
-  assert.match(app, /const storageKey="festapp-demo-v1"/);
-  assert.match(app, /localStorage\.setItem\(storageKey,JSON\.stringify\(data\)\)/);
+  assert.match(storage, /DEMO_STORAGE_KEY = "festapp-demo-v1"/);
+  assert.match(storage, /storage\.setItem\(DEMO_STORAGE_KEY,JSON\.stringify\(validated\)\)/);
+  assert.match(app, /writeDemoStorage\(localStorage,data\)/);
+  assert.match(app, /readDemoStorage\(localStorage,seed\)/);
   assert.doesNotMatch(app, /(?:supabase\.|createClient\(|fetch\(\s*["'`]https?:\/\/)/);
 });
 
