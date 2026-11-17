@@ -37,3 +37,27 @@ test("successful save clears dirty flag and retains server revision",async()=>{
  assert.equal(sync.snapshot().status,"synced");
  assert.deepEqual(sync.snapshot().dirty,[]);
 });
+
+test("edit made while saving stays unsaved",async()=>{
+ let finish;
+ const pending=new Promise(resolve=>{finish=resolve});
+ const sync=createTillSyncController({list:async()=>[],save:async()=>{await pending;return "2026-11-17T12:01:00Z"}});
+ sync.edit("Noël",menu);
+ const saving=sync.save("Noël");
+ sync.edit("Noël",[{id:"vin-chaud",priceCents:500}]);
+ finish();
+ assert.equal(await saving,true);
+ assert.deepEqual(sync.snapshot().dirty,["Noël"]);
+ assert.equal(sync.snapshot().menus["Noël"][0].priceCents,500);
+ assert.equal(sync.snapshot().status,"unsaved");
+});
+test("double tap cannot trigger duplicate save",async()=>{
+ let finish;let calls=0;
+ const pending=new Promise(resolve=>{finish=resolve});
+ const sync=createTillSyncController({list:async()=>[],save:async()=>{calls++;await pending;return "2026-11-17T12:01:00Z"}});
+ sync.edit("Noël",menu);
+ const first=sync.save("Noël");
+ assert.equal(await sync.save("Noël"),false);
+ finish();await first;
+ assert.equal(calls,1);
+});
