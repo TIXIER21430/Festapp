@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {compareShoppingWithStock} from "../src/lib/stockComparison.js";
+import {compareShoppingWithStock,summarizeStockComparison} from "../src/lib/stockComparison.js";
 test("calculates theoretical shortage only for exact named numeric items",()=>{
  const shopping=[{id:"a",eventId:"event",values:["Écocups","100","À prévoir"]},{id:"b",eventId:"event",values:["Pain","10","À prévoir"]},{id:"c",eventId:"other",values:["Pain","50","À prévoir"]}];
  const stock=[{values:["Ecocups","60","10"]},{values:["Pain","12","0"]}];
@@ -16,3 +16,13 @@ test("unclear quantities and duplicate stock cannot claim sufficiency",()=>{
  assert.equal(compareShoppingWithStock(shopping,[],"e")[0].status,"Non trouvé dans le stock");
 });
 test("invalid input is rejected",()=>assert.throws(()=>compareShoppingWithStock([],null,"e")));
+
+test("stock dashboard counts sufficient, shortage and uncertain items",()=>{
+ const rows=compareShoppingWithStock([
+  {id:"a",eventId:"e",values:["Pain","10",""]},
+  {id:"b",eventId:"e",values:["Gaz","5",""]},
+  {id:"c",eventId:"e",values:["Écocups","À préciser",""]}
+ ],[{values:["Pain","15",""]},{values:["Gaz","2",""]},{values:["Écocups","50",""]}],"e");
+ assert.deepEqual(summarizeStockComparison(rows),{total:3,sufficient:1,shortage:1,verify:1});
+ assert.equal(summarizeStockComparison([]).total,0);
+});
