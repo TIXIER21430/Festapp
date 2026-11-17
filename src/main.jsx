@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
 import {buildCsv} from "./lib/csv.js";
+import {scaleRecipeText} from "./lib/recipeText.js";
 import {summarizeEcocups} from "./lib/ecocupDemoBalance.js";
 import {ECOCUP_DEMO_SETTINGS_KEY,parseDemoEcocupSettings,serializeDemoEcocupSettings} from "./lib/ecocupDemoSettings.js";
 import {createDemoBackup} from "./lib/demoBackup.js";
@@ -36,6 +37,9 @@ function App(){
  const [filter,setFilter]=useState("");
  const [contactType,setContactType]=useState("tous");
  const [editingId,setEditingId]=useState(null);
+ const [recipeServings,setRecipeServings]=useState("10");
+ const [recipeTarget,setRecipeTarget]=useState("50");
+ const [recipeOutput,setRecipeOutput]=useState("");
  const [backupPreview,setBackupPreview]=useState("");
  const [restoreCandidate,setRestoreCandidate]=useState(null);
  const [formError,setFormError]=useState("");
@@ -74,9 +78,10 @@ function App(){
  {storageWarning&&<p role="alert" className="note">⚠ {storageWarning}</p>}
  <section className="hero"><h1>Organisons nos fêtes !</h1><p>Manifestations, bénévoles, stocks et bilans au même endroit.</p><strong>⚠ Données enregistrées uniquement sur cet appareil, non partagées avec le bureau.</strong></section>
  <section className="panel" aria-label="Sauvegarde de démonstration"><div className="heading"><h2>💾 Sauvegarde locale</h2><button className="secondary" onClick={exportBackup}>Télécharger JSON</button></div><p>Conservez une copie de vos fiches de démonstration. La vérification d’un fichier ne restaure ni ne remplace aucune donnée.</p><label>Vérifier une sauvegarde JSON<input type="file" accept=".json,application/json" onChange={inspectBackup}/></label>{backupPreview&&<p role="status">{backupPreview}</p>}{restoreCandidate&&!demoReadOnly&&<button type="button" onClick={restoreBackup}>Confirmer l’ajout des fiches manquantes</button>}</section>
- <nav aria-label="Modules">{categories.map(c=><button key={c.key} className={tab===c.key?"active":""} onClick={()=>{setTab(c.key);setContactType("tous");setEditingId(null);setForm(["","",""]);setFilter("");setFormError("")}}>{c.icon} {c.title}</button>)}</nav>
+ <nav aria-label="Modules">{categories.map(c=><button key={c.key} className={tab===c.key?"active":""} onClick={()=>{setTab(c.key);setRecipeOutput("");setContactType("tous");setEditingId(null);setForm(["","",""]);setFilter("");setFormError("")}}>{c.icon} {c.title}</button>)}</nav>
  <section className="panel"><div className="heading"><h2>{current.icon} {current.title}</h2><button className="secondary" onClick={exportCsv}>Exporter CSV</button></div>
  {tab==="ecocups"&&<div className="note"><p><strong>Calcul local de démonstration uniquement — aucun stock partagé.</strong> Saisir les mouvements exactement sous la forme « entrée » ou « sortie », et une quantité entière positive.</p><div className="fields"><label>Stock initial de démonstration<input inputMode="numeric" value={ecocupOpening} onChange={e=>setEcocupOpening(e.target.value)}/></label><label>Seuil d'alerte<input inputMode="numeric" value={ecocupThreshold} onChange={e=>setEcocupThreshold(e.target.value)}/></label></div>{ecocupError?<p role="alert">⚠ Calcul impossible : {ecocupError}. Vérifiez les mouvements, sans les effacer.</p>:<p role="status"><strong>Solde calculé : {ecocupSummary.balance} écocups.</strong> {ecocupSummary.alert?"⚠ Seuil atteint. Quantité minimale à ajouter : "+(ecocupSummary.minimumToClearAlert??"non calculable")+".":"Stock au-dessus du seuil."}</p>}</div>}
+ {tab==="recipes"&&<div className="note"><h3>🧮 Calculateur de quantités</h3><p>Choisissez une recette ci-dessous avec « Modifier », puis indiquez ses ingrédients, un par ligne (ex. : 250 g farine). Le calcul ne modifie pas la recette enregistrée.</p><div className="fields"><label>Recette prévue pour<input inputMode="numeric" value={recipeServings} onChange={e=>setRecipeServings(e.target.value)}/></label><label>Nombre de personnes souhaité<input inputMode="numeric" value={recipeTarget} onChange={e=>setRecipeTarget(e.target.value)}/></label></div><button type="button" onClick={()=>{try{setRecipeOutput(scaleRecipeText(form[1],Number(recipeServings),Number(recipeTarget)))}catch(e){setRecipeOutput("⚠ "+e.message)}}}>Calculer les ingrédients</button>{recipeOutput&&<pre role="status" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{recipeOutput}</pre>}</div>}
  <form onSubmit={add}>{formError&&<p role="alert">{formError}</p>}<div className="fields">{current.fields.map((label,i)=><label key={label}>{label}<input required={i===0} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/></label>)}</div><button type="submit" disabled={demoReadOnly}>{editingId?"Enregistrer les modifications":"+ Ajouter"}</button>{editingId&&<button type="button" className="secondary" onClick={cancelEdit}>Annuler la modification</button>}</form>
  {tab==="contacts"&&<div className="note"><p>Retrouvez rapidement les bénévoles, exposants et groupes. L’export CSV concerne uniquement cet appareil.</p><div className="fields"><label>Afficher les contacts<select value={contactType} onChange={e=>setContactType(e.target.value)}><option value="tous">Tous les contacts</option><option value="bénévole">Bénévoles</option><option value="exposant">Exposants</option><option value="groupe">Groupes</option></select></label></div><p>{records.length} fiche(s) affichée(s).</p></div>}
  <label className="search">Rechercher<input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filtrer les fiches…"/></label>
