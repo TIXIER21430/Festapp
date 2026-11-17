@@ -4,7 +4,7 @@ const MODULES=["tasks","shopping","stock","shifts","feedback","finance"];
 export function eventOverview(data,eventName,eventId=null){
  if(typeof eventName!=="string"||!eventName.trim())throw new TypeError("Invalid event");
  const normalized=eventName.trim().normalize("NFC").toLocaleLowerCase("fr");
- const result={eventName,counts:{},records:{},unassigned:{}};
+ const result={eventName,counts:{},records:{},unassigned:{},taskProgress:{total:0,done:0,remaining:0}};
  for(const module of MODULES){
   const rows=Array.isArray(data?.[module])?data[module]:[];
   const matches=[],unassigned=[];
@@ -20,6 +20,10 @@ export function eventOverview(data,eventName,eventId=null){
   result.records[module]=matches;
   result.counts[module]=matches.length;
   result.unassigned[module]=unassigned.length;
+  if(module==="tasks"){
+   const done=matches.filter(row=>row.done===true).length;
+   result.taskProgress={total:matches.length,done,remaining:matches.length-done};
+  }
  }
  return result;
 }
