@@ -16,7 +16,8 @@ export function validateDemoData(data) {
         throw new TypeError("Invalid demo record");
       }
       ids.add(row.id);
-      return {id:row.id,values:[...row.values]};
+      if (own(row,"eventId") && (typeof row.eventId !== "string" || row.eventId.length > 200)) throw new TypeError("Invalid event link");
+      return {...(own(row,"eventId")?{eventId:row.eventId}:{}),id:row.id,values:[...row.values]};
     });
   }
   return result;
