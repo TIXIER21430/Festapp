@@ -15,7 +15,8 @@ export function createTillSharedAdapter(client,{testProjectConfirmed=false}={}){
    const {data,error}=await client.from(SHARED_TILL_TABLE).select("event_name,menu,updated_at").limit(100);
    if(error)throw new Error("Shared till read failed");
    if(!Array.isArray(data))throw new Error("Shared till read failed");
-   return data.map(row=>({eventName:row.event_name,menu:row.menu,updatedAt:row.updated_at}));
+   const {validateTillConfig}=await import("./tillConfig.js");
+   return data.map(row=>({eventName:row.event_name,menu:validateTillConfig({[row.event_name]:row.menu})[row.event_name],updatedAt:row.updated_at}));
   },
   async save(eventName,menu){
    const userId=await requireUser();
