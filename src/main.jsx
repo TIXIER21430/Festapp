@@ -120,6 +120,7 @@ function App(){
    if(!payload||payload.version!==1||!Array.isArray(payload.files)||!payload.seed||!payload.stats||payload.files.length>10000)throw new Error("Format du catalogue Drive invalide.");
    if(cancelled)return;
    setDriveCatalog(payload);
+   if(payload.seed.events?.some(r=>r.values?.[0]==="Marché de Noël 2026"))setOverviewEvent(current=>current==="Marché de Noël"?"Marché de Noël 2026":current);
    if(!demoReadOnly&&localStorage.getItem(DRIVE_IMPORT_KEY)!==payload.asOf){
     setData(old=>mergeDriveSeed(old,payload.seed).data);
     try{localStorage.setItem(DRIVE_IMPORT_KEY,payload.asOf);}catch{/* The normal local save warning covers blocked storage. */}
