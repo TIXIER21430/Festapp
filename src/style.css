@@ -187,3 +187,7 @@
 .shared-test-backup{margin-top:1rem;padding:1rem;background:#f0f8ff;border:2px solid #96c5ed;border-radius:18px;color:#153759}
 .shared-test-backup p{margin:.35rem 0 .8rem}
 .shared-test-backup button{max-width:100%;white-space:normal}
+.owner-setup-tools{display:flex;align-items:center;flex-wrap:wrap;gap:.8rem;margin:.75rem 0 1rem}
+.owner-setup-tools button{background:#087b74;border:0;color:white;border-radius:14px;padding:.8rem 1rem;font-weight:800;cursor:pointer}
+.owner-setup-tools small{color:#c2dff6}
+.owner-recheck{color:#9b3e02;background:#fff1ca;border-radius:9px;padding:.35rem .5rem;font-size:.85rem;font-weight:700}
