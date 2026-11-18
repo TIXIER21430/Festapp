@@ -43,6 +43,12 @@ export async function listPhotoOriginals(scope){
  return all.filter(row=>row.scope===scope&&row.blob instanceof Blob).sort((a,b)=>b.addedAt.localeCompare(a.addedAt));
 }
 
+export async function listAllPhotoOriginals(){
+ const all=await transact("readonly",store=>store.getAll());
+ if(!Array.isArray(all)||all.some(row=>!row||!SCOPES.has(row.scope)||!(row.blob instanceof Blob)||row.size!==row.blob.size))throw new Error("Certaines photos locales sont illisibles : export complet refusé pour éviter un oubli.");
+ return all.sort((a,b)=>a.scope.localeCompare(b.scope)||a.addedAt.localeCompare(b.addedAt));
+}
+
 export async function savePhotoOriginal(file,scope,recordId=""){
  const meta=validatePhotoInput(file,scope,recordId);
  const row={...meta,id:crypto.randomUUID(),addedAt:new Date().toISOString(),blob:file};

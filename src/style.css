@@ -195,3 +195,6 @@
 .photo-zip button{background:#087b74;color:#fff;border:0;border-radius:12px;padding:.8rem 1rem;font-weight:800;cursor:pointer}
 .photo-zip button:disabled{opacity:.6;cursor:not-allowed}
 .photo-zip small{color:#d2e8f6}
+.owner-setup-tools .owner-backup-secondary{background:#253b5c;border:1px solid #8bb4d7}
+.owner-setup-tools button:disabled{opacity:.55;cursor:not-allowed}
+.owner-backup-status{padding:.65rem .85rem;border-radius:12px;background:#e1f7ee;color:#125f49;font-weight:700}

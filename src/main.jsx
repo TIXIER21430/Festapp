@@ -6,6 +6,9 @@ import PhotoVault from "./PhotoVault.jsx";
 import DriveBoard from "./DriveBoard.jsx";
 import OwnerSetup from "./OwnerSetup.jsx";
 import BulkEntry from "./BulkEntry.jsx";
+import {listAllPhotoOriginals} from "./lib/photoVault.js";
+import {makeCompleteBackupZip} from "./lib/photoZip.js";
+import {OWNER_REVIEW_KEY,parseOwnerReviews} from "./lib/ownerSetup.js";
 import {createEventPostDraft} from "./lib/postDrafts.js";
 import {buildCsv} from "./lib/csv.js";
 import {CONTACT_EXPORT_COLUMNS,selectContactsWithDetailsForExport} from "./lib/contactExport.js";
@@ -216,6 +219,18 @@ function App(){
  function openTillEditor(){setTillDraft(TILL_PRODUCTS.map(p=>({id:p.id,enabled:tillProducts.some(x=>x.id===p.id),price:String((tillProducts.find(x=>x.id===p.id)||p).priceCents/100).replace(".",",")})));setTillEdit(true)}
  function saveTillEditor(){try{if(initialTillConfig.warning)throw new Error("Réglages locaux illisibles");const chosen=tillDraft.filter(p=>p.enabled).map(p=>{const price=p.price.trim();if(!/^(0|[1-9]\\d*)(?:[,.]\\d{1,2})?$/.test(price))throw new Error("Prix invalide : "+p.id);const cents=Math.round(Number(price.replace(",","."))*100);if(!Number.isSafeInteger(cents)||cents>100000)throw new Error("Prix hors limite");return {id:p.id,priceCents:cents}});const next={...tillConfig,[tillEvent]:chosen};saveTillConfig(localStorage,next);setTillConfig(next);setTillCart({});setTillEdit(false);setTillConfigWarning("Menu enregistré uniquement sur cet appareil.")}catch(e){setTillConfigWarning("⚠ "+e.message)}}
  function exportBackup(){if(demoReadOnly){setBackupPreview("⚠ Sauvegarde bloquée : une partie des données locales est illisible. Ne supprimez pas les données de cet appareil.");return;}try{const json=createCombinedDemoBackup(data,volunteerNeeds,undefined,ecocupSettings);const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="festapp-demo-sauvegarde-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch{setBackupPreview("⚠ Téléchargement impossible : la sauvegarde est trop volumineuse ou contient des données invalides. Aucune fiche n’a été effacée.")}}
+ async function exportFullBackup(){
+  if(demoReadOnly)throw new Error('Données locales illisibles : ne quittez pas cet appareil et ne supprimez rien.');
+  const backupJSON=createCombinedDemoBackup(data,volunteerNeeds,undefined,ecocupSettings);
+  const menuJSON=exportTillConfig(tillConfig);
+  const reviewJSON=JSON.stringify({format:'festapp-owner-review',version:1,reviews:parseOwnerReviews(localStorage.getItem(OWNER_REVIEW_KEY))},null,2);
+  const photos=await listAllPhotoOriginals();
+  const zip=await makeCompleteBackupZip({backupJSON,menuJSON,reviewJSON,photos});
+  const url=URL.createObjectURL(zip);
+  const a=document.createElement('a');a.href=url;a.download='festapp-sauvegarde-complete-'+new Date().toISOString().slice(0,10)+'.zip';a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),60000);
+  return `✅ ZIP préparé : ${Object.values(data).reduce((n,rows)=>n+(Array.isArray(rows)?rows.length:0),0)} fiche(s), ${photos.length} photo(s), menus et vérifications. Conservez-le hors du navigateur.`;
+ }
  async function inspectBackup(e){
   setRestoreCandidate(null);
   const file=e.target.files?.[0];
@@ -293,7 +308,7 @@ function App(){
   </div>
   <p className="quick-access-note">Chiffres de démonstration de cet appareil uniquement · aucun stock partagé.</p>
  </section>
- <OwnerSetup data={data} onOpen={openModule} onBackup={exportBackup} ecocupSettings={{opening:ecocupOpening,threshold:ecocupThreshold}} readOnly={demoReadOnly}/>
+ <OwnerSetup data={data} onOpen={openModule} onBackup={exportBackup} onFullBackup={exportFullBackup} ecocupSettings={{opening:ecocupOpening,threshold:ecocupThreshold}} readOnly={demoReadOnly}/>
  <DriveBoard catalog={driveCatalog} loading={driveLoading} error={driveError} importStatus={driveImportStatus} onImport={importDriveAgain} readOnly={demoReadOnly}/>
  <section className="event-cockpit" aria-label="Tableau de bord de la manifestation">
   <div className="event-cockpit-heading"><div><h2>🎯 Ma manifestation</h2><p>En un coup d’œil, les priorités pour préparer la fête.</p></div><label>Événement<select value={overviewEvent} onChange={e=>{setOverviewEvent(e.target.value);setChecklistStatus("");}}>{[...new Set([...eventNames,...eventOptions.map(r=>r.values[0])])].map(name=><option key={name} value={name}>{name}</option>)}</select></label></div>

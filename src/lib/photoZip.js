@@ -45,25 +45,28 @@ function centralHeader(entry){
  return view.buffer;
 }
 
-export async function makePhotoZip(photos,scope){
- if(!Array.isArray(photos)||photos.length>MAX_FILES||typeof scope!=='string'||!/^[a-z]+$/.test(scope))throw new TypeError('Liste de photos invalide.');
+function collectPhotos(photos,{scope=null,limit=MAX_FILES}={}){
+ if(!Array.isArray(photos)||photos.length>limit)throw new TypeError('Liste de photos invalide.');
  const files=[],manifest=[];
  for(let i=0;i<photos.length;i++){
   const photo=photos[i];
-  if(!photo||photo.scope!==scope||!(photo.blob instanceof Blob)||!Number.isSafeInteger(photo.size)||photo.size!==photo.blob.size||photo.size<=0||photo.size>12_000_000)throw new TypeError('Photo locale incompatible avec le téléchargement.');
-  const name=`photos/${String(i+1).padStart(3,'0')}-${zipName(photo.fileName)}`;
+  if(!photo||typeof photo.scope!=='string'||!/^[a-z]+$/.test(photo.scope)||(scope&&photo.scope!==scope)||!(photo.blob instanceof Blob)||!Number.isSafeInteger(photo.size)||photo.size!==photo.blob.size||photo.size<=0||photo.size>12_000_000)throw new TypeError('Photo locale incompatible avec le téléchargement.');
+  const name=`photos/${scope?'':photo.scope+'/'}${String(i+1).padStart(3,'0')}-${zipName(photo.fileName)}`;
   files.push({name,blob:photo.blob});
-  manifest.push({fichier:name,nomOriginal:photo.fileName,rubrique:scope,ficheAssociee:photo.recordId||'',date:photo.addedAt||''});
+  manifest.push({fichier:name,nomOriginal:photo.fileName,rubrique:photo.scope,ficheAssociee:photo.recordId||'',date:photo.addedAt||''});
  }
- const info=JSON.stringify({format:'festapp-photos-originales',version:1,rubrique:scope,exportLe:new Date().toISOString(),photos:manifest},null,2);
- files.push({name:'FESTAPP-liste-des-photos.json',blob:new Blob([info],{type:'application/json'})});
+ return {files,manifest};
+}
+
+async function zipFiles(files){
+ if(files.length>65535)throw new RangeError('Trop de fichiers pour ce ZIP.');
  const chunks=[],central=[];
  let offset=0;
  for(const file of files){
   const nameBytes=encoder.encode(file.name);
   if(nameBytes.byteLength>65535)throw new TypeError('Nom de photo trop long.');
   const size=file.blob.size;
-  if(size>=0xffffffff||offset+size+nameBytes.byteLength+100>MAX_ARCHIVE_SIZE)throw new RangeError('Photos trop volumineuses pour un seul ZIP.');
+  if(size>=0xffffffff||offset+size+nameBytes.byteLength+100>MAX_ARCHIVE_SIZE)throw new RangeError('Photos trop volumineuses pour un seul ZIP. Exportez-les par rubrique.');
   const crc=photoCrc32(new Uint8Array(await file.blob.arrayBuffer()));
   const entry={nameBytes,crc,size,offset};
   central.push(entry);
@@ -80,4 +83,27 @@ export async function makePhotoZip(photos,scope){
  end.setUint32(16,cdOffset,true);
  chunks.push(end.buffer);
  return new Blob(chunks,{type:'application/zip'});
+}
+
+export async function makePhotoZip(photos,scope){
+ if(typeof scope!=='string'||!/^[a-z]+$/.test(scope))throw new TypeError('Liste de photos invalide.');
+ const {files,manifest}=collectPhotos(photos,{scope});
+ const info=JSON.stringify({format:'festapp-photos-originales',version:1,rubrique:scope,exportLe:new Date().toISOString(),photos:manifest},null,2);
+ files.push({name:'FESTAPP-liste-des-photos.json',blob:new Blob([info],{type:'application/json'})});
+ return zipFiles(files);
+}
+
+export async function makeCompleteBackupZip({backupJSON,menuJSON,reviewJSON,photos}={}){
+ if(typeof backupJSON!=='string'||encoder.encode(backupJSON).byteLength>10_000_000)throw new TypeError('Sauvegarde JSON absente ou trop volumineuse.');
+ if(typeof menuJSON!=='string'||encoder.encode(menuJSON).byteLength>100_000||typeof reviewJSON!=='string'||encoder.encode(reviewJSON).byteLength>100_000)throw new TypeError('Réglages de l’application invalides.');
+ for(const value of [backupJSON,menuJSON,reviewJSON]){try{JSON.parse(value);}catch{throw new TypeError('Une des sauvegardes JSON est invalide.');}}
+ const {files,manifest}=collectPhotos(photos,{limit:500});
+ const info=JSON.stringify({format:'festapp-photos-originales',version:1,rubrique:'toutes',exportLe:new Date().toISOString(),photos:manifest},null,2);
+ files.unshift(
+  {name:'FESTAPP-sauvegarde.json',blob:new Blob([backupJSON],{type:'application/json'})},
+  {name:'FESTAPP-menus-caisse.json',blob:new Blob([menuJSON],{type:'application/json'})},
+  {name:'FESTAPP-verifications.json',blob:new Blob([reviewJSON],{type:'application/json'})},
+  {name:'FESTAPP-liste-des-photos.json',blob:new Blob([info],{type:'application/json'})}
+ );
+ return zipFiles(files);
 }
