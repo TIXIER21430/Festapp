@@ -7,5 +7,5 @@ export function planNextEdition(events,tasks,sourceId,year){
  const name=baseName+" "+year;
  if(events.some(e=>String(e?.values?.[0]||"").trim().toLocaleLowerCase("fr")===name.toLocaleLowerCase("fr")))throw new Error("Cette édition existe déjà");
  const sourceTasks=tasks.filter(t=>t?.eventId===sourceId&&Array.isArray(t.values));
- return {eventValues:[name,"",source.values[2]||""],tasks:sourceTasks.map(t=>({values:[String(t.values[0]||""),"",String(t.values[2]||"")],done:false}))};
+ return {eventValues:[name,"",source.values[2]||""],tasks:sourceTasks.map(t=>({values:[String(t.values[0]||""),"",String(t.phase?"":t.values[2]||"")],...(typeof t.phase==="string"?{phase:t.phase}:{}),done:false}))};
 }
