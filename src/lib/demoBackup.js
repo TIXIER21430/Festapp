@@ -29,11 +29,11 @@ export function createDemoBackup(data, timestamp = new Date().toISOString()) {
   if (typeof timestamp !== "string" || !Number.isFinite(Date.parse(timestamp))) throw new TypeError("Invalid timestamp");
   const json = JSON.stringify({format:DEMO_BACKUP_FORMAT,version:DEMO_BACKUP_VERSION,exportedAt:timestamp,data:validated},null,2);
   // Match the importer limit: never offer a backup that this app cannot restore.
-  if (json.length > 10_000_000) throw new RangeError("Backup too large to restore");
+  if (new TextEncoder().encode(json).byteLength > 10_000_000) throw new RangeError("Backup too large to restore");
   return json;
 }
 export function parseDemoBackup(json) {
-  if (typeof json !== "string" || json.length > 10_000_000) throw new TypeError("Backup too large or invalid");
+  if (typeof json !== "string" || new TextEncoder().encode(json).byteLength > 10_000_000) throw new TypeError("Backup too large or invalid");
   const parsed = JSON.parse(json);
   if (!parsed || parsed.format !== DEMO_BACKUP_FORMAT || parsed.version !== DEMO_BACKUP_VERSION ||
       typeof parsed.exportedAt !== "string" || !Number.isFinite(Date.parse(parsed.exportedAt)) ||
