@@ -85,3 +85,26 @@
 .quick-access-tile:focus-visible{outline:3px solid white;outline-offset:3px}.quick-access-tile:active{transform:scale(.98)}
 .module-panel{scroll-margin-top:12px}.module-panel:focus{outline:2px solid #b8e7ff;outline-offset:3px}
 @media(max-width:650px){.quick-access-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.quick-access-tile{min-height:108px;padding:12px 8px}.quick-access-tile strong{font-size:16px}.quick-access-title h2{font-size:19px}}
+
+/* All ten FEST'APP modules and an event-specific, one-tap cockpit. */
+.quick-access-tile:nth-child(6n+4){background:#c2f5d7}
+.quick-access-tile:nth-child(6n+5){background:#d8c9ff}
+.quick-access-tile:nth-child(6n){background:#ffd2b7}
+.event-cockpit{margin:18px 0 24px;padding:20px;border-radius:20px;background:#e9f6ff;color:#203047}
+.event-cockpit-heading{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;margin-bottom:15px}
+.event-cockpit-heading h2{margin:0 0 5px;font-size:22px}
+.event-cockpit-heading p,.event-cockpit>p{margin:5px 0;color:#495d72;font-size:13px}
+.event-cockpit-heading label{color:#203047;flex:0 1 290px;font-weight:750}
+.event-cockpit-heading select{display:block;width:100%;margin-top:6px;padding:12px;border:2px solid #8eb0cf;border-radius:13px;background:white;color:#233147;font:inherit;min-height:49px}
+.event-cockpit-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin:12px 0}
+.event-cockpit-tile{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;min-width:0;min-height:126px;padding:12px 8px;border-radius:17px;color:#203047;background:#ffdf9c;touch-action:manipulation}
+.event-cockpit-tile:nth-child(2){background:#c2f5d7}.event-cockpit-tile:nth-child(3){background:#f8bfe3}.event-cockpit-tile:nth-child(4){background:#d8c9ff}
+.event-cockpit-tile span{font-size:25px}.event-cockpit-tile strong{font-size:34px;line-height:1}.event-cockpit-tile small{font-weight:800;font-size:12px;text-align:center}
+.event-cockpit-tile:focus-visible{outline:3px solid #244f90;outline-offset:3px}.event-cockpit-tile:active{transform:scale(.98)}
+.event-cockpit-action{width:100%;min-height:56px;margin:5px 0 6px;border-radius:14px;background:#2075c9;color:white;font-size:16px}
+.event-cockpit-action:focus-visible{outline:3px solid #244f90;outline-offset:3px}
+.recipe-starters{padding:18px;margin:16px 0;border-radius:17px;background:#fff0cb;color:#273448}
+.recipe-starters h3{margin:0 0 10px}.recipe-starters p{font-size:14px;line-height:1.5}
+.recipe-starters button{background:#2075c9;min-height:54px;border-radius:14px}
+.recipe-starters p[role="status"]{font-weight:750}
+@media(max-width:650px){.event-cockpit{padding:14px}.event-cockpit-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.event-cockpit-tile{min-height:112px}.event-cockpit-heading h2{font-size:20px}}

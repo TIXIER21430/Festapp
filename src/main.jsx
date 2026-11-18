@@ -19,6 +19,7 @@ import {VOLUNTEER_NEEDS_KEY,staffingStatus} from "./lib/volunteerNeeds.js";
 import {readDemoEcocupSettings,readDemoVolunteerNeeds} from "./lib/demoAuxStorage.js";
 import {exportVolunteerNeeds,importVolunteerNeeds} from "./lib/volunteerNeedsBackup.js";
 import {scaleRecipeText} from "./lib/recipeText.js";
+import {addMissingRecipeDrafts} from "./lib/recipeStarters.js";
 import {TILL_PRODUCTS,calculateTill,changeQuantity,productsForEvent} from "./lib/quickTill.js";
 import {loadTillConfig,eventTillProducts,saveTillConfig,exportTillConfig,importTillConfig} from "./lib/tillConfig.js";
 import {summarizeEcocups} from "./lib/ecocupDemoBalance.js";
@@ -64,6 +65,7 @@ function App(){
  const [recipeServings,setRecipeServings]=useState("10");
  const [recipeTarget,setRecipeTarget]=useState("50");
  const [recipeOutput,setRecipeOutput]=useState("");
+ const [recipeDraftStatus,setRecipeDraftStatus]=useState("");
  const [selectedRecipeId,setSelectedRecipeId]=useState("");
  const [overviewEvent,setOverviewEvent]=useState("Marché de Noël");
  const [checklistStatus,setChecklistStatus]=useState("");
@@ -145,6 +147,12 @@ function App(){
   });
  }
  function remove(id){if(demoReadOnly)return;if(!confirm("Supprimer cette fiche ?"))return;if(editingId===id)cancelEdit();setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
+ function addRecipeDrafts(){
+  if(demoReadOnly){setRecipeDraftStatus("Lecture seule : fiches locales protégées.");return;}
+  const result=addMissingRecipeDrafts(data.recipes||[]);
+  if(result.added)setData(old=>({...old,recipes:addMissingRecipeDrafts(old.recipes||[]).recipes}));
+  setRecipeDraftStatus(result.added?result.added+" brouillon(s) créé(s). Complétez-les avec les originaux du comité.":"Les deux fiches existent déjà. Aucune donnée modifiée.");
+ }
  function toggleTaskDone(id){if(demoReadOnly)return;setData(d=>({...d,tasks:(d.tasks||[]).map(r=>r.id===id?{...r,done:!r.done}:r)}));}
  function downloadVolunteerNeeds(){const blob=new Blob([exportVolunteerNeeds(volunteerNeeds)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="festapp-besoins-benevoles.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
  async function uploadVolunteerNeeds(e){const file=e.target.files?.[0];e.target.value="";if(!file)return;try{if(demoReadOnly)throw new Error("Mode lecture seule.");if(file.size>1_000_000)throw new Error("Fichier trop volumineux.");const parsed=importVolunteerNeeds(await file.text());if(!window.confirm("Remplacer les besoins bénévoles enregistrés sur cet appareil ? Les affectations existantes ne seront pas modifiées."))return;localStorage.setItem(VOLUNTEER_NEEDS_KEY,JSON.stringify(parsed));setVolunteerNeeds(parsed);setNeedsWarning("Besoins importés sur cet appareil.");}catch(err){setNeedsWarning("⚠ Import refusé : "+err.message);}}
@@ -218,10 +226,22 @@ function App(){
     ["contacts","👥","Annuaire",(data.contacts||[]).length+" contacts"],
     ["ecocups","🥤","Écocups",ecocupSummary?(ecocupSummary.alert?"⚠ Seuil atteint · ":"Stock · ")+ecocupSummary.balance:"Stock à vérifier"],
     ["shifts","🕒","Bénévoles",(data.shifts||[]).length+" affectations"],
-    ["recipes","🍲","Recettes",(data.recipes||[]).length+" recettes"]
+    ["recipes","🍲","Recettes",(data.recipes||[]).length+" recettes"],
+    ["shopping","🛒","Achats",(data.shopping||[]).length+" articles"],
+    ["stock","📦","Stock",(data.stock||[]).length+" fiches"],
+    ["feedback","📝","Retours",(data.feedback||[]).length+" retours"],
+    ["finance","📊","Finances",(data.finance||[]).length+" écritures"]
    ].map(([key,icon,title,details])=><button type="button" key={key} className="quick-access-tile" aria-label={title+" : "+details} onClick={()=>openModule(key)}><span className="quick-icon" aria-hidden="true">{icon}</span><strong>{title}</strong><small>{details}</small></button>)}
   </div>
   <p className="quick-access-note">Chiffres de démonstration de cet appareil uniquement · aucun stock partagé.</p>
+ </section>
+ <section className="event-cockpit" aria-label="Tableau de bord de la manifestation">
+  <div className="event-cockpit-heading"><div><h2>🎯 Ma manifestation</h2><p>En un coup d’œil, les priorités pour préparer la fête.</p></div><label>Événement<select value={overviewEvent} onChange={e=>{setOverviewEvent(e.target.value);setChecklistStatus("");}}>{[...new Set([...eventNames,...eventOptions.map(r=>r.values[0])])].map(name=><option key={name} value={name}>{name}</option>)}</select></label></div>
+  <div className="event-cockpit-grid">
+   {[["tasks","✅",selectedOverview.taskProgress.remaining,"Tâches à faire"],["shopping","🛒",selectedOverview.counts.shopping,"Achats prévus"],["shifts","👥",selectedOverview.counts.shifts,"Affectations"],["stock","📦",selectedOverview.counts.stock,"Fiches stock"]].map(([key,icon,count,label])=><button type="button" key={key} className="event-cockpit-tile" onClick={()=>openModule(key,eventOptions.find(r=>r.values[0]===overviewEvent)?.id||"")}><span aria-hidden="true">{icon}</span><strong>{count}</strong><small>{label}</small></button>)}
+  </div>
+  <button type="button" className="event-cockpit-action" onClick={()=>document.querySelector('[aria-label="Préparation de manifestation"]')?.scrollIntoView({behavior:"smooth",block:"start"})}>📋 Préparer {overviewEvent}</button>
+  <p>Ces indicateurs ne comptent que les fiches associées à cette manifestation. Les données restent sur cet appareil.</p>
  </section>
  <SharedAccess/>
  <section className="panel" aria-label="Sauvegarde de démonstration"><div className="heading"><h2>💾 Sauvegarde locale</h2><button className="secondary" onClick={exportBackup}>Télécharger JSON</button></div><p>Conservez une copie de vos fiches de démonstration. La vérification d’un fichier ne restaure ni ne remplace aucune donnée.</p><label>Vérifier une sauvegarde JSON<input type="file" accept=".json,application/json" onChange={inspectBackup}/></label>{backupPreview&&<p role="status">{backupPreview}</p>}{restoreCandidate&&!demoReadOnly&&<button type="button" onClick={restoreBackup}>Confirmer l’ajout des fiches manquantes</button>}</section>
@@ -231,6 +251,7 @@ function App(){
  <section className="panel module-panel" ref={modulePanelRef} tabIndex={-1} aria-label={current.title}><div className="heading"><h2>{current.icon} {current.title}</h2><button className="secondary" onClick={()=>exportCsv(false)}>Exporter CSV</button></div>
  {tab==="ecocups"&&<div className="note"><p><strong>Calcul local de démonstration uniquement — aucun stock partagé.</strong> Saisir les mouvements exactement sous la forme « entrée » ou « sortie », et une quantité entière positive.</p><div className="fields"><label>Stock initial de démonstration<input inputMode="numeric" disabled={demoReadOnly} value={ecocupOpening} onChange={e=>setEcocupOpening(e.target.value)}/></label><label>Seuil d'alerte<input inputMode="numeric" disabled={demoReadOnly} value={ecocupThreshold} onChange={e=>setEcocupThreshold(e.target.value)}/></label></div>{ecocupError?<p role="alert">⚠ Calcul impossible : {ecocupError}. Vérifiez les mouvements, sans les effacer.</p>:<div className={"ecocup-balance-card "+(ecocupSummary.alert?"ecocup-balance-alert":"ecocup-balance-ok")} role="status"><span className="ecocup-balance-icon" aria-hidden="true">{ecocupSummary.alert?"⚠️":"✅"}</span><div><strong className="ecocup-balance-count">{ecocupSummary.balance} écocups</strong><p>{ecocupSummary.alert?"Seuil atteint : prévoir au moins "+(ecocupSummary.minimumToClearAlert??"une quantité à vérifier")+" écocups supplémentaires.":"Stock de démonstration au-dessus du seuil."}</p><small>Calcul local uniquement · aucune réservation de stock réel</small></div></div>}</div>}
  {tab==="recipes"&&<div className="note"><h3>🧮 Calculateur de quantités</h3><p>Choisissez une recette enregistrée. Les ingrédients doivent être saisis un par ligne (ex. : 250 g farine). Le calcul ne modifie jamais la recette originale.</p><label>Recette à calculer<select value={selectedRecipeId} onChange={e=>{setSelectedRecipeId(e.target.value);setRecipeOutput("");}}><option value="">Choisir une recette</option>{(data.recipes||[]).map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label><div className="fields"><label>Recette prévue pour<input inputMode="numeric" value={recipeServings} onChange={e=>setRecipeServings(e.target.value)}/></label><label>Nombre de personnes souhaité<input inputMode="numeric" value={recipeTarget} onChange={e=>setRecipeTarget(e.target.value)}/></label></div><button type="button" disabled={!selectedRecipeId} onClick={()=>{try{const recipe=(data.recipes||[]).find(r=>r.id===selectedRecipeId);if(!recipe)throw new Error("Recette introuvable.");setRecipeOutput(scaleRecipeText(recipe.values[1],Number(recipeServings),Number(recipeTarget)))}catch(e){setRecipeOutput("⚠ "+e.message)}}}>Calculer les ingrédients</button>{recipeOutput&&<pre role="status" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{recipeOutput}</pre>}</div>}
+ {tab==="recipes"&&<div className="recipe-starters"><h3>📒 Recettes du comité à compléter</h3><p>Andouillettes et pâte à crêpes : les recettes originales n’ont pas encore été transmises. Créez deux brouillons sans ingrédients inventés, puis complétez les fiches.</p><button type="button" disabled={demoReadOnly} onClick={addRecipeDrafts}>➕ Préparer les 2 fiches brouillon</button>{recipeDraftStatus&&<p role="status">{recipeDraftStatus}</p>}</div>}
  <form onSubmit={add}>
   {tab!=="events"&&tab!=="contacts"&&tab!=="ecocups"&&<label>Manifestation associée<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Non attribuée</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>}
   {formError&&<p role="alert">{formError}</p>}

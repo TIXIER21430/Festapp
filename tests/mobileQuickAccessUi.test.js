@@ -36,3 +36,27 @@ test("dashboard ecocup badge checks the local ledger and handles invalid setting
  assert.match(app,/"Stock à vérifier"/);
  assert.match(app,/Chiffres de démonstration de cet appareil uniquement/);
 });
+
+test("all ten modules remain one tap away in the colorful mobile dashboard",()=>{
+ const begin=app.indexOf('aria-label="Accès rapide aux modules"');
+ const end=app.indexOf('className="event-cockpit"');
+ const dashboard=app.slice(begin,end);
+ for(const name of ['events','tasks','contacts','ecocups','shifts','recipes','shopping','stock','feedback','finance']){
+  assert.ok(dashboard.includes('"'+name+'"'),name);
+ }
+ assert.match(css,/\.quick-access-tile:nth-child\(6n\+4\)/);
+ assert.match(css,/\.event-cockpit-grid\{display:grid;grid-template-columns:repeat\(4,/);
+});
+
+test("event cockpit opens the chosen manifestation without changing records",()=>{
+ const begin=app.indexOf('aria-label="Tableau de bord de la manifestation"');
+ const end=app.indexOf('<SharedAccess/>');
+ const cockpit=app.slice(begin,end);
+ assert.match(cockpit,/selectedOverview\.taskProgress\.remaining/);
+ assert.match(cockpit,/selectedOverview\.counts\.shopping/);
+ assert.match(cockpit,/selectedOverview\.counts\.shifts/);
+ assert.match(cockpit,/openModule\(key,eventOptions\.find\(/);
+ assert.match(cockpit,/Préparer \{overviewEvent\}/);
+ assert.match(cockpit,/scrollIntoView\(\{behavior:"smooth",block:"start"\}\)/);
+ assert.doesNotMatch(cockpit,/setData\(/);
+});
