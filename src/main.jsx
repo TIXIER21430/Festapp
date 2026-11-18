@@ -3,6 +3,7 @@ import {createRoot} from "react-dom/client";
 import "./style.css";
 import SharedAccess from "./SharedAccess.jsx";
 import PhotoVault from "./PhotoVault.jsx";
+import DriveBoard from "./DriveBoard.jsx";
 import {createEventPostDraft} from "./lib/postDrafts.js";
 import {buildCsv} from "./lib/csv.js";
 import {CONTACT_EXPORT_COLUMNS,selectContactsWithDetailsForExport} from "./lib/contactExport.js";
@@ -32,6 +33,9 @@ import {inspectDemoBackupReadiness} from "./lib/demoBackupReadiness.js";
 import {planDemoRestore} from "./lib/demoRestorePlan.js";
 import {previewRestoreImpact} from "./lib/restorePreview.js";
 import {applyDemoRestore} from "./lib/applyDemoRestore.js";
+import {mergeDriveSeed} from "./lib/mergeDriveSeed.js";
+
+const DRIVE_IMPORT_KEY="festapp-drive-snapshot-20261118-v1";
 
 const categories=[
 {key:"events",title:"Manifestations",icon:"🎉",fields:["Nom","Date","Lieu"]},
@@ -56,6 +60,10 @@ function App(){
  const [initialNeedsStorage]=useState(()=>readDemoVolunteerNeeds(localStorage));
  const [initialEcocupStorage]=useState(()=>readDemoEcocupSettings(localStorage));
  const [data,setData]=useState(initialStorage.data);
+ const [driveCatalog,setDriveCatalog]=useState(null);
+ const [driveLoading,setDriveLoading]=useState(true);
+ const [driveError,setDriveError]=useState("");
+ const [driveImportStatus,setDriveImportStatus]=useState("");
  const [storageWarning,setStorageWarning]=useState(initialStorage.warning);
  const demoReadOnly=initialStorage.readOnly||initialNeedsStorage.readOnly||initialEcocupStorage.readOnly;
  const initialRender=useRef(true);
@@ -104,6 +112,27 @@ function App(){
   ecocupSummary=summarizeEcocups(data.ecocups||[],{openingBalance:Number(ecocupOpening),alertThreshold:Number(ecocupThreshold)});
  }catch(e){ecocupError=e.message||"Mouvements invalides";}
  useEffect(()=>{if(initialRender.current){initialRender.current=false;return;}if(demoReadOnly)return;const result=writeDemoStorage(localStorage,data);setStorageWarning(result.warning||"")},[data]);
+ useEffect(()=>{
+  let cancelled=false;
+  fetch(`${import.meta.env.BASE_URL}drive-data.json`,{cache:"no-store"}).then(async response=>{
+   if(!response.ok)throw new Error("Le catalogue privé n'est pas disponible sur cette installation.");
+   const payload=await response.json();
+   if(!payload||payload.version!==1||!Array.isArray(payload.files)||!payload.seed||!payload.stats||payload.files.length>10000)throw new Error("Format du catalogue Drive invalide.");
+   if(cancelled)return;
+   setDriveCatalog(payload);
+   if(!demoReadOnly&&localStorage.getItem(DRIVE_IMPORT_KEY)!==payload.asOf){
+    setData(old=>mergeDriveSeed(old,payload.seed).data);
+    try{localStorage.setItem(DRIVE_IMPORT_KEY,payload.asOf);}catch{/* The normal local save warning covers blocked storage. */}
+    setDriveImportStatus("✅ Fiches du Drive ajoutées au premier chargement, sans remplacement des saisies locales.");
+   }
+  }).catch(error=>{if(!cancelled)setDriveError(error.message||"Catalogue indisponible.");}).finally(()=>{if(!cancelled)setDriveLoading(false);});
+  return ()=>{cancelled=true;};
+ },[]);
+ function importDriveAgain(){
+  if(!driveCatalog||demoReadOnly)return;
+  try{const result=mergeDriveSeed(data,driveCatalog.seed);if(result.added)setData(result.data);setDriveImportStatus(result.added?`✅ ${result.added} fiche(s) manquante(s) ajoutée(s), sans écrasement.`:"✅ Tout est déjà présent. Aucune fiche modifiée.");}
+  catch(e){setDriveImportStatus("⚠ Import non effectué : "+e.message);}
+ }
  useEffect(()=>{if(demoReadOnly)return;try{localStorage.setItem(ECOCUP_DEMO_SETTINGS_KEY,serializeDemoEcocupSettings(ecocupSettings))}catch{/* Keep invalid input visible for correction, never overwrite saved valid settings. */}},[ecocupSettings]);
  useEffect(()=>{if(demoReadOnly)return;try{localStorage.setItem(VOLUNTEER_NEEDS_KEY,JSON.stringify(volunteerNeeds));setNeedsWarning("");}catch{setNeedsWarning("Impossible de sauvegarder les besoins sur cet appareil.");}},[volunteerNeeds]);
  const selectedOverview=eventOverview(data,overviewEvent,eventOptions.find(r=>r.values[0]===overviewEvent)?.id||null);
@@ -238,7 +267,7 @@ function App(){
  {storageWarning&&<p role="alert" className="note">⚠ {storageWarning}</p>}
  {initialNeedsStorage.warning&&<p role="alert" className="note">⚠ {initialNeedsStorage.warning}</p>}
  {initialEcocupStorage.warning&&<p role="alert" className="note">⚠ {initialEcocupStorage.warning}</p>}
- <section className="hero"><h1>Organisons nos fêtes !</h1><p>Manifestations, bénévoles, stocks et bilans au même endroit.</p><strong>⚠ Données enregistrées uniquement sur cet appareil, non partagées avec le bureau.</strong></section>
+ <section className="hero"><h1>Organisons nos fêtes !</h1><p>Manifestations, bénévoles, stocks, bilans et documents du Drive au même endroit.</p><strong>⚠ Données enregistrées uniquement sur cet appareil, non partagées avec le bureau.</strong></section>
  <section className="quick-access" aria-label="Accès rapide aux modules">
   <div className="quick-access-title"><h2>⚡ Accès rapide</h2><span>Choisissez votre activité</span></div>
   <div className="quick-access-grid">
@@ -260,6 +289,7 @@ function App(){
   </div>
   <p className="quick-access-note">Chiffres de démonstration de cet appareil uniquement · aucun stock partagé.</p>
  </section>
+ <DriveBoard catalog={driveCatalog} loading={driveLoading} error={driveError} importStatus={driveImportStatus} onImport={importDriveAgain} readOnly={demoReadOnly}/>
  <section className="event-cockpit" aria-label="Tableau de bord de la manifestation">
   <div className="event-cockpit-heading"><div><h2>🎯 Ma manifestation</h2><p>En un coup d’œil, les priorités pour préparer la fête.</p></div><label>Événement<select value={overviewEvent} onChange={e=>{setOverviewEvent(e.target.value);setChecklistStatus("");}}>{[...new Set([...eventNames,...eventOptions.map(r=>r.values[0])])].map(name=><option key={name} value={name}>{name}</option>)}</select></label></div>
   <div className="event-cockpit-grid">
@@ -279,7 +309,7 @@ function App(){
  {tab==="recipes"&&<div className="recipe-starters"><h3>📒 Recettes du comité à compléter</h3><p>Andouillettes et pâte à crêpes : les recettes originales n’ont pas encore été transmises. Créez deux brouillons sans ingrédients inventés, puis complétez les fiches.</p><button type="button" disabled={demoReadOnly} onClick={addRecipeDrafts}>➕ Préparer les 2 fiches brouillon</button>{recipeDraftStatus&&<p role="status">{recipeDraftStatus}</p>}</div>}
  {tab==="posts"&&<div className="post-assistant"><h3>✨ Préparer une publication Facebook</h3><p>Choisissez la manifestation dans la fiche ci-dessous, puis préparez un texte modifiable. C’est un <strong>brouillon guidé local, sans IA connectée</strong>. Aucune publication automatique.</p><div className="post-controls"><label>Type<select value={postKind} onChange={e=>setPostKind(e.target.value)}><option value="annonce">Annoncer une fête</option><option value="rappel">Faire un rappel</option><option value="remerciement">Remercier après l’événement</option></select></label><label>Ton<select value={postTone} onChange={e=>setPostTone(e.target.value)}><option value="chaleureux">Chaleureux</option><option value="dynamique">Dynamique</option></select></label></div><button type="button" onClick={preparePostDraft}>✨ Préparer mon texte</button><button type="button" className="secondary" disabled={!form[1]} onClick={copyPostDraft}>📋 Copier le texte</button>{postStatus&&<p role="status">{postStatus}</p>}</div>}
  {tab==="equipment"&&<p className="note">🧰 Inventaire et prêts de matériel : renseignez les quantités et les emplacements, ou la personne à qui le matériel est prêté. Pas de déduction automatique du stock ni de réservation partagée.</p>}
- {tab==="archives"&&<p className="note">🗂️ Conservez les bilans, anecdotes et erreurs à éviter d'une édition à la suivante. Les photos originales se rangent dans la galerie ci-dessous ; les autres documents doivent pour l'instant rester dans le Drive du comité.</p>}
+ {tab==="archives"&&<p className="note">🗂️ Les documents d’origine restent dans le Drive. <a href="#drive-library" className="archive-drive-link">🔎 Rechercher parmi les {driveCatalog?.files?.length||0} documents du comité</a>. Vous pouvez aussi ajouter vos souvenirs et photos locales ci-dessous.</p>}
  <form onSubmit={add}>
   {tab!=="events"&&tab!=="contacts"&&tab!=="ecocups"&&<label>Manifestation associée<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Non attribuée</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>}
   {formError&&<p role="alert">{formError}</p>}
@@ -309,10 +339,10 @@ function App(){
  {tab==="tasks"&&<p role="status" className="note">✅ {(data.tasks||[]).filter(r=>r.done===true).length} tâche(s) terminée(s) sur {(data.tasks||[]).length}. Cochez une tâche pour la marquer comme faite ; responsable et échéance sont conservés.</p>}
  {tab==="contacts"&&<div className="note"><p>Retrouvez rapidement les bénévoles, exposants et groupes. L’export CSV concerne uniquement cet appareil.</p><div className="fields"><label>Afficher les contacts<select value={contactType} onChange={e=>setContactType(e.target.value)}><option value="tous">Tous les contacts</option><option value="bénévole">Bénévoles</option><option value="exposant">Exposants</option><option value="groupe">Groupes</option></select></label></div><p>{records.length} fiche(s) affichée(s).</p><button type="button" className="contact-export-button" onClick={()=>exportCsv(true)} disabled={!records.length}>📥 Exporter uniquement ces contacts en CSV</button><p className="contact-export-note">CSV avec e-mail et téléphone séparés, sans supprimer l’ancien contact libre. Export local uniquement : vérifiez les destinataires avant tout partage.</p></div>}
  <label className="search">Rechercher<input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filtrer les fiches…"/></label>
- <div className="records">{records.length?records.map(r=><article key={r.id}>{tab==="tasks"&&<label><input type="checkbox" checked={r.done===true} disabled={demoReadOnly} onChange={()=>toggleTaskDone(r.id)}/> {r.done?"Terminée":"À faire"}</label>}<div><strong>{r.values[0]}</strong><p>{r.values.slice(1).filter(Boolean).join(" · ")||"Aucune précision"}</p>{tab==="contacts"&&(r.email||r.phone)&&<p>{[r.email&&"✉️ "+r.email,r.phone&&"📞 "+r.phone].filter(Boolean).join(" · ")}</p>}</div><button className="secondary" disabled={demoReadOnly} onClick={()=>beginEdit(r)}>Modifier</button><button className="delete" disabled={demoReadOnly} onClick={()=>remove(r.id)} aria-label={"Supprimer "+r.values[0]}>Supprimer</button></article>):<p>Aucune fiche pour le moment.</p>}</div>
+ <div className="records">{records.length?records.map(r=><article key={r.id}>{tab==="tasks"&&<label><input type="checkbox" checked={r.done===true} disabled={demoReadOnly} onChange={()=>toggleTaskDone(r.id)}/> {r.done?"Terminée":"À faire"}</label>}<div><strong>{r.values[0]}</strong><p>{(tab==="archives"&&/^https:\/\/(?:drive|docs)\.google\.com\//.test(r.values[2])?[r.values[1]]:r.values.slice(1)).filter(Boolean).join(" · ")||"Aucune précision"}</p>{tab==="archives"&&/^https:\/\/(?:drive|docs)\.google\.com\//.test(r.values[2])&&<a href={r.values[2]} target="_blank" rel="noopener noreferrer" className="archive-drive-link">📄 Ouvrir l’original dans Drive ↗</a>}{tab==="contacts"&&(r.email||r.phone)&&<p>{[r.email&&"✉️ "+r.email,r.phone&&"📞 "+r.phone].filter(Boolean).join(" · ")}</p>}</div><button className="secondary" disabled={demoReadOnly} onClick={()=>beginEdit(r)}>Modifier</button><button className="delete" disabled={demoReadOnly} onClick={()=>remove(r.id)} aria-label={"Supprimer "+r.values[0]}>Supprimer</button></article>):<p>Aucune fiche pour le moment.</p>}</div>
  </section>
  <section className="print-sheet" aria-label="Planning imprimable des bénévoles"><h1>FEST’APP — Planning bénévoles</h1><h2>{printEvent?.values[0]||"Manifestation non sélectionnée"}</h2><p>{printEvent?.values[1]?"Date : "+printEvent.values[1]:"Date non renseignée"} · {printEvent?.values[2]||"Lieu non renseigné"}</p><table><thead><tr><th>Horaires</th><th>Bénévole</th><th>Poste</th></tr></thead><tbody>{(printSchedule?.scheduled||[]).map(r=><tr key={r.id}><td>{r.time}</td><td>{r.name}</td><td>{r.post||"À préciser"}</td></tr>)}</tbody></table>{printSchedule?.unscheduled.length>0&&<><h3>Horaires à préciser</h3><table><thead><tr><th>Bénévole</th><th>Poste</th><th>Créneau saisi</th></tr></thead><tbody>{printSchedule.unscheduled.map(r=><tr key={r.id}><td>{r.name}</td><td>{r.post||"À préciser"}</td><td>{r.time||"Non renseigné"}</td></tr>)}</tbody></table></>}<p className="print-footer">Document issu de la démonstration locale FEST’APP — vérifier les affectations avant affichage.</p></section>
- <footer>Prototype local • aucune donnée synchronisée</footer>
+ <footer>FEST’APP · Documents du Drive consultables par lien · fiches de travail locales · aucune donnée synchronisée avec Supabase</footer>
  </main>
 }
 createRoot(document.getElementById("root")).render(<App/>);
