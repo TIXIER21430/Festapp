@@ -55,5 +55,5 @@ export function suggestDriveChecklistTasks(eventName,eventId,existing=[]){
  const template=DRIVE_CHECKLISTS[eventName];
  if(!template)return [];
  const present=new Set(existing.filter(r=>r?.eventId===eventId).map(r=>String(r.values?.[0]||"").trim().toLocaleLowerCase("fr")));
- return Object.entries(template.phases).flatMap(([phase,tasks])=>tasks.filter(name=>!present.has(name.trim().toLocaleLowerCase("fr"))).map(name=>({values:[name,"",phase],eventId,done:false})));
+ return Object.entries(template.phases).flatMap(([phase,tasks])=>tasks.filter(name=>!present.has(name.trim().toLocaleLowerCase("fr"))).map(name=>({values:[name,"",""],phase,eventId,done:false})));
 }
