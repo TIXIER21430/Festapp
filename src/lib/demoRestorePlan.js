@@ -31,5 +31,18 @@ export function planDemoRestore(currentData, backupJson) {
       conflicts: rows.length - additions[category].length
     };
   }
-  return { counts, conflicts, capacityExceeded, additions, safeToAppend: conflicts.length === 0 && capacityExceeded.length === 0 };
+  // A linked record must never be added with a reference to a missing event.
+  // Check additions only: pre-existing legacy orphans are preserved untouched.
+  const eventIds = new Set([...(current.events || []), ...(additions.events || [])].map(row => row.id));
+  const danglingLinks = [];
+  for (const [category, rows] of Object.entries(additions)) {
+    if (category === "events") continue;
+    for (const row of rows) {
+      if (row.eventId && !eventIds.has(row.eventId)) {
+        danglingLinks.push({category, id:row.id, eventId:row.eventId});
+      }
+    }
+  }
+  return { counts, conflicts, capacityExceeded, danglingLinks, additions,
+    safeToAppend: conflicts.length === 0 && capacityExceeded.length === 0 && danglingLinks.length === 0 };
 }

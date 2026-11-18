@@ -13,7 +13,7 @@
 2. Conserver une copie de l'état de test actuel avant import.
 3. Valider le JSON avec `parseDemoBackup` / `previewDemoBackup`. Un fichier invalide, trop volumineux ou d'une version inconnue doit être refusé.
 4. Vérifier les mouvements écocups avec `inspectEcocupBackup` et `inspectCombinedEcocupSettings`. Les nouveaux exports contiennent le stock initial et le seuil correspondant, mais **l'import ne les applique jamais automatiquement** : recopier et vérifier ces deux valeurs dans la démonstration avant de restaurer des mouvements. L'import est bloqué si leur solde serait invalide avec les réglages courants.
-5. Contrôler les doublons et les liens manifestations–tâches. Ne pas corriger automatiquement les correspondances ambiguës.
+5. Contrôler les doublons et les liens manifestations–tâches. L'ajout local est **bloqué** lorsqu'une nouvelle fiche (tâche, planning ou autre module lié) référence par `eventId` une manifestation absente à la fois du navigateur et de la sauvegarde. Le contrôle n'efface pas les anciennes fiches déjà orphelines. Ne pas corriger automatiquement les correspondances ambiguës : compléter la sauvegarde avec la manifestation manquante après vérification humaine, puis relancer l'aperçu.
 6. Importer uniquement dans un jeu de test, puis comparer les nombres d'enregistrements et le stock final attendu. Vérifier particulièrement qu'une tâche conserve sa manifestation (`eventId`), son étape (`phase` : Avant, Veille, Jour J) et sa case cochée (`done`) après restauration. Les anciennes fiches sans ces métadonnées restent compatibles.
 7. En cas d'écart, interrompre l'essai et revenir à la copie précédente. Ne jamais écraser des données réelles.
 
