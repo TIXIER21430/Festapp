@@ -12,12 +12,12 @@
 1. Travailler sur un profil de navigateur de test, sans session Supabase de production.
 2. Conserver une copie de l'état de test actuel avant import.
 3. Valider le JSON avec `parseDemoBackup` / `previewDemoBackup`. Un fichier invalide, trop volumineux ou d'une version inconnue doit être refusé.
-4. Vérifier les mouvements écocups avec `inspectEcocupBackup`, en renseignant **explicitement** le stock initial et le seuil correspondant à la sauvegarde. Ces réglages ne sont pas inclus dans le format actuel.
+4. Vérifier les mouvements écocups avec `inspectEcocupBackup` et `inspectCombinedEcocupSettings`. Les nouveaux exports contiennent le stock initial et le seuil correspondant, mais **l'import ne les applique jamais automatiquement** : recopier et vérifier ces deux valeurs dans la démonstration avant de restaurer des mouvements. L'import est bloqué si leur solde serait invalide avec les réglages courants.
 5. Contrôler les doublons et les liens manifestations–tâches. Ne pas corriger automatiquement les correspondances ambiguës.
 6. Importer uniquement dans un jeu de test, puis comparer les nombres d'enregistrements et le stock final attendu. Vérifier particulièrement qu'une tâche conserve sa manifestation (`eventId`), son étape (`phase` : Avant, Veille, Jour J) et sa case cochée (`done`) après restauration. Les anciennes fiches sans ces métadonnées restent compatibles.
 7. En cas d'écart, interrompre l'essai et revenir à la copie précédente. Ne jamais écraser des données réelles.
 
-**Limite du fichier :** l'ensemble du JSON, y compris les besoins bénévoles, doit tenir dans 10 Mo (octets UTF-8). Si l'export affiche un refus, les fiches locales restent présentes mais **aucune sauvegarde exploitable n'a été téléchargée**. Réduire la taille des données de test ou répartir les essais avant de retenter. Ne jamais considérer un export refusé comme une sauvegarde réussie.
+**Limite du fichier :** l'ensemble du JSON, y compris les besoins bénévoles et les réglages écocups, doit tenir dans 10 Mo (octets UTF-8). Si l'export affiche un refus, les fiches locales restent présentes mais **aucune sauvegarde exploitable n'a été téléchargée**. Réduire la taille des données de test ou répartir les essais avant de retenter. Ne jamais considérer un export refusé comme une sauvegarde réussie.
 
 **Si un stockage local est illisible :** FEST'APP se verrouille en lecture seule dès le chargement des fiches, des besoins bénévoles ou des réglages écocups. Ne pas vider le cache, réinitialiser le navigateur ni tenter une restauration dans ce profil : cela pourrait rendre la donnée d'origine irrécupérable. Conserver l'appareil et demander un diagnostic avant toute correction. Le bouton d'export JSON refuse de produire une sauvegarde potentiellement incomplète.
 
@@ -29,4 +29,4 @@
 - Vérifier les droits d'export des coordonnées et les durées de conservation RGPD.
 - Exiger validation explicite avant toute modification d'une base réelle, fusion, déploiement ou service payant.
 
-**Limitation actuelle :** le format de sauvegarde de démonstration ne transporte pas le stock initial ni le seuil d'alerte écocups. Une restauration du stock sans ces valeurs vérifiées est potentiellement trompeuse.
+**Compatibilité :** les anciens fichiers de sauvegarde de démonstration restent acceptés, mais ne contiennent pas le stock initial ni le seuil d'alerte écocups. Ces valeurs doivent alors être retrouvées et vérifiées manuellement. Une sauvegarde JSON locale ne constitue toujours pas une sauvegarde Supabase.
