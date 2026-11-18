@@ -10,7 +10,7 @@ export function applyDemoRestore(currentData, backupJson, { confirmed = false } 
   const result = validateDemoData(currentData);
   for (const [category, rows] of Object.entries(plan.additions)) {
     result[category] = [...(result[category] || []), ...rows.map(row => ({
-      id: row.id, values: [...row.values]
+      ...row, values: [...row.values]
     }))];
   }
   return result;

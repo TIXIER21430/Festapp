@@ -15,7 +15,7 @@ export function mergeDemoBackupWithoutOverwrite(currentData, backupJson) {
   }
   const result = {...current};
   for (const [category, additions] of Object.entries(plan.additions)) {
-    result[category] = [...(result[category] || []), ...additions.map(row => ({id:row.id, values:[...row.values]}))];
+    result[category] = [...(result[category] || []), ...additions.map(row => ({...row, values:[...row.values]}))];
   }
   return validateDemoData(result);
 }

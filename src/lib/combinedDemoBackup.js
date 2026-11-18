@@ -3,7 +3,10 @@ import {parseVolunteerNeeds} from "./volunteerNeeds.js";
 export function createCombinedDemoBackup(data,needs,timestamp){
  const doc=JSON.parse(createDemoBackup(data,timestamp));
  doc.volunteerNeeds=parseVolunteerNeeds(JSON.stringify(needs));
- return JSON.stringify(doc,null,2);
+ const json=JSON.stringify(doc,null,2);
+ // The needs extension must not make an exported backup too large to import.
+ if(new TextEncoder().encode(json).byteLength>10_000_000)throw new RangeError("Backup too large to restore");
+ return json;
 }
 export function inspectCombinedVolunteerNeeds(json){
  parseDemoBackup(json);

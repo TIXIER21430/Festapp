@@ -14,8 +14,10 @@
 3. Valider le JSON avec `parseDemoBackup` / `previewDemoBackup`. Un fichier invalide, trop volumineux ou d'une version inconnue doit être refusé.
 4. Vérifier les mouvements écocups avec `inspectEcocupBackup`, en renseignant **explicitement** le stock initial et le seuil correspondant à la sauvegarde. Ces réglages ne sont pas inclus dans le format actuel.
 5. Contrôler les doublons et les liens manifestations–tâches. Ne pas corriger automatiquement les correspondances ambiguës.
-6. Importer uniquement dans un jeu de test, puis comparer les nombres d'enregistrements et le stock final attendu.
+6. Importer uniquement dans un jeu de test, puis comparer les nombres d'enregistrements et le stock final attendu. Vérifier particulièrement qu'une tâche conserve sa manifestation (`eventId`), son étape (`phase` : Avant, Veille, Jour J) et sa case cochée (`done`) après restauration. Les anciennes fiches sans ces métadonnées restent compatibles.
 7. En cas d'écart, interrompre l'essai et revenir à la copie précédente. Ne jamais écraser des données réelles.
+
+**Limite du fichier :** l'ensemble du JSON, y compris les besoins bénévoles, doit tenir dans 10 Mo (octets UTF-8). Si l'export affiche un refus, les fiches locales restent présentes mais **aucune sauvegarde exploitable n'a été téléchargée**. Réduire la taille des données de test ou répartir les essais avant de retenter. Ne jamais considérer un export refusé comme une sauvegarde réussie.
 
 ## Avant une mise en service partagée (non réalisée)
 - Créer un projet Supabase de test indépendant, avec clés et utilisateurs de test distincts.

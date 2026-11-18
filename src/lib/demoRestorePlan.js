@@ -2,6 +2,10 @@
 // The caller must explicitly decide what to do with the returned plan.
 import { parseDemoBackup, validateDemoData } from "./demoBackup.js";
 
+// Keep the optional checklist metadata during preview and restoration.
+// Revalidating at the boundary also returns detached records and value arrays.
+const copyRecord = row => ({...row, values:[...row.values]});
+
 export function planDemoRestore(currentData, backupJson) {
   const current = validateDemoData(currentData);
   const incoming = parseDemoBackup(backupJson);
@@ -16,7 +20,7 @@ export function planDemoRestore(currentData, backupJson) {
       if (existingIds.has(row.id)) {
         conflicts.push({ category, id: row.id });
       } else {
-        additions[category].push({ id: row.id, values: [...row.values] });
+        additions[category].push(copyRecord(row));
       }
     }
     const finalCount = (current[category] || []).length + additions[category].length;
