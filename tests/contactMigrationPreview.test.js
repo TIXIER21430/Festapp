@@ -48,3 +48,24 @@ test("rejects duplicate source IDs before migration without mutating input",()=>
  );
  assert.equal(JSON.stringify(data),before);
 });
+test("migration preview uses both typed contact fields without deleting free text",()=>{
+ const data={contacts:[{id:"typed",values:["Élodie","bénévole",""],email:"elodie@example.fr",phone:"06 01 02 03 04"}]};
+ const snapshot=JSON.stringify(data);
+ const result=previewContactMigration(data);
+ assert.equal(result.ready,true);
+ assert.equal(result.accepted[0].email,"elodie@example.fr");
+ assert.equal(result.accepted[0].phone,"06 01 02 03 04");
+ assert.equal(JSON.stringify(data),snapshot);
+});
+test("contradicting legacy and typed emails require human review",()=>{
+ const data={contacts:[{id:"c",values:["Bob","exposant","old@example.fr"],email:"new@example.fr",phone:""}]};
+ const result=previewContactMigration(data);
+ assert.equal(result.ready,false);
+ assert.deepEqual(result.review[0].reasons,["E-mails contradictoires"]);
+});
+test("invalid typed contact data is quarantined before any shared migration",()=>{
+ const data={contacts:[{id:"bad",values:["Alice","bénévole",""],email:"not-an-email",phone:"abc"}]};
+ const result=previewContactMigration(data);
+ assert.equal(result.ready,false);
+ assert.deepEqual(result.review[0].reasons,["E-mail structuré invalide","Téléphone structuré invalide"]);
+});

@@ -1,4 +1,4 @@
-// Read-only migration assessment for the offline demo's three-column annuaire.
+// Read-only migration assessment for legacy and additive structured contacts.
 // No network, database access, or writes. Ambiguous rows are explicitly quarantined.
 import {validateDemoData} from "./demoBackup.js";
 
@@ -13,8 +13,8 @@ const phonePattern = /^\+?[0-9][0-9 .()\-]{5,23}$/u;
 
 /**
  * Produce a conservative preview only. Do not automatically migrate or merge
- * contact data: the demo has one free-text contact field, whereas the durable
- * schema separates email and phone. Any ambiguous contact requires review.
+ * contact data: the legacy demo has one free-text contact field, whereas the
+ * newer demo can carry typed email/phone. Any ambiguity requires review.
  */
 export function previewContactMigration(demoData) {
   const data = validateDemoData(demoData);
@@ -30,10 +30,18 @@ export function previewContactMigration(demoData) {
     seenIds.add(row.id);
     if (!name || name.length > 200) reasons.push("Nom manquant ou trop long");
     if (!kind) reasons.push("Catégorie inconnue");
-    let email = null, phone = null;
+    let email = row.email?.trim() || null, phone = row.phone?.trim() || null;
+    if (email && !emailPattern.test(email)) reasons.push("E-mail structuré invalide");
+    if (phone && !phonePattern.test(phone)) reasons.push("Téléphone structuré invalide");
     if (contact) {
-      if (emailPattern.test(contact)) email = contact;
-      else if (phonePattern.test(contact)) phone = contact;
+      if (emailPattern.test(contact)) {
+        if (email && email !== contact) reasons.push("E-mails contradictoires");
+        else email = contact;
+      }
+      else if (phonePattern.test(contact)) {
+        if (phone && phone !== contact) reasons.push("Téléphones contradictoires");
+        else phone = contact;
+      }
       else reasons.push("Coordonnées ambiguës");
     }
     if (reasons.length) review.push({sourceId:row.id,reasons,original:[...row.values]});
