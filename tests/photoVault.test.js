@@ -7,6 +7,7 @@ test("preserves original file details and chosen recipe link",()=>{
 });
 test("allows phone image formats and rejects executable SVG",()=>{
  assert.equal(validatePhotoInput(image({name:"cuisine.heic",type:"image/heic"}),"archives").type,"image/heic");
+ assert.equal(validatePhotoInput(image(),"events","event-1").scope,"events");
  assert.throws(()=>validatePhotoInput(image({type:"image/svg+xml"}),"posts"),/refusée/);
 });
 test("rejects zero-byte files, too-large images, and unknown scope",()=>{

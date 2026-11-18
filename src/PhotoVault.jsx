@@ -1,5 +1,6 @@
 import React,{useEffect,useState} from "react";
 import {deletePhotoOriginal,listPhotoOriginals,savePhotoOriginal} from "./lib/photoVault.js";
+import {makePhotoZip} from "./lib/photoZip.js";
 
 function OriginalCard({photo,title,onDelete,readOnly}){
  const [src,setSrc]=useState("");
@@ -38,9 +39,22 @@ export default function PhotoVault({scope,records=[],readOnly=false}){
   catch(err){setStatus("⚠ "+err.message);}
   finally{setBusy(false);}
  }
+ async function downloadAll(){
+  if(busy||!photos.length)return;
+  setBusy(true);setStatus('Préparation du ZIP de photos originales…');
+  try{
+   const zip=await makePhotoZip(photos,scope);
+   const url=URL.createObjectURL(zip);
+   const a=document.createElement('a');a.href=url;a.download=`festapp-photos-${scope}-${new Date().toISOString().slice(0,10)}.zip`;a.click();
+   setTimeout(()=>URL.revokeObjectURL(url),5000);
+   setStatus(`${photos.length} photo(s) préparée(s) en ZIP. Conservez ce fichier avec votre sauvegarde JSON.`);
+  }catch(error){setStatus('⚠ Export ZIP impossible : '+error.message);}
+  finally{setBusy(false);}
+ }
  return <section className="photo-vault" aria-label="Photos originales locales">
   <h3>📸 Photos originales</h3>
   <p>Ajoutez une photo de recette, de facture, de matériel, d’affiche ou de manifestation. Le fichier reste <strong>inchangé</strong> sur cet appareil et peut être téléchargé à tout moment.</p>
+  {!!photos.length&&<div className="photo-zip"><button type="button" disabled={busy} onClick={downloadAll}>💾 Télécharger les {photos.length} photos en ZIP</button><small>Originaux inchangés et liste des associations incluse.</small></div>}
   <div className="photo-add-row">
    <label>Associer à une fiche<select value={recordId} onChange={e=>setRecordId(e.target.value)}><option value="">Sans fiche / général</option>{records.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>
    <label className="photo-upload">📷 Ajouter des photos<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" multiple disabled={readOnly||busy} onChange={addPhotos}/></label>
