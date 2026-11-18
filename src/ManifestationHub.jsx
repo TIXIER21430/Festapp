@@ -1,6 +1,7 @@
 import React,{useEffect,useRef,useState} from 'react';
 import EventTodoList from './EventTodoList.jsx';
 import {collectEventTodos} from './lib/eventTodo.js';
+import {recordsForManifestation} from './lib/manifestationScope.js';
 
 const ICONS={'Concours de belote':'🃏','Carnaval':'🎭','Chasse aux œufs':'🐣','Fête des voisins':'🏡','Fanfare':'🎺','Vide-grenier':'🛍️','Saint-Laurent':'🎪','Halloween':'🎃','Marché de Noël':'🎄'};
 const baseName=name=>String(name||'').replace(/\s+20\d{2}$/,'');
@@ -30,7 +31,7 @@ const features=[
  ['archives','📸','Photos et archives','Souvenirs et documents']
 ];
 
-export default function ManifestationHub({events=[],tasks=[],selectedId='',onSelect,onBack,onOpenModule,onOpenTill,onToggleTodo,onAddTodo,onChecklist,readOnly=false}){
+export default function ManifestationHub({events=[],tasks=[],data={},selectedId='',onSelect,onBack,onOpenModule,onOpenTill,onOwnerSetup,onToggleTodo,onAddTodo,onChecklist,readOnly=false}){
  const [showTasks,setShowTasks]=useState(false);
  const [checklistMessage,setChecklistMessage]=useState('');
  const rootRef=useRef(null);
@@ -55,11 +56,15 @@ export default function ManifestationHub({events=[],tasks=[],selectedId='',onSel
      <span className="festapp-manif-icon" aria-hidden="true">{ICONS[base]||'🎉'}</span><strong>{event.values[0]}</strong><small>{event.values[1]||'Date à préciser'}</small><em>{remaining} tâche(s) à faire</em>
     </button>;
    })}</div>
+   <button className="festapp-owner-cta" type="button" onClick={onOwnerSetup}>✍️ Remplir et vérifier toutes mes fiches avant de partager <span aria-hidden="true">→</span></button>
   </>:<>
    <button type="button" className="festapp-hub-back" onClick={()=>{onBack();scrollHere();}}>← Toutes les manifestations</button>
    <div className="festapp-event-heading"><span aria-hidden="true">{ICONS[baseName(chosen.values[0])]||'🎉'}</span><div><small>Ma manifestation</small><h2>{chosen.values[0]}</h2><p>📅 {chosen.values[1]||'Date à confirmer'}{chosen.values[2]?' · 📍 '+chosen.values[2]:''}</p></div></div>
    <div className="festapp-event-progress"><div><strong>{done} / {total}</strong><span>tâches terminées</span></div><progress max={Math.max(1,total)} value={done} aria-label="Tâches terminées pour cette manifestation"/></div>
-   <div className="festapp-feature-grid">{features.map(([key,icon,title,subtitle])=><button type="button" className={'festapp-feature-tile'+(key==='tasks'&&showTasks?' selected':'')} key={key} onClick={()=>doFeature(key)} aria-expanded={key==='tasks'?showTasks:undefined}><span aria-hidden="true">{icon}</span><strong>{title}</strong><small>{subtitle}</small></button>)}</div>
+   <div className="festapp-feature-grid">{features.map(([key,icon,title,subtitle])=>{
+    const linked=key==='tasks'?total:key==='till'?null:recordsForManifestation(data[key]||[],key,chosen.id).length;
+    return <button type="button" className={'festapp-feature-tile'+(key==='tasks'&&showTasks?' selected':'')} key={key} onClick={()=>doFeature(key)} aria-expanded={key==='tasks'?showTasks:undefined}><span aria-hidden="true">{icon}</span><strong>{title}</strong><small>{subtitle}</small>{linked!==null&&<em className="festapp-feature-count">{linked} fiche(s) liée(s)</em>}</button>;
+   })}</div>
    {showTasks&&<div className="festapp-event-todo-panel"><EventTodoList key={chosen.id} tasks={tasks} eventId={chosen.id} eventName={chosen.values[0]} onToggle={onToggleTodo} onAdd={onAddTodo} readOnly={readOnly}/><button type="button" className="festapp-checklist-add" disabled={readOnly} onClick={()=>setChecklistMessage(onChecklist(chosen))}>📋 Ajouter les tâches du modèle Drive (sans doublons)</button>{checklistMessage&&<p role="status" className="festapp-todo-status">{checklistMessage}</p>}</div>}
   </>}
  </section>;

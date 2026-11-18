@@ -10,6 +10,7 @@ import FreeAiHelper from "./FreeAiHelper.jsx";
 import ManifestationHub from "./ManifestationHub.jsx";
 import BottomNavigation from "./BottomNavigation.jsx";
 import {createTodo} from "./lib/eventTodo.js";
+import {recordsForManifestation,withRecordEventId} from "./lib/manifestationScope.js";
 import {listAllPhotoOriginals,saveRestoredPhotoOriginals,rollbackRestoredPhotoOriginals} from "./lib/photoVault.js";
 import {makeCompleteBackupZip} from "./lib/photoZip.js";
 import {readCompleteBackupZip,planCompleteZipRestore} from "./lib/completeZipRestore.js";
@@ -81,6 +82,7 @@ function App(){
  const initialRender=useRef(true);
  const [tab,setTab]=useState("events");
  const [hubEventId,setHubEventId]=useState("");
+ const [moduleScopeEventId,setModuleScopeEventId]=useState("");
  const [orgTodosOpen,setOrgTodosOpen]=useState(false);
  const [form,setForm]=useState(["","",""]);
  const [contactEmail,setContactEmail]=useState("");
@@ -90,6 +92,8 @@ function App(){
  const [editingId,setEditingId]=useState(null);
  const modulePanelRef=useRef(null);
  const moduleWorkbenchRef=useRef(null);
+ const advancedRef=useRef(null);
+ const ownerSetupRef=useRef(null);
  const [recipeServings,setRecipeServings]=useState("10");
  const [recipeTarget,setRecipeTarget]=useState("50");
  const [recipeOutput,setRecipeOutput]=useState("");
@@ -164,7 +168,8 @@ function App(){
  const printSchedule=printEvent?volunteerSchedule(data.shifts||[],printEvent.id):null;
  const current=categories.find(c=>c.key===tab);
  const normalizeContact=value=>String(value??"").trim().normalize("NFC").toLocaleLowerCase("fr");
- const records=(data[tab]||[]).filter(r=>tab==="contacts"
+ const scopeEvent=eventOptions.find(r=>r.id===moduleScopeEventId);
+ const records=recordsForManifestation(data[tab]||[],tab,moduleScopeEventId).filter(r=>tab==="contacts"
   ?(contactType==="tous"||normalizeContact(r.values[1])===normalizeContact(contactType))&&[...r.values,r.email||"",r.phone||""].some(value=>normalizeContact(value).includes(normalizeContact(filter)))
   :r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
  function add(e){
@@ -177,7 +182,7 @@ function App(){
    try{details=validateContactDetails(contactEmail,contactPhone)}
    catch(err){setFormError(err.message);return;}
   }
-  const row={id:editingId||crypto.randomUUID(),values:form.map(x=>x.trim()),...(tab!=="events"&&recordEventId?{eventId:recordEventId}:{}),...details};
+  const row=withRecordEventId({id:editingId||crypto.randomUUID(),values:form.map(x=>x.trim()),...details},tab!=="events"?recordEventId:"");
   if(tab==="shifts"&&form[1].trim()){
    if(!parseShiftSlot(form[1])){setFormError("Créneau invalide : utilisez HH:MM-HH:MM, par exemple 10:00-12:30.");return;}
    const clashes=findVolunteerConflicts(data.shifts||[],row,{excludeId:editingId});
@@ -190,14 +195,15 @@ function App(){
    }catch(err){setFormError("Mouvement refusé : "+(err instanceof RangeError?"stock insuffisant ou quantité trop grande.":"type ou quantité invalide. Utilisez entrée/sortie et un entier positif."));return;}
   }
   setFormError("");
-  setData(d=>({...d,[tab]:editingId?(d[tab]||[]).map(existing=>existing.id===editingId?{...existing,values:row.values,...(tab!=="events"?{eventId:recordEventId}:{}),...(tab==="contacts"?details:{})}:existing):[...(d[tab]||[]),row]}));
-  setEditingId(null);setForm(["","",""]);setRecordEventId("");setContactEmail("");setContactPhone("");
+  setData(d=>({...d,[tab]:editingId?(d[tab]||[]).map(existing=>existing.id===editingId?withRecordEventId({...existing,values:row.values,...(tab==="contacts"?details:{})},tab!=="events"?recordEventId:""):existing):[...(d[tab]||[]),row]}));
+  setEditingId(null);setForm(["","",""]);setRecordEventId(moduleScopeEventId);setContactEmail("");setContactPhone("");
  }
  function beginEdit(record){if(demoReadOnly)return;setEditingId(record.id);setForm([...record.values]);setContactEmail(record.email||"");setContactPhone(record.phone||"");setRecordEventId(record.eventId||"");setFormError("");window.requestAnimationFrame(()=>modulePanelRef.current?.scrollIntoView({behavior:"smooth",block:"start"}));}
- function cancelEdit(){setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setRecordEventId("");setFormError("");}
+ function cancelEdit(){setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setRecordEventId(moduleScopeEventId);setFormError("");}
  function openModule(key,eventId=""){
   setOrgTodosOpen(false);
   if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=true;
+  setModuleScopeEventId(eventId);
   setTab(key);setRecipeOutput("");setContactType("tous");setEditingId(null);
   setRecordEventId(eventId);setForm(["","",""]);setContactEmail("");setContactPhone("");
   setFilter("");setFormError("");
@@ -245,8 +251,9 @@ function App(){
   });
   return `✅ ${drafts.length} tâche(s) ajoutée(s), toutes non cochées.`;
  }
- function goToHome(){setHubEventId('');setOrgTodosOpen(false);if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>document.querySelector('[aria-label="Accueil des manifestations"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
- function openTillForEvent(event){setTillEvent(event?.values?.[0]||'Marché de Noël');setTillCart({});setOrgTodosOpen(false);window.requestAnimationFrame(()=>document.querySelector('[aria-label="Caisse tactile"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
+ function goToHome(){setHubEventId('');setOrgTodosOpen(false);setModuleScopeEventId('');if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>document.querySelector('[aria-label="Accueil des manifestations"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
+ function openOwnerSetup(){if(advancedRef.current)advancedRef.current.open=true;window.requestAnimationFrame(()=>ownerSetupRef.current?.scrollIntoView({behavior:'smooth',block:'start'}));}
+ function openTillForEvent(event){setTillEvent((event?.values?.[0]||'Marché de Noël').replace(/\s+20\d{2}$/,''));setTillCart({});setOrgTodosOpen(false);window.requestAnimationFrame(()=>document.querySelector('[aria-label="Caisse tactile"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
  function downloadVolunteerNeeds(){const blob=new Blob([exportVolunteerNeeds(volunteerNeeds)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="festapp-besoins-benevoles.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
  async function uploadVolunteerNeeds(e){const file=e.target.files?.[0];e.target.value="";if(!file)return;try{if(demoReadOnly)throw new Error("Mode lecture seule.");if(file.size>1_000_000)throw new Error("Fichier trop volumineux.");const parsed=importVolunteerNeeds(await file.text());if(!window.confirm("Remplacer les besoins bénévoles enregistrés sur cet appareil ? Les affectations existantes ne seront pas modifiées."))return;localStorage.setItem(VOLUNTEER_NEEDS_KEY,JSON.stringify(parsed));setVolunteerNeeds(parsed);setNeedsWarning("Besoins importés sur cet appareil.");}catch(err){setNeedsWarning("⚠ Import refusé : "+err.message);}}
  function exportMenus(){const blob=new Blob([exportTillConfig(tillConfig)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="festapp-menus-caisse.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
@@ -355,12 +362,12 @@ function App(){
  function exportCsv(filteredContacts=false){
   const rows=tab==="contacts"
    ?selectContactsWithDetailsForExport(data.contacts||[],filteredContacts?contactType:"tous",filteredContacts?filter:"")
-   :(data[tab]||[]).map(r=>r.values);
+   :recordsForManifestation(data[tab]||[],tab,moduleScopeEventId).map(r=>r.values);
   const csv=tab==="contacts"?buildCsv(CONTACT_EXPORT_COLUMNS,rows):buildCsv(current.fields,rows);
   const a=document.createElement("a");
   const url=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
   a.href=url;
-  a.download="festapp-"+tab+(filteredContacts&&tab==="contacts"?"-"+(contactType==="tous"?"selection":contactType):"")+".csv";
+  a.download="festapp-"+tab+(moduleScopeEventId?"-manifestation":"")+(filteredContacts&&tab==="contacts"?"-"+(contactType==="tous"?"selection":contactType):"")+".csv";
   a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);
  }
  return <main>
@@ -369,8 +376,8 @@ function App(){
  {initialNeedsStorage.warning&&<p role="alert" className="note">⚠ {initialNeedsStorage.warning}</p>}
  {initialEcocupStorage.warning&&<p role="alert" className="note">⚠ {initialEcocupStorage.warning}</p>}
  <section className="hero"><h1>Organisons nos fêtes !</h1><p>Manifestations, bénévoles, stocks, bilans et documents du Drive au même endroit.</p><strong>⚠ Données enregistrées uniquement sur cet appareil, non partagées avec le bureau.</strong></section>
- <ManifestationHub events={eventOptions} tasks={data.tasks||[]} selectedId={hubEventId} onSelect={setHubEventId} onBack={()=>setHubEventId('')} onOpenModule={openModule} onOpenTill={openTillForEvent} onToggleTodo={toggleTaskDone} onAddTodo={addQuickTodo} onChecklist={addChecklistToEvent} readOnly={demoReadOnly}/>
- <details className="festapp-advanced"><summary>🔧 Préparation privée, archives du Drive et sauvegardes</summary>
+ <ManifestationHub events={eventOptions} tasks={data.tasks||[]} data={data} selectedId={hubEventId} onSelect={setHubEventId} onBack={()=>setHubEventId('')} onOpenModule={openModule} onOpenTill={openTillForEvent} onOwnerSetup={openOwnerSetup} onToggleTodo={toggleTaskDone} onAddTodo={addQuickTodo} onChecklist={addChecklistToEvent} readOnly={demoReadOnly}/>
+ <details className="festapp-advanced" ref={advancedRef}><summary>🔧 Préparation privée, archives du Drive et sauvegardes</summary>
  <section className="quick-access" aria-label="Accès rapide aux modules">
   <div className="quick-access-title"><h2>⚡ Accès rapide</h2><span>Choisissez votre activité</span></div>
   <div className="quick-access-grid">
@@ -392,7 +399,7 @@ function App(){
   </div>
   <p className="quick-access-note">Chiffres de démonstration de cet appareil uniquement · aucun stock partagé.</p>
  </section>
- <OwnerSetup data={data} onOpen={openModule} onBackup={exportBackup} onFullBackup={exportFullBackup} onInspectZip={inspectFullZip} onRestoreZip={confirmFullZip} zipPreview={fullZipPreview} zipCanRestore={!!fullZipCandidate} zipBusy={fullZipBusy} reviewRestoreRevision={reviewRestoreRevision} ecocupSettings={{opening:ecocupOpening,threshold:ecocupThreshold}} readOnly={demoReadOnly}/>
+ <div ref={ownerSetupRef}><OwnerSetup data={data} onOpen={openModule} onBackup={exportBackup} onFullBackup={exportFullBackup} onInspectZip={inspectFullZip} onRestoreZip={confirmFullZip} zipPreview={fullZipPreview} zipCanRestore={!!fullZipCandidate} zipBusy={fullZipBusy} reviewRestoreRevision={reviewRestoreRevision} ecocupSettings={{opening:ecocupOpening,threshold:ecocupThreshold}} readOnly={demoReadOnly}/></div>
  <FreeAiHelper events={eventOptions} recipes={data.recipes||[]}/>
  <DriveBoard catalog={driveCatalog} loading={driveLoading} error={driveError} importStatus={driveImportStatus} onImport={importDriveAgain} readOnly={demoReadOnly}/>
  <section className="event-cockpit" aria-label="Tableau de bord de la manifestation">
@@ -411,6 +418,7 @@ function App(){
  <details className="festapp-workbench" ref={moduleWorkbenchRef}><summary>✏️ Saisie détaillée des fiches</summary>
  <nav aria-label="Modules">{categories.map(c=><button key={c.key} className={tab===c.key?"active":""} onClick={()=>openModule(c.key)}>{c.icon} {c.title}</button>)}</nav>
  <section className="panel module-panel" ref={modulePanelRef} tabIndex={-1} aria-label={current.title}><div className="heading"><h2>{current.icon} {current.title}</h2><button className="secondary" onClick={()=>exportCsv(false)}>Exporter CSV</button></div>
+ {scopeEvent&&<div className="festapp-module-scope" role="status"><div><strong>🎉 {scopeEvent.values[0]}</strong><small>Uniquement les fiches liées à cette édition. Les archives anciennes sans lien restent dans la vue générale.</small></div><button type="button" onClick={()=>openModule(tab)}>🌍 Voir toutes les fiches</button></div>}
  {tab==="ecocups"&&<div className="note"><p><strong>Calcul local de démonstration uniquement — aucun stock partagé.</strong> Saisir les mouvements exactement sous la forme « entrée » ou « sortie », et une quantité entière positive.</p><div className="fields"><label>Stock initial de démonstration<input inputMode="numeric" disabled={demoReadOnly} value={ecocupOpening} onChange={e=>setEcocupOpening(e.target.value)}/></label><label>Seuil d'alerte<input inputMode="numeric" disabled={demoReadOnly} value={ecocupThreshold} onChange={e=>setEcocupThreshold(e.target.value)}/></label></div>{ecocupError?<p role="alert">⚠ Calcul impossible : {ecocupError}. Vérifiez les mouvements, sans les effacer.</p>:<div className={"ecocup-balance-card "+(ecocupSummary.alert?"ecocup-balance-alert":"ecocup-balance-ok")} role="status"><span className="ecocup-balance-icon" aria-hidden="true">{ecocupSummary.alert?"⚠️":"✅"}</span><div><strong className="ecocup-balance-count">{ecocupSummary.balance} écocups</strong><p>{ecocupSummary.alert?"Seuil atteint : prévoir au moins "+(ecocupSummary.minimumToClearAlert??"une quantité à vérifier")+" écocups supplémentaires.":"Stock de démonstration au-dessus du seuil."}</p><small>Calcul local uniquement · aucune réservation de stock réel</small></div></div>}</div>}
  {tab==="recipes"&&<div className="note"><h3>🧮 Calculateur de quantités</h3><p>Choisissez une recette enregistrée. Les ingrédients doivent être saisis un par ligne (ex. : 250 g farine). Le calcul ne modifie jamais la recette originale.</p><label>Recette à calculer<select value={selectedRecipeId} onChange={e=>{setSelectedRecipeId(e.target.value);setRecipeOutput("");}}><option value="">Choisir une recette</option>{(data.recipes||[]).map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label><div className="fields"><label>Recette prévue pour<input inputMode="numeric" value={recipeServings} onChange={e=>setRecipeServings(e.target.value)}/></label><label>Nombre de personnes souhaité<input inputMode="numeric" value={recipeTarget} onChange={e=>setRecipeTarget(e.target.value)}/></label></div><button type="button" disabled={!selectedRecipeId} onClick={()=>{try{const recipe=(data.recipes||[]).find(r=>r.id===selectedRecipeId);if(!recipe)throw new Error("Recette introuvable.");setRecipeOutput(scaleRecipeText(recipe.values[1],Number(recipeServings),Number(recipeTarget)))}catch(e){setRecipeOutput("⚠ "+e.message)}}}>Calculer les ingrédients</button>{recipeOutput&&<pre role="status" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{recipeOutput}</pre>}</div>}
  {tab==="recipes"&&<div className="recipe-starters"><h3>📒 Recettes du comité à compléter</h3><p>Andouillettes et pâte à crêpes : les recettes originales n’ont pas encore été transmises. Créez deux brouillons sans ingrédients inventés, puis complétez les fiches.</p><button type="button" disabled={demoReadOnly} onClick={addRecipeDrafts}>➕ Préparer les 2 fiches brouillon</button>{recipeDraftStatus&&<p role="status">{recipeDraftStatus}</p>}</div>}
@@ -418,9 +426,9 @@ function App(){
  {tab==="equipment"&&<p className="note">🧰 Inventaire et prêts de matériel : renseignez les quantités et les emplacements, ou la personne à qui le matériel est prêté. Pas de déduction automatique du stock ni de réservation partagée.</p>}
  {tab==="archives"&&<p className="note">🗂️ Les documents d’origine restent dans le Drive. <a href="#drive-library" className="archive-drive-link">🔎 Rechercher parmi les {driveCatalog?.files?.length||0} documents du comité</a>. Vous pouvez aussi ajouter vos souvenirs et photos locales ci-dessous.</p>}
  {tab==="finance"&&<p className="note">🧾 Vous pouvez photographier les justificatifs en bas de cette rubrique, en gardant leur original sur cet appareil. La photo n’inscrit aucun montant automatiquement : saisissez puis contrôlez l’écriture ci-dessous.</p>}
- {BULK_ENTRY_CATEGORIES.has(tab)&&<BulkEntry key={tab+":"+recordEventId} category={tab} fields={current.fields} records={data[tab]||[]} eventId={recordEventId} readOnly={demoReadOnly} onAppend={values=>{const result=appendBulkEntry(data,{category:tab,values,eventId:recordEventId,newId:()=>crypto.randomUUID()});if(result.added)setData(result.data);return result.added;}}/>}
+ {BULK_ENTRY_CATEGORIES.has(tab)&&<BulkEntry key={tab+":"+recordEventId} category={tab} fields={current.fields} records={recordsForManifestation(data[tab]||[],tab,moduleScopeEventId)} eventId={recordEventId} readOnly={demoReadOnly} onAppend={values=>{const result=appendBulkEntry(data,{category:tab,values,eventId:recordEventId,newId:()=>crypto.randomUUID()});if(result.added)setData(result.data);return result.added;}}/>}
  <form onSubmit={add}>
-  {tab!=="events"&&tab!=="contacts"&&tab!=="ecocups"&&<label>Manifestation associée<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Non attribuée</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>}
+  {tab!=="events"&&tab!=="contacts"&&tab!=="ecocups"&&(scopeEvent?<p className="festapp-module-attached">🔗 Cette fiche sera rangée dans <strong>{scopeEvent.values[0]}</strong></p>:<label>Manifestation associée<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Non attribuée</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>)}
   {formError&&<p role="alert">{formError}</p>}
   <div className="fields">
    {tab==="shifts"&&<label>Choisir dans l’annuaire<select value={volunteers.some(v=>v.name===form[0])?form[0]:""} onChange={e=>setForm(f=>f.map((v,i)=>i===0?e.target.value:v))}><option value="">Saisie manuelle / autre bénévole</option>{volunteers.map(v=><option key={v.id} value={v.name}>{v.name}</option>)}</select></label>}
@@ -442,12 +450,13 @@ function App(){
   <button type="submit" disabled={demoReadOnly}>{editingId?"Enregistrer les modifications":"+ Ajouter"}</button>
   {editingId&&<button type="button" className="secondary" onClick={cancelEdit}>Annuler la modification</button>}
  </form>
- {["recipes","posts","archives","finance","equipment","events"].includes(tab)&&<PhotoVault scope={tab} records={data[tab]||[]} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision}/>}
+ {["recipes","posts","archives","finance","equipment","events"].includes(tab)&&<PhotoVault scope={tab} records={recordsForManifestation(data[tab]||[],tab,moduleScopeEventId)} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision}/>}
  {tab==="shifts"&&<section className="volunteer-agenda" aria-label="Planning des bénévoles par manifestation"><h3>🕒 Qui fait quoi ?</h3><div className="needs-backup-actions"><button type="button" onClick={downloadVolunteerNeeds}>💾 Sauvegarder les besoins</button><label className="needs-import">📂 Restaurer les besoins<input type="file" accept=".json,application/json" disabled={demoReadOnly} onChange={uploadVolunteerNeeds}/></label></div><button type="button" className="secondary" disabled={!printEvent||!printSchedule?.total} onClick={()=>window.print()}>🖨️ Imprimer le planning</button><label>Manifestation à afficher<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Choisir une manifestation</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>{recordEventId?(()=>{const schedule=volunteerSchedule(data.shifts||[],recordEventId);const summary=volunteerPostSummary(data.shifts||[],recordEventId,volunteerPosts);return <><p role="status">{schedule.total} affectation(s) pour cette manifestation</p><div className="volunteer-role-grid" aria-label="Répartition des bénévoles par poste">{summary.posts.map(item=>{const target=volunteerNeeds[recordEventId]?.[item.post];const status=staffingStatus(item.count,target);return <div className="volunteer-role-card" key={item.post}><span>{item.post}</span><strong>{item.count}{target!==undefined?` / ${target}`:""}</strong><small>{status.label}</small><label>Besoin<input aria-label={"Besoin pour "+item.post} type="number" min="0" max="1000" step="1" disabled={demoReadOnly} value={target??""} placeholder="À définir" onChange={e=>{const value=e.target.value;if(value!==""&&(!/^\d+$/.test(value)||Number(value)>1000))return;setVolunteerNeeds(old=>{const next={...old,[recordEventId]:{...(old[recordEventId]||{})}};if(value==="")delete next[recordEventId][item.post];else next[recordEventId][item.post]=Number(value);return next;});}}/></label></div>})}</div>{needsWarning&&<p role="alert">{needsWarning}</p>}{(summary.other>0||summary.unassigned>0)&&<p className="note">{summary.other>0?`${summary.other} affectation(s) sur d’autres postes. `:""}{summary.unassigned>0?`${summary.unassigned} poste(s) à préciser.`:""}</p>}<div className="agenda-list">{schedule.scheduled.map(r=><article key={r.id} className="agenda-item"><strong className="agenda-time">{r.time}</strong><div><strong>{r.name}</strong><p>{r.post||"Poste non précisé"}</p></div></article>)}</div>{schedule.unscheduled.length>0&&<div className="note"><strong>Créneaux à préciser ({schedule.unscheduled.length})</strong>{schedule.unscheduled.map(r=><p key={r.id}>{r.name} — {r.post||"Poste non précisé"} ({r.time||"horaire manquant"})</p>)}</div>}{schedule.total===0&&<p>Aucun bénévole affecté pour le moment.</p>}</>})():<p>Sélectionnez une manifestation pour consulter ses créneaux.</p>}</section>}
  {tab==="shifts"&&<p className="note">Choisissez un bénévole dans l’annuaire ou saisissez son nom manuellement. Seuls les contacts classés « bénévole » sont proposés. Planning local : indiquez les créneaux au format 10:00-12:30. Si un bénévole a deux créneaux qui se chevauchent sur la même manifestation, l’enregistrement est refusé. Les horaires sans date ne permettent pas de vérifier les conflits entre journées différentes.</p>}
- {tab==="tasks"&&<p role="status" className="note">✅ {(data.tasks||[]).filter(r=>r.done===true).length} tâche(s) terminée(s) sur {(data.tasks||[]).length}. Cochez une tâche pour la marquer comme faite ; responsable et échéance sont conservés.</p>}
+ {tab==="tasks"&&<p role="status" className="note">✅ {recordsForManifestation(data.tasks||[],tab,moduleScopeEventId).filter(r=>r.done===true).length} tâche(s) terminée(s) sur {recordsForManifestation(data.tasks||[],tab,moduleScopeEventId).length}. Cochez une tâche pour la marquer comme faite ; responsable et échéance sont conservés.</p>}
  {tab==="contacts"&&<div className="note"><p>Retrouvez rapidement les bénévoles, exposants et groupes. L’export CSV concerne uniquement cet appareil.</p><div className="fields"><label>Afficher les contacts<select value={contactType} onChange={e=>setContactType(e.target.value)}><option value="tous">Tous les contacts</option><option value="bénévole">Bénévoles</option><option value="exposant">Exposants</option><option value="groupe">Groupes</option></select></label></div><p>{records.length} fiche(s) affichée(s).</p><button type="button" className="contact-export-button" onClick={()=>exportCsv(true)} disabled={!records.length}>📥 Exporter uniquement ces contacts en CSV</button><p className="contact-export-note">CSV avec e-mail et téléphone séparés, sans supprimer l’ancien contact libre. Export local uniquement : vérifiez les destinataires avant tout partage.</p></div>}
  <label className="search">Rechercher<input value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Filtrer les fiches…"/></label>
+ {scopeEvent&&!records.length&&!filter.trim()&&<p className="festapp-scope-empty">💡 Pas encore de fiche dans cette rubrique pour {scopeEvent.values[0]}. Le formulaire juste au-dessus permet d’en créer une, sans mélanger les autres fêtes.</p>}
  <div className="records">{records.length?records.map(r=><article key={r.id}>{tab==="tasks"&&<label><input type="checkbox" checked={r.done===true} disabled={demoReadOnly} onChange={()=>toggleTaskDone(r.id)}/> {r.done?"Terminée":"À faire"}</label>}<div><strong>{r.values[0]}</strong><p>{(tab==="archives"&&/^https:\/\/(?:drive|docs)\.google\.com\//.test(r.values[2])?[r.values[1]]:r.values.slice(1)).filter(Boolean).join(" · ")||"Aucune précision"}</p>{tab==="archives"&&/^https:\/\/(?:drive|docs)\.google\.com\//.test(r.values[2])&&<a href={r.values[2]} target="_blank" rel="noopener noreferrer" className="archive-drive-link">📄 Ouvrir l’original dans Drive ↗</a>}{tab==="contacts"&&(r.email||r.phone)&&<p>{[r.email&&"✉️ "+r.email,r.phone&&"📞 "+r.phone].filter(Boolean).join(" · ")}</p>}</div><button className="secondary" disabled={demoReadOnly} onClick={()=>beginEdit(r)}>Modifier</button><button className="delete" disabled={demoReadOnly} onClick={()=>remove(r.id)} aria-label={"Supprimer "+r.values[0]}>Supprimer</button></article>):<p>Aucune fiche pour le moment.</p>}</div>
  </section>
  </details>
