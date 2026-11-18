@@ -10,8 +10,10 @@ export function getFestappConnection(env=import.meta.env){
   if(typeof key!=="string"||!key.startsWith("sb_publishable_"))return null;
   return {url:FESTAPP_TEST_URL,spaceId:FESTAPP_TEST_SPACE_ID,key,testMode:true};
  }
- const key=env?.VITE_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_m3ZizYfx5yErYtF57r8KUQ_7GrcUg9-";
- if(typeof key!=="string"||!key.trim())return null;
+ // The real space is opt-in only. A generic build must never connect to it by accident.
+ if(env?.VITE_FESTAPP_PRODUCTION_MODE!=="true")return null;
+ const key=env?.VITE_SUPABASE_PUBLISHABLE_KEY;
+ if(typeof key!=="string"||!key.startsWith("sb_publishable_"))return null;
  return {url:FESTAPP_SUPABASE_URL,spaceId:FESTAPP_SPACE_ID,key,testMode:false};
 }
 // Publishable keys are safe for a browser. Never use service-role or secret keys here.

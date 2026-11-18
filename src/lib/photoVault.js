@@ -2,7 +2,7 @@
 export const MAX_PHOTO_BYTES=12_000_000;
 const DB_NAME="festapp-original-photos-v1";
 const STORE="originals";
-const SCOPES=new Set(["recipes","posts","archives"]);
+const SCOPES=new Set(["recipes","posts","archives","finance","equipment"]);
 const IMAGE_TYPES=new Set(["image/jpeg","image/png","image/webp","image/gif","image/heic","image/heif"]);
 
 export function validatePhotoInput(file,scope,recordId=""){

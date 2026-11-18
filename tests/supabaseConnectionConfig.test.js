@@ -2,8 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {getFestappConnection,FESTAPP_TEST_URL,FESTAPP_TEST_SPACE_ID} from "../src/lib/supabaseClient.js";
 import {FESTAPP_SUPABASE_URL,FESTAPP_SPACE_ID} from "../src/lib/supabaseSharedRead.js";
-test("live configuration remains unchanged without TEST flag",()=>{
- const config=getFestappConnection({VITE_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_live"});
+test("real space requires deliberate production opt-in",()=>{
+ assert.equal(getFestappConnection({VITE_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_live"}),null);
+ assert.equal(getFestappConnection({VITE_FESTAPP_PRODUCTION_MODE:"true"}),null);
+ const config=getFestappConnection({VITE_FESTAPP_PRODUCTION_MODE:"true",VITE_SUPABASE_PUBLISHABLE_KEY:"sb_publishable_live"});
  assert.equal(config.url,FESTAPP_SUPABASE_URL);
  assert.equal(config.spaceId,FESTAPP_SPACE_ID);
  assert.equal(config.testMode,false);

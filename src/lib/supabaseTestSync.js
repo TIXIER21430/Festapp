@@ -1,5 +1,13 @@
 // TEST-only optimistic persistence. Never call from the live application.
 // RLS and the database revision trigger are the final authorization guards.
+function sortedJSON(value){
+ if(Array.isArray(value))return value.map(sortedJSON);
+ if(value&&typeof value==="object")return Object.fromEntries(Object.keys(value).sort().map(key=>[key,sortedJSON(value[key])]));
+ return value;
+}
+export function sameTestSnapshotData(left,right){
+ return JSON.stringify(sortedJSON(left))===JSON.stringify(sortedJSON(right));
+}
 export async function saveTestSnapshot(client,{spaceId,expectedRevision,payload,testMode}={}){
  if(testMode!==true)throw new Error("Écriture interdite hors de l’environnement TEST.");
  if(!client?.auth?.getUser||!client?.from)throw new TypeError("Client Supabase absent.");

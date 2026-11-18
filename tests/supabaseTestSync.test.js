@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {saveTestSnapshot} from "../src/lib/supabaseTestSync.js";
+import {saveTestSnapshot,sameTestSnapshotData} from "../src/lib/supabaseTestSync.js";
 const spaceId="d4dbe793-56bb-4dad-a76c-5ac322b1e5b1";
 function mock({user=true,conflict=false,error=null}={}){
  const calls=[];const q={update(v){calls.push(["update",v]);return this},eq(k,v){calls.push(["eq",k,v]);return this},select(v){calls.push(["select",v]);return this},async maybeSingle(){return {data:conflict?null:{revision:2,updated_at:"2026-11-18T12:00:00Z"},error}}};
@@ -26,4 +26,11 @@ test("rejects invalid payloads and revisions",async()=>{
  const c=mock();await assert.rejects(saveTestSnapshot(c,{spaceId,expectedRevision:0,payload:{},testMode:true}),/Révision/);
  await assert.rejects(saveTestSnapshot(c,{spaceId,expectedRevision:1,payload:[],testMode:true}),/Données/);
  assert.deepEqual(c.calls,[]);
+});
+test("readback comparison tolerates reordered JSONB object keys without hiding changes",()=>{
+ const original={events:[{id:"abc",values:["Nom","Date","Lieu"],done:false}],tasks:[]};
+ const reordered={tasks:[],events:[{values:["Nom","Date","Lieu"],done:false,id:"abc"}]};
+ assert.equal(sameTestSnapshotData(original,reordered),true);
+ reordered.events[0].values[1]="Autre date";
+ assert.equal(sameTestSnapshotData(original,reordered),false);
 });
