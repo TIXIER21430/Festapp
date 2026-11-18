@@ -27,7 +27,10 @@ export function validateDemoData(data) {
 export function createDemoBackup(data, timestamp = new Date().toISOString()) {
   const validated = validateDemoData(data);
   if (typeof timestamp !== "string" || !Number.isFinite(Date.parse(timestamp))) throw new TypeError("Invalid timestamp");
-  return JSON.stringify({format:DEMO_BACKUP_FORMAT,version:DEMO_BACKUP_VERSION,exportedAt:timestamp,data:validated},null,2);
+  const json = JSON.stringify({format:DEMO_BACKUP_FORMAT,version:DEMO_BACKUP_VERSION,exportedAt:timestamp,data:validated},null,2);
+  // Match the importer limit: never offer a backup that this app cannot restore.
+  if (json.length > 10_000_000) throw new RangeError("Backup too large to restore");
+  return json;
 }
 export function parseDemoBackup(json) {
   if (typeof json !== "string" || json.length > 10_000_000) throw new TypeError("Backup too large or invalid");
