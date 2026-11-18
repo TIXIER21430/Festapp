@@ -6,6 +6,7 @@ import PhotoVault from "./PhotoVault.jsx";
 import DriveBoard from "./DriveBoard.jsx";
 import OwnerSetup from "./OwnerSetup.jsx";
 import BulkEntry from "./BulkEntry.jsx";
+import FreeAiHelper from "./FreeAiHelper.jsx";
 import {listAllPhotoOriginals} from "./lib/photoVault.js";
 import {makeCompleteBackupZip} from "./lib/photoZip.js";
 import {OWNER_REVIEW_KEY,parseOwnerReviews} from "./lib/ownerSetup.js";
@@ -309,6 +310,7 @@ function App(){
   <p className="quick-access-note">Chiffres de démonstration de cet appareil uniquement · aucun stock partagé.</p>
  </section>
  <OwnerSetup data={data} onOpen={openModule} onBackup={exportBackup} onFullBackup={exportFullBackup} ecocupSettings={{opening:ecocupOpening,threshold:ecocupThreshold}} readOnly={demoReadOnly}/>
+ <FreeAiHelper events={eventOptions} recipes={data.recipes||[]}/>
  <DriveBoard catalog={driveCatalog} loading={driveLoading} error={driveError} importStatus={driveImportStatus} onImport={importDriveAgain} readOnly={demoReadOnly}/>
  <section className="event-cockpit" aria-label="Tableau de bord de la manifestation">
   <div className="event-cockpit-heading"><div><h2>🎯 Ma manifestation</h2><p>En un coup d’œil, les priorités pour préparer la fête.</p></div><label>Événement<select value={overviewEvent} onChange={e=>{setOverviewEvent(e.target.value);setChecklistStatus("");}}>{[...new Set([...eventNames,...eventOptions.map(r=>r.values[0])])].map(name=><option key={name} value={name}>{name}</option>)}</select></label></div>
