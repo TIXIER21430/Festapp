@@ -72,3 +72,16 @@
 .ecocup-balance-icon{font-size:32px;flex:none}.ecocup-balance-count{display:block;font-size:clamp(24px,5vw,34px);line-height:1.2}
 .ecocup-balance-card p{font-weight:750;margin:8px 0}.ecocup-balance-card small{display:block;font-size:12px}
 @media(max-width:420px){.ecocup-balance-card{padding:14px;align-items:flex-start;gap:10px}.ecocup-balance-icon{font-size:26px}}
+
+/* One-tap dashboard: show the six essential modules before long event sections. */
+.quick-access{margin:18px 0 22px}
+.quick-access-title{display:flex;justify-content:space-between;align-items:baseline;flex-wrap:wrap;gap:8px;margin-bottom:12px}
+.quick-access-title h2{font-size:21px;margin:0}.quick-access-title span,.quick-access-note{color:#bdcce3;font-size:13px}
+.quick-access-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.quick-access-tile{min-width:0;min-height:122px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;border-radius:18px;background:#ffdf9c;color:#20283a;text-align:center;padding:14px;touch-action:manipulation;overflow-wrap:anywhere}
+.quick-access-tile:nth-child(3n+2){background:#b8e7ff}.quick-access-tile:nth-child(3n){background:#f8bfe3}
+.quick-access-tile strong{font-size:18px}.quick-access-tile small{font-size:13px;font-weight:650}
+.quick-icon{font-size:32px;line-height:1.1}.quick-access-note{margin:9px 0 0}
+.quick-access-tile:focus-visible{outline:3px solid white;outline-offset:3px}.quick-access-tile:active{transform:scale(.98)}
+.module-panel{scroll-margin-top:12px}.module-panel:focus{outline:2px solid #b8e7ff;outline-offset:3px}
+@media(max-width:650px){.quick-access-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.quick-access-tile{min-height:108px;padding:12px 8px}.quick-access-tile strong{font-size:16px}.quick-access-title h2{font-size:19px}}
