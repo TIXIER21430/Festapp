@@ -65,3 +65,10 @@
 
 /* One-tap filtered directory export on mobile */
 .contact-export-button{min-height:56px;border-radius:16px;background:#ffdf9c;color:#20283a;padding:14px 18px;font-weight:800;font-size:15px;max-width:100%}.contact-export-button:disabled{opacity:.5;cursor:not-allowed}.contact-export-button:focus-visible{outline:3px solid #fff;outline-offset:3px}.contact-export-note{font-size:12px;color:#d5e1f4}
+
+/* FEST'APP ecocup balance: large accessible warning, demo only. */
+.ecocup-balance-card{display:flex;align-items:center;gap:15px;padding:18px;margin:12px 0;border-radius:18px;color:#182a38;border:2px solid transparent}
+.ecocup-balance-ok{background:#c7f4db;border-color:#26935b}.ecocup-balance-alert{background:#ffe1a8;border-color:#c07915}
+.ecocup-balance-icon{font-size:32px;flex:none}.ecocup-balance-count{display:block;font-size:clamp(24px,5vw,34px);line-height:1.2}
+.ecocup-balance-card p{font-weight:750;margin:8px 0}.ecocup-balance-card small{display:block;font-size:12px}
+@media(max-width:420px){.ecocup-balance-card{padding:14px;align-items:flex-start;gap:10px}.ecocup-balance-icon{font-size:26px}}
