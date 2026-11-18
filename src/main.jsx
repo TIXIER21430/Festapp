@@ -7,8 +7,10 @@ import DriveBoard from "./DriveBoard.jsx";
 import OwnerSetup from "./OwnerSetup.jsx";
 import BulkEntry from "./BulkEntry.jsx";
 import FreeAiHelper from "./FreeAiHelper.jsx";
-import {listAllPhotoOriginals} from "./lib/photoVault.js";
+import {listAllPhotoOriginals,saveRestoredPhotoOriginals,rollbackRestoredPhotoOriginals} from "./lib/photoVault.js";
 import {makeCompleteBackupZip} from "./lib/photoZip.js";
+import {readCompleteBackupZip,planCompleteZipRestore} from "./lib/completeZipRestore.js";
+import {persistCompleteZipRestore} from "./lib/completeZipCommit.js";
 import {OWNER_REVIEW_KEY,parseOwnerReviews} from "./lib/ownerSetup.js";
 import {createEventPostDraft} from "./lib/postDrafts.js";
 import {buildCsv} from "./lib/csv.js";
@@ -108,6 +110,11 @@ function App(){
  const tillProducts=eventTillProducts(tillEvent,tillConfig);
  const [backupPreview,setBackupPreview]=useState("");
  const [restoreCandidate,setRestoreCandidate]=useState(null);
+ const [fullZipCandidate,setFullZipCandidate]=useState(null);
+ const [fullZipPreview,setFullZipPreview]=useState("");
+ const [fullZipBusy,setFullZipBusy]=useState(false);
+ const [photoRefreshRevision,setPhotoRefreshRevision]=useState(0);
+ const [reviewRestoreRevision,setReviewRestoreRevision]=useState(0);
  const [formError,setFormError]=useState("");
  const [ecocupSettings,setEcocupSettings]=useState(initialEcocupStorage.settings);
  const {openingBalance:ecocupOpening,alertThreshold:ecocupThreshold}=ecocupSettings;
@@ -232,6 +239,53 @@ function App(){
   setTimeout(()=>URL.revokeObjectURL(url),60000);
   return `✅ ZIP préparé : ${Object.values(data).reduce((n,rows)=>n+(Array.isArray(rows)?rows.length:0),0)} fiche(s), ${photos.length} photo(s), menus et vérifications. Conservez-le hors du navigateur.`;
  }
+ async function inspectFullZip(e){
+  const file=e.target.files?.[0];e.target.value='';
+  setFullZipCandidate(null);
+  if(!file||fullZipBusy)return;
+  if(demoReadOnly){setFullZipPreview('⚠ Données locales illisibles : restauration désactivée.');return;}
+  setFullZipBusy(true);setFullZipPreview('Analyse privée du ZIP et vérification de toutes les photos…');
+  try{
+   const archive=await readCompleteBackupZip(file);
+   const existingPhotos=await listAllPhotoOriginals();
+   const localReviews=parseOwnerReviews(localStorage.getItem(OWNER_REVIEW_KEY));
+   const plan=await planCompleteZipRestore(archive,data,{volunteerNeeds,ecocupSettings,tillConfig,reviews:localReviews,photos:existingPhotos});
+   const hasUpdates=plan.addedRecords>0||plan.addedPhotos>0||JSON.stringify(plan.nextNeeds)!==JSON.stringify(volunteerNeeds)||JSON.stringify(plan.nextEcocups)!==JSON.stringify(ecocupSettings)||JSON.stringify(plan.nextMenus)!==JSON.stringify(tillConfig)||JSON.stringify(plan.nextReviews)!==JSON.stringify(localReviews);
+   const explanation=`ZIP contrôlé : ${plan.addedRecords} fiche(s) à ajouter, ${plan.unchangedRecords} déjà identique(s), ${plan.addedPhotos} photo(s) à restaurer, ${plan.unchangedPhotos} déjà présente(s). Menus, besoins bénévoles, réglages écocups et vérifications examinés.`;
+   if(!plan.safe){setFullZipPreview('⚠ '+explanation+' Restauration bloquée : '+plan.conflicts.slice(0,4).join(' ; ')+'. Aucun changement.');return;}
+   if(!hasUpdates){setFullZipPreview('✅ '+explanation+' Tout est déjà à jour, rien à restaurer.');return;}
+   setFullZipCandidate({plan,snapshot:JSON.stringify([data,volunteerNeeds,ecocupSettings,tillConfig,localReviews]),photoIds:existingPhotos.map(p=>p.id).sort().join('|')});
+   setFullZipPreview('✅ '+explanation+' Aucun changement pour le moment. Tu peux confirmer l’ajout des éléments manquants ; les fiches différentes existantes ne seront jamais écrasées.');
+  }catch(error){setFullZipPreview('⚠ Import ZIP refusé : '+(error.message||'fichier incompatible')+' Aucune donnée modifiée.');}
+  finally{setFullZipBusy(false);}
+ }
+ async function confirmFullZip(){
+  if(demoReadOnly||fullZipBusy||!fullZipCandidate?.plan?.safe)return;
+  const {plan,snapshot,photoIds}=fullZipCandidate;
+  const currentReviews=parseOwnerReviews(localStorage.getItem(OWNER_REVIEW_KEY));
+  if(snapshot!==JSON.stringify([data,volunteerNeeds,ecocupSettings,tillConfig,currentReviews])){setFullZipCandidate(null);setFullZipPreview('⚠ Des fiches ou des réglages ont changé : rechoisis ton ZIP pour une nouvelle vérification.');return;}
+  setFullZipBusy(true);
+  try{
+   const photos=await listAllPhotoOriginals();
+   if(photoIds!==photos.map(p=>p.id).sort().join('|'))throw new Error('La photothèque a changé : rechoisis ton ZIP.');
+   if(!window.confirm(`Confirmer l’ajout de ${plan.addedRecords} fiche(s) et ${plan.addedPhotos} photo(s), ainsi que les réglages manquants de ce ZIP ? Aucun contenu déjà présent ne sera remplacé. Conserve toujours le ZIP original.`))return;
+   let ids=[];
+   try{
+    ids=await saveRestoredPhotoOriginals(plan.addPhotos);
+    persistCompleteZipRestore(localStorage,plan);
+   }catch(error){
+    let rollbackFailed=false;
+    try{await rollbackRestoredPhotoOriginals(ids);}catch{rollbackFailed=true;}
+    throw new Error(error.message+(rollbackFailed?' ⚠ Certaines photos ont peut-être été ajoutées : vérifie la photothèque.':''));
+   }
+   const restoredData=plan.nextData;
+   setData(restoredData);setVolunteerNeeds(plan.nextNeeds);setEcocupSettings(plan.nextEcocups);setTillConfig(plan.nextMenus);setTillCart({});
+   setPhotoRefreshRevision(r=>r+1);setReviewRestoreRevision(r=>r+1);setStorageWarning('');
+   setFullZipCandidate(null);
+   setFullZipPreview(`✅ Restauration effectuée sur cet appareil : ${plan.addedRecords} fiche(s), ${plan.addedPhotos} photo(s), et réglages compatibles. Rien n’a été envoyé ni partagé. Garde le ZIP original.`);
+  }catch(error){setFullZipCandidate(null);setFullZipPreview('⚠ Restauration non terminée : '+(error.message||'stockage indisponible')+' Conserve ton ZIP et vérifie les données de cet appareil avant un nouvel essai.');}
+  finally{setFullZipBusy(false);}
+ }
  async function inspectBackup(e){
   setRestoreCandidate(null);
   const file=e.target.files?.[0];
@@ -309,7 +363,7 @@ function App(){
   </div>
   <p className="quick-access-note">Chiffres de démonstration de cet appareil uniquement · aucun stock partagé.</p>
  </section>
- <OwnerSetup data={data} onOpen={openModule} onBackup={exportBackup} onFullBackup={exportFullBackup} ecocupSettings={{opening:ecocupOpening,threshold:ecocupThreshold}} readOnly={demoReadOnly}/>
+ <OwnerSetup data={data} onOpen={openModule} onBackup={exportBackup} onFullBackup={exportFullBackup} onInspectZip={inspectFullZip} onRestoreZip={confirmFullZip} zipPreview={fullZipPreview} zipCanRestore={!!fullZipCandidate} zipBusy={fullZipBusy} reviewRestoreRevision={reviewRestoreRevision} ecocupSettings={{opening:ecocupOpening,threshold:ecocupThreshold}} readOnly={demoReadOnly}/>
  <FreeAiHelper events={eventOptions} recipes={data.recipes||[]}/>
  <DriveBoard catalog={driveCatalog} loading={driveLoading} error={driveError} importStatus={driveImportStatus} onImport={importDriveAgain} readOnly={demoReadOnly}/>
  <section className="event-cockpit" aria-label="Tableau de bord de la manifestation">
@@ -357,7 +411,7 @@ function App(){
   <button type="submit" disabled={demoReadOnly}>{editingId?"Enregistrer les modifications":"+ Ajouter"}</button>
   {editingId&&<button type="button" className="secondary" onClick={cancelEdit}>Annuler la modification</button>}
  </form>
- {["recipes","posts","archives","finance","equipment","events"].includes(tab)&&<PhotoVault scope={tab} records={data[tab]||[]} readOnly={demoReadOnly}/>}
+ {["recipes","posts","archives","finance","equipment","events"].includes(tab)&&<PhotoVault scope={tab} records={data[tab]||[]} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision}/>}
  {tab==="shifts"&&<section className="volunteer-agenda" aria-label="Planning des bénévoles par manifestation"><h3>🕒 Qui fait quoi ?</h3><div className="needs-backup-actions"><button type="button" onClick={downloadVolunteerNeeds}>💾 Sauvegarder les besoins</button><label className="needs-import">📂 Restaurer les besoins<input type="file" accept=".json,application/json" disabled={demoReadOnly} onChange={uploadVolunteerNeeds}/></label></div><button type="button" className="secondary" disabled={!printEvent||!printSchedule?.total} onClick={()=>window.print()}>🖨️ Imprimer le planning</button><label>Manifestation à afficher<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Choisir une manifestation</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>{recordEventId?(()=>{const schedule=volunteerSchedule(data.shifts||[],recordEventId);const summary=volunteerPostSummary(data.shifts||[],recordEventId,volunteerPosts);return <><p role="status">{schedule.total} affectation(s) pour cette manifestation</p><div className="volunteer-role-grid" aria-label="Répartition des bénévoles par poste">{summary.posts.map(item=>{const target=volunteerNeeds[recordEventId]?.[item.post];const status=staffingStatus(item.count,target);return <div className="volunteer-role-card" key={item.post}><span>{item.post}</span><strong>{item.count}{target!==undefined?` / ${target}`:""}</strong><small>{status.label}</small><label>Besoin<input aria-label={"Besoin pour "+item.post} type="number" min="0" max="1000" step="1" disabled={demoReadOnly} value={target??""} placeholder="À définir" onChange={e=>{const value=e.target.value;if(value!==""&&(!/^\d+$/.test(value)||Number(value)>1000))return;setVolunteerNeeds(old=>{const next={...old,[recordEventId]:{...(old[recordEventId]||{})}};if(value==="")delete next[recordEventId][item.post];else next[recordEventId][item.post]=Number(value);return next;});}}/></label></div>})}</div>{needsWarning&&<p role="alert">{needsWarning}</p>}{(summary.other>0||summary.unassigned>0)&&<p className="note">{summary.other>0?`${summary.other} affectation(s) sur d’autres postes. `:""}{summary.unassigned>0?`${summary.unassigned} poste(s) à préciser.`:""}</p>}<div className="agenda-list">{schedule.scheduled.map(r=><article key={r.id} className="agenda-item"><strong className="agenda-time">{r.time}</strong><div><strong>{r.name}</strong><p>{r.post||"Poste non précisé"}</p></div></article>)}</div>{schedule.unscheduled.length>0&&<div className="note"><strong>Créneaux à préciser ({schedule.unscheduled.length})</strong>{schedule.unscheduled.map(r=><p key={r.id}>{r.name} — {r.post||"Poste non précisé"} ({r.time||"horaire manquant"})</p>)}</div>}{schedule.total===0&&<p>Aucun bénévole affecté pour le moment.</p>}</>})():<p>Sélectionnez une manifestation pour consulter ses créneaux.</p>}</section>}
  {tab==="shifts"&&<p className="note">Choisissez un bénévole dans l’annuaire ou saisissez son nom manuellement. Seuls les contacts classés « bénévole » sont proposés. Planning local : indiquez les créneaux au format 10:00-12:30. Si un bénévole a deux créneaux qui se chevauchent sur la même manifestation, l’enregistrement est refusé. Les horaires sans date ne permettent pas de vérifier les conflits entre journées différentes.</p>}
  {tab==="tasks"&&<p role="status" className="note">✅ {(data.tasks||[]).filter(r=>r.done===true).length} tâche(s) terminée(s) sur {(data.tasks||[]).length}. Cochez une tâche pour la marquer comme faite ; responsable et échéance sont conservés.</p>}

@@ -56,6 +56,40 @@ export async function savePhotoOriginal(file,scope,recordId=""){
  return row;
 }
 
+// One IndexedDB transaction for an explicitly confirmed ZIP restoration.
+// Either all requested photo originals are committed, or none are.
+export async function saveRestoredPhotoOriginals(photos){
+ if(!Array.isArray(photos)||photos.length>500)throw new TypeError('Trop de photos à restaurer.');
+ const rows=photos.map(photo=>{
+  const meta=validatePhotoInput({name:photo?.fileName,type:photo?.type,size:photo?.size},photo?.scope,photo?.recordId||'');
+  if(!(photo.blob instanceof Blob)||photo.blob.size!==meta.size)throw new TypeError('Photo restaurée invalide.');
+  return {...meta,id:crypto.randomUUID(),addedAt:typeof photo.addedAt==='string'&&Number.isFinite(Date.parse(photo.addedAt))?photo.addedAt:new Date().toISOString(),blob:photo.blob};
+ });
+ if(!rows.length)return [];
+ const db=await openDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE,'readwrite');
+  const store=tx.objectStore(STORE);
+  for(const row of rows)store.add(row);
+  tx.oncomplete=()=>{db.close();resolve(rows.map(row=>row.id));};
+  const fail=()=>{db.close();reject(new Error('Photos non restaurées : espace plein ou accès refusé.'));};
+  tx.onerror=fail;tx.onabort=fail;
+ });
+}
+
+export async function rollbackRestoredPhotoOriginals(ids){
+ if(!Array.isArray(ids)||ids.some(id=>typeof id!=='string'||!id))throw new TypeError('Identifiants de photos invalides.');
+ if(!ids.length)return;
+ const db=await openDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE);
+  for(const id of ids)store.delete(id);
+  tx.oncomplete=()=>{db.close();resolve();};
+  const fail=()=>{db.close();reject(new Error('Impossible de retirer des photos après échec.'));};
+  tx.onerror=fail;tx.onabort=fail;
+ });
+}
+
 export async function deletePhotoOriginal(id){
  if(typeof id!=="string"||!id)throw new TypeError("Photo inconnue.");
  await transact("readwrite",store=>store.delete(id));

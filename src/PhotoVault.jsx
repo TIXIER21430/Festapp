@@ -13,13 +13,13 @@ function OriginalCard({photo,title,onDelete,readOnly}){
  </article>;
 }
 
-export default function PhotoVault({scope,records=[],readOnly=false}){
+export default function PhotoVault({scope,records=[],readOnly=false,photoRefreshRevision=0}){
  const [photos,setPhotos]=useState([]);
  const [recordId,setRecordId]=useState("");
  const [status,setStatus]=useState("");
  const [busy,setBusy]=useState(false);
  async function refresh(){const list=await listPhotoOriginals(scope);setPhotos(list);}
- useEffect(()=>{let active=true;listPhotoOriginals(scope).then(rows=>{if(active)setPhotos(rows);}).catch(err=>{if(active)setStatus("⚠ "+err.message);});return()=>{active=false;};},[scope]);
+ useEffect(()=>{let active=true;listPhotoOriginals(scope).then(rows=>{if(active)setPhotos(rows);}).catch(err=>{if(active)setStatus("⚠ "+err.message);});return()=>{active=false;};},[scope,photoRefreshRevision]);
  async function addPhotos(e){
   const files=Array.from(e.target.files||[]);e.target.value="";
   if(!files.length||busy||readOnly)return;

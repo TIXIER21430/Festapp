@@ -1,9 +1,10 @@
-import React,{useMemo,useState} from 'react';
+import React,{useEffect,useMemo,useState} from 'react';
 import {OWNER_REVIEW_KEY,parseOwnerReviews,summarizeOwnerReviews} from './lib/ownerSetup.js';
 import {auditOwnerReadiness} from './lib/ownerReadinessAudit.js';
 
-export default function OwnerSetup({data,onOpen,onBackup,onFullBackup,ecocupSettings,readOnly=false}){
+export default function OwnerSetup({data,onOpen,onBackup,onFullBackup,onInspectZip,onRestoreZip,zipPreview='',zipCanRestore=false,zipBusy=false,reviewRestoreRevision=0,ecocupSettings,readOnly=false}){
  const [reviews,setReviews]=useState(()=>{try{return parseOwnerReviews(localStorage.getItem(OWNER_REVIEW_KEY));}catch{return {};}});
+ useEffect(()=>{try{setReviews(parseOwnerReviews(localStorage.getItem(OWNER_REVIEW_KEY)));}catch{/* Keep the last displayed review state. */}},[reviewRestoreRevision]);
  const [warning,setWarning]=useState('');
  const [backupStatus,setBackupStatus]=useState('');
  const [backupBusy,setBackupBusy]=useState(false);
@@ -29,6 +30,13 @@ export default function OwnerSetup({data,onOpen,onBackup,onFullBackup,ecocupSett
   <div className="owner-setup-heading"><div><span className="owner-setup-pill">🔒 Préparation privée</span><h2>Je remplis et je vérifie mon appli</h2><p>Avance rubrique par rubrique. <strong>Rien n’est partagé aux membres du bureau.</strong></p></div><div className="owner-progress" role="status"><strong>{checked} / {total}</strong><span>rubriques vérifiées</span></div></div>
   <div className="owner-setup-tools"><button type="button" disabled={readOnly||backupBusy} onClick={downloadEverything}>📦 {backupBusy?'Préparation du ZIP…':'Sauvegarde complète (fiches + photos)'}</button><button type="button" disabled={readOnly} className="owner-backup-secondary" onClick={onBackup}>💾 JSON seul</button><small>Garde une copie privée après chaque session.</small></div>
   {backupStatus&&<p role="status" className="owner-backup-status">{backupStatus}</p>}
+  <div className="owner-zip-restore" aria-label="Restaurer une sauvegarde complète">
+   <div><span className="owner-zip-kicker">📂 Changement de téléphone ou d’ordinateur</span><h3>Restaurer toutes mes données</h3><p>Choisis ton ZIP FEST’APP. Je vérifie les fichiers, les photos et les éventuels doublons <strong>avant</strong> de te proposer de confirmer. Aucune fiche existante n’est écrasée.</p></div>
+   <label className="owner-zip-upload">📁 Choisir mon ZIP<input type="file" accept=".zip,application/zip" disabled={readOnly||zipBusy} onChange={onInspectZip}/></label>
+   {zipPreview&&<p className="owner-zip-result" role="status">{zipPreview}</p>}
+   {zipCanRestore&&<button className="owner-zip-confirm" type="button" disabled={readOnly||zipBusy} onClick={onRestoreZip}>✅ Confirmer la restauration des éléments manquants</button>}
+   <small>Import privé sur cet appareil uniquement. Les éléments différents déjà présents provoquent un blocage, pas un remplacement.</small>
+  </div>
   <progress value={checked} max={total} aria-label="Progression de la vérification de FEST’APP"/>
   <div className="owner-audit" aria-label="Suggestions de saisie avant partage">
    <div className="owner-audit-heading"><div><span className="owner-audit-kicker">🔎 Contrôle guidé</span><h3>Les prochains points à compléter</h3><p>Ces pistes sont calculées sur tes fiches. Les modèles historiques peuvent rester incomplets : c’est toi qui décides ce qui est utile pour la prochaine fête.</p></div><span className="owner-audit-count" role="status">{issueCount===0?'Aucune piste détectée':issueCount+' piste(s)'}</span></div>
@@ -40,6 +48,6 @@ export default function OwnerSetup({data,onOpen,onBackup,onFullBackup,ecocupSett
     <p>{item.hint}</p>{item.needsRecheck&&<p className="owner-recheck">🔄 Fiches modifiées : à revérifier</p>}<button type="button" onClick={()=>onOpen(item.key)}>✏️ Remplir / contrôler</button>
   </article>)}</div>
   {warning&&<p className="owner-review-warning" role="alert">⚠ {warning}</p>}
-  <p className="owner-setup-warning">✅ Coche « Vérifié » seulement après avoir contrôlé chaque rubrique. Le ZIP complet conserve tes fiches, réglages, cases de vérification et photos originales. Pour récupérer les données sur un autre appareil, extrais le JSON du ZIP puis utilise « Vérifier une sauvegarde JSON » ; les photos restent à réimporter manuellement. Aucun envoi dans le cloud et aucun partage sans ta décision.</p>
+  <p className="owner-setup-warning">✅ Coche « Vérifié » seulement après avoir contrôlé chaque rubrique. Le ZIP complet conserve tes fiches, réglages, cases de vérification et photos originales. Tu peux désormais réimporter ce ZIP ici, avec prévisualisation et confirmation ; le bouton JSON plus bas permet toujours un ajout de fiches sans photos. Aucun envoi dans le cloud et aucun partage sans ta décision.</p>
  </section>;
 }
