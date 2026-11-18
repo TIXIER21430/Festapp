@@ -18,3 +18,15 @@ test("task checklist phase survives backup and restore without becoming a due da
 test("phase metadata cannot be smuggled into unrelated categories",()=>{
  assert.throws(()=>createDemoBackup({contacts:[{id:"c",values:["Nom","Bénévole","contact"],phase:"Veille"}]}));
 });
+
+test("UTF-8 backup limit rejects accented data exceeding 10 MB in bytes",()=>{
+ const rows=Array.from({length:300},(_,i)=>({id:"accent-"+i,values:["é".repeat(20000),"",""]}));
+ assert.throws(()=>createDemoBackup({contacts:rows}),RangeError);
+});
+test("UTF-8 restore rejects oversized accented backup without applying it",()=>{
+ const rows=Array.from({length:300},(_,i)=>({id:"accent-"+i,values:["é".repeat(20000),"",""]}));
+ const payload=JSON.stringify({format:"festapp-demo-backup",version:1,exportedAt:"2026-11-18T00:00:00.000Z",data:{contacts:rows}});
+ assert.ok(payload.length<10_000_000);
+ assert.ok(new TextEncoder().encode(payload).byteLength>10_000_000);
+ assert.throws(()=>parseDemoBackup(payload),TypeError);
+});
