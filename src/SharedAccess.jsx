@@ -1,6 +1,7 @@
 import React,{useEffect,useState} from "react";
-import {createFestappClient} from "./lib/supabaseClient.js";
+import {createFestappClient,getFestappConnection} from "./lib/supabaseClient.js";
 import {readSharedSpace} from "./lib/supabaseSharedRead.js";
+const connection=getFestappConnection();
 const client=createFestappClient();
 export default function SharedAccess(){
  const [email,setEmail]=useState("");
@@ -22,7 +23,7 @@ export default function SharedAccess(){
  async function checkAccess(){
   if(!client||busy)return;setBusy(true);setStatus("");setPreview(null);
   try{
-   const snapshot=await readSharedSpace(client);
+   const snapshot=await readSharedSpace(client,connection?.spaceId);
    setPreview({revision:snapshot.revision,updatedAt:snapshot.updatedAt,events:snapshot.data.events?.length||0,volunteers:snapshot.data.shifts?.length||0, tasks:snapshot.data.tasks?.length||0,shopping:snapshot.data.shopping?.length||0,stock:snapshot.data.stock?.length||0,recipes:snapshot.data.recipes?.length||0});
    setStatus("Accès au comité vérifié. Consultation uniquement.");
   }catch(err){setStatus(err.message||"Accès impossible.");}
@@ -33,9 +34,9 @@ export default function SharedAccess(){
   try{await client.auth.signOut();setPreview(null);setPassword("");setSignedIn(false);setStatus("Déconnecté.");}
   catch{setStatus("Déconnexion impossible.");}finally{setBusy(false);}
  }
- return <section className="panel shared-access" aria-label="Accès des membres"><h2>🔐 Espace du comité</h2>
+ return <section className="panel shared-access" aria-label="Accès des membres"><h2>🔐 Espace du comité {connection?.testMode?"🧪 TEST":""}</h2>
   {!client?<p>La connexion partagée n’est pas encore configurée. La démonstration locale reste disponible.</p>:<>
-   <p>Connexion réservée aux membres autorisés. Aucune donnée locale n’est remplacée.</p>
+   <p>{connection?.testMode?"Environnement de test séparé : aucune donnée du comité réel n’est modifiée.":"Connexion réservée aux membres autorisés. Aucune donnée locale n’est remplacée."}</p>
    {!signedIn&&<form onSubmit={login} className="shared-login"><label>Adresse e-mail<input type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Mot de passe<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button disabled={busy} type="submit">🔑 Se connecter</button></form>}
    {signedIn&&<p className="shared-session">✅ Session active sur cet appareil</p>}
    <div className="shared-actions"><button type="button" disabled={busy||!signedIn} onClick={checkAccess}>👀 Vérifier mon accès</button><button type="button" className="secondary" disabled={busy||!signedIn} onClick={logout}>Se déconnecter</button></div>
