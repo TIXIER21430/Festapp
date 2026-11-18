@@ -10,3 +10,11 @@ test("invalid record shapes rejected",()=>assert.throws(()=>createDemoBackup({ev
 test("unknown categories rejected",()=>assert.throws(()=>createDemoBackup({admin:[{id:"x",values:["a","b","c"]}]})));
 test("invalid JSON rejected",()=>assert.throws(()=>parseDemoBackup("{")));
 test("backup does not mutate source",()=>{const before=JSON.stringify(sample);createDemoBackup(sample);assert.equal(JSON.stringify(sample),before)});
+
+test("task checklist phase survives backup and restore without becoming a due date",()=>{
+ const data={tasks:[{id:"phase-1",eventId:"event-1",values:["Installer la buvette","",""],phase:"Veille",done:false}]};
+ assert.deepEqual(parseDemoBackup(createDemoBackup(data)),data);
+});
+test("phase metadata cannot be smuggled into unrelated categories",()=>{
+ assert.throws(()=>createDemoBackup({contacts:[{id:"c",values:["Nom","Bénévole","contact"],phase:"Veille"}]}));
+});
