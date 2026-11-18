@@ -18,7 +18,8 @@ export function validateDemoData(data) {
       ids.add(row.id);
       if (own(row,"eventId") && (typeof row.eventId !== "string" || row.eventId.length > 200)) throw new TypeError("Invalid event link");
       if (own(row,"done") && (category !== "tasks" || typeof row.done !== "boolean")) throw new TypeError("Invalid task completion");
-      return {...(own(row,"eventId")?{eventId:row.eventId}:{}),...(own(row,"done")?{done:row.done}:{}),id:row.id,values:[...row.values]};
+      if (own(row,"phase") && (category !== "tasks" || typeof row.phase !== "string" || row.phase.length > 200)) throw new TypeError("Invalid task phase");
+      return {...(own(row,"eventId")?{eventId:row.eventId}:{}),...(own(row,"done")?{done:row.done}:{}),...(own(row,"phase")?{phase:row.phase}:{}),id:row.id,values:[...row.values]};
     });
   }
   return result;
