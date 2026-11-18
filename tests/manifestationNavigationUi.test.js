@@ -24,7 +24,7 @@ test('each manifestation has a dedicated to-do entry with avant pendant après',
 test('fixed bottom to-do is general to the committee and other destinations stay accessible',()=>{
  assert.match(bottom,/collectCommitteeTodos|<EventTodoList tasks=\{tasks\}/);
  assert.match(bottom,/À faire pour l’organisation générale/);
- for(const name of ['Manifestations','Bénévoles','Matériel','Finances'])assert.ok(bottom.includes(name),name);
+ for(const name of ['Fêtes','À faire','Annuaire','Stock','Plus'])assert.ok(bottom.includes(name),name);
  assert.match(css,/\.festapp-bottom-nav\{position:fixed/);
  assert.match(app,/ref=\{moduleWorkbenchRef\}/);
  assert.match(app,/moduleWorkbenchRef\.current\.open=true/);

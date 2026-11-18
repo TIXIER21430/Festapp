@@ -1,7 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import EventTodoList from './EventTodoList.jsx';
 import {collectEventTodos} from './lib/eventTodo.js';
-import {recordsForManifestation} from './lib/manifestationScope.js';
 
 const ICONS={'Concours de belote':'🃏','Carnaval':'🎭','Chasse aux œufs':'🐣','Fête des voisins':'🏡','Fanfare':'🎺','Vide-grenier':'🛍️','Saint-Laurent':'🎪','Halloween':'🎃','Marché de Noël':'🎄'};
 const baseName=name=>String(name||'').replace(/\s+20\d{2}$/,'');
@@ -18,20 +17,23 @@ export function homeManifestations(events){
  return list;
 }
 
+// Les six actions du quotidien restent visibles ; le reste est disponible sur demande.
 const features=[
- ['tasks','✅','À faire','Mes listes avant, pendant, après'],
- ['shifts','👥','Planning bénévoles','Qui fait quoi et quand'],
- ['shopping','🛒','Achats','Courses et commandes'],
- ['recipes','🍲','Recettes','Ingrédients et quantités'],
- ['posts','📣','Communication','Affiches et publications'],
- ['equipment','🧰','Matériel','Ce qu’il faut prévoir'],
- ['till','🧾','Caisse / SumUp','Démo, sans encaissement'],
- ['feedback','📝','Retours','Ce qu’on améliore'],
- ['finance','📊','Bilan financier','Recettes et dépenses'],
- ['archives','📸','Photos et archives','Souvenirs et documents']
+ ['tasks','✅','À faire'],
+ ['shifts','👥','Bénévoles'],
+ ['shopping','🛒','Achats'],
+ ['till','🧾','Caisse / SumUp'],
+ ['recipes','🍲','Recettes'],
+ ['posts','📣','Communication']
+];
+const secondaryFeatures=[
+ ['equipment','🧰','Matériel'],
+ ['finance','📊','Bilan financier'],
+ ['feedback','📝','Retours'],
+ ['archives','📸','Photos et archives']
 ];
 
-export default function ManifestationHub({events=[],tasks=[],data={},selectedId='',onSelect,onBack,onOpenModule,onOpenTill,tillOpen=false,onOwnerSetup,onToggleTodo,onAddTodo,onChecklist,readOnly=false}){
+export default function ManifestationHub({events=[],tasks=[],selectedId='',onSelect,onBack,onOpenModule,onOpenTill,tillOpen=false,onToggleTodo,onAddTodo,onChecklist,readOnly=false}){
  const [showTasks,setShowTasks]=useState(false);
  const [checklistMessage,setChecklistMessage]=useState('');
  const rootRef=useRef(null);
@@ -49,23 +51,22 @@ export default function ManifestationHub({events=[],tasks=[],data={},selectedId=
  const done=grouped.reduce((n,g)=>n+g.done,0),total=grouped.reduce((n,g)=>n+g.total,0);
  return <section ref={rootRef} className="festapp-hub" aria-label="Accueil des manifestations">
   {!chosen?<>
-   <div className="festapp-hub-header"><span className="festapp-hub-label">🎉 Nos événements</span><h2>Quelle fête prépare-t-on ?</h2><p>Appuie sur une manifestation : tout ce qui la concerne est rangé au même endroit.</p></div>
+   <div className="festapp-hub-header"><h2>Quelle fête ouvre-t-on ?</h2></div>
    <div className="festapp-manif-grid">{cards.map((event,i)=>{
     const base=baseName(event.values[0]);const groups=collectEventTodos(tasks,event.id,event.values[0]);const remaining=groups.reduce((n,g)=>n+g.remaining,0);
     return <button type="button" className="festapp-manif-card" key={event.id} onClick={()=>goTo(event)}>
      <span className="festapp-manif-icon" aria-hidden="true">{ICONS[base]||'🎉'}</span><strong>{event.values[0]}</strong><small>{event.values[1]||'Date à préciser'}</small><em>{remaining} tâche(s) à faire</em>
     </button>;
    })}</div>
-   <button className="festapp-owner-cta" type="button" onClick={onOwnerSetup}>✍️ Remplir et vérifier toutes mes fiches avant de partager <span aria-hidden="true">→</span></button>
   </>:<>
    <button type="button" className="festapp-hub-back" onClick={()=>{onBack();scrollHere();}}>← Toutes les manifestations</button>
    <div className="festapp-event-heading"><span aria-hidden="true">{ICONS[baseName(chosen.values[0])]||'🎉'}</span><div><small>Ma manifestation</small><h2>{chosen.values[0]}</h2><p>📅 {chosen.values[1]||'Date à confirmer'}{chosen.values[2]?' · 📍 '+chosen.values[2]:''}</p></div></div>
-   <div className="festapp-event-progress"><div><strong>{done} / {total}</strong><span>tâches terminées</span></div><progress max={Math.max(1,total)} value={done} aria-label="Tâches terminées pour cette manifestation"/></div>
-   <div className="festapp-feature-grid">{features.map(([key,icon,title,subtitle])=>{
-    const linked=key==='tasks'?total:key==='till'?null:recordsForManifestation(data[key]||[],key,chosen.id).length;
-    return <button type="button" className={'festapp-feature-tile'+((key==='tasks'&&showTasks)||(key==='till'&&tillOpen)?' selected':'')} key={key} onClick={()=>doFeature(key)} aria-expanded={key==='tasks'?showTasks:key==='till'?tillOpen:undefined}><span aria-hidden="true">{icon}</span><strong>{title}</strong><small>{subtitle}</small>{linked!==null&&<em className="festapp-feature-count">{linked} fiche(s) liée(s)</em>}</button>;
-   })}</div>
-   {showTasks&&<div className="festapp-event-todo-panel"><EventTodoList key={chosen.id} tasks={tasks} eventId={chosen.id} eventName={chosen.values[0]} onToggle={onToggleTodo} onAdd={onAddTodo} readOnly={readOnly}/><button type="button" className="festapp-checklist-add" disabled={readOnly} onClick={()=>setChecklistMessage(onChecklist(chosen))}>📋 Ajouter les tâches du modèle Drive (sans doublons)</button>{checklistMessage&&<p role="status" className="festapp-todo-status">{checklistMessage}</p>}</div>}
+   {!tillOpen&&<>
+    {total>0&&<div className="festapp-event-progress"><div><strong>{done} / {total}</strong><span>tâches terminées</span></div><progress max={Math.max(1,total)} value={done} aria-label="Tâches terminées pour cette manifestation"/></div>}
+    <div className="festapp-feature-grid">{features.map(([key,icon,title])=><button type="button" className={'festapp-feature-tile'+(key==='tasks'&&showTasks?' selected':'')} key={key} onClick={()=>doFeature(key)} aria-expanded={key==='tasks'?showTasks:undefined}><span aria-hidden="true">{icon}</span><strong>{title}</strong></button>)}</div>
+    <details className="festapp-event-more" key={chosen.id}><summary>Autres outils de cette fête <span>＋</span></summary><div className="festapp-feature-grid secondary">{secondaryFeatures.map(([key,icon,title])=><button type="button" className="festapp-feature-tile" key={key} onClick={()=>doFeature(key)}><span aria-hidden="true">{icon}</span><strong>{title}</strong></button>)}</div></details>
+    {showTasks&&<div className="festapp-event-todo-panel"><EventTodoList key={chosen.id} tasks={tasks} eventId={chosen.id} eventName={chosen.values[0]} onToggle={onToggleTodo} onAdd={onAddTodo} readOnly={readOnly}/><button type="button" className="festapp-checklist-add" disabled={readOnly} onClick={()=>setChecklistMessage(onChecklist(chosen))}>📋 Ajouter les tâches du modèle Drive (sans doublons)</button>{checklistMessage&&<p role="status" className="festapp-todo-status">{checklistMessage}</p>}</div>}
+   </>}
   </>}
  </section>;
 }

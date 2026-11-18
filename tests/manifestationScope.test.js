@@ -15,6 +15,7 @@ test('manifestation workspace shows only explicitly linked records and leaves ge
  ];
  assert.deepEqual(recordsForManifestation(rows,'shopping','noel-2026'),[rows[0]]);
  assert.deepEqual(recordsForManifestation(rows,'finance','noel-2026'),[rows[0]]);
+ assert.deepEqual(recordsForManifestation(rows,'recipes','noel-2026'),[rows[0],rows[2],rows[3]]);
  assert.equal(recordsForManifestation(rows,'finance','').length,4);
  assert.equal(recordsForManifestation(rows,'contacts','noel-2026').length,4);
  assert.equal(rows[2].eventId,undefined);
@@ -31,20 +32,23 @@ test('edits keep or remove the explicit event link without leaving stale associa
  assert.equal(source.eventId,'noel-2026');
 });
 
-test('event tiles lead to a scoped form, list and export; bottom navigation remains general',()=>{
+test('event tiles lead to a scoped form and list without losing the event context',()=>{
  assert.match(source,/setModuleScopeEventId\(eventId\)/);
  assert.match(source,/setRecordEventId\(moduleScopeEventId\)/);
  assert.match(source,/recordsForManifestation\(data\[tab\]\|\|\[\],tab,moduleScopeEventId\)\.filter/);
  assert.match(source,/const rows=tab==="contacts"[\s\S]*?recordsForManifestation\(data\[tab\]\|\|\[\],tab,moduleScopeEventId\)\.map/);
  assert.match(source,/scopeEvent\?<p className="festapp-module-attached"/);
- assert.match(source,/onClick=\{\(\)=>openModule\(tab\)\}/);
+ assert.match(source,/data-event-scoped=\{!!scopeEvent\}/);
  assert.match(hub,/onOpenModule\(key,chosen.id\)/);
- assert.match(hub,/recordsForManifestation\(data\[key\]\|\|\[\],key,chosen.id\)/);
+ assert.match(source,/Les nouvelles fiches sont automatiquement rattachées à cette fête/);
+ assert.doesNotMatch(source,/Voir toutes les fiches/);
 });
 
-test('private review checklist is accessible in one tap from the colorful home',()=>{
- assert.match(hub,/className="festapp-owner-cta" type="button" onClick=\{onOwnerSetup\}/);
- assert.match(source,/function openOwnerSetup\(\)\{if\(advancedRef\.current\)advancedRef\.current\.open=true/);
+test('private review checklist is available under Plus without cluttering home',()=>{
+ assert.doesNotMatch(hub,/festapp-owner-cta/);
+ assert.match(source,/settingsOpen&&<>/);
+ assert.match(source,/onClick=\{openOwnerSetup\}>✍️ Vérifier les fiches/);
+ assert.match(source,/function openOwnerSetup\(\)\{setSettingsOpen\(true\)/);
  assert.match(source,/ref=\{advancedRef\}/);
  assert.match(source,/ref=\{ownerSetupRef\}><OwnerSetup/);
 });

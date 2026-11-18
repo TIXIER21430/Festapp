@@ -1,7 +1,7 @@
 import React,{useEffect,useRef} from 'react';
 import EventTodoList from './EventTodoList.jsx';
 
-export default function BottomNavigation({onHome,onOpenModule,orgTodosOpen,onToggleOrgTodos,tasks,onAddTodo,onToggleTodo,readOnly=false}){
+export default function BottomNavigation({onHome,onOpenModule,onSettings,settingsOpen=false,orgTodosOpen,onToggleOrgTodos,tasks,onAddTodo,onToggleTodo,readOnly=false}){
  const closeRef=useRef(null);
  useEffect(()=>{if(orgTodosOpen)closeRef.current?.focus();},[orgTodosOpen]);
  return <>
@@ -13,12 +13,12 @@ export default function BottomNavigation({onHome,onOpenModule,orgTodosOpen,onTog
   </div>}
   <nav className="festapp-bottom-nav" aria-label="Navigation permanente du comité">
    {[
-    ['home','🏠','Manifestations',onHome],
+    ['home','🏠','Fêtes',onHome],
     ['todo','✅','À faire',onToggleOrgTodos],
-    ['contacts','👥','Bénévoles',()=>onOpenModule('contacts')],
-    ['equipment','🧰','Matériel',()=>onOpenModule('equipment')],
-    ['finance','📊','Finances',()=>onOpenModule('finance')]
-   ].map(([key,icon,label,action])=><button type="button" key={key} onClick={action} className={key==='todo'&&orgTodosOpen?'active':''} aria-label={key==='todo'?'À faire pour l’organisation générale':label} aria-expanded={key==='todo'?orgTodosOpen:undefined}><span aria-hidden="true">{icon}</span><small>{label}</small></button>)}
+    ['contacts','👥','Annuaire',()=>onOpenModule('contacts')],
+    ['stock','📦','Stock',()=>onOpenModule('stock')],
+    ['settings','⚙️','Plus',onSettings]
+   ].map(([key,icon,label,action])=><button type="button" key={key} onClick={action} className={(key==='todo'&&orgTodosOpen)||(key==='settings'&&settingsOpen)?'active':''} aria-label={key==='todo'?'À faire pour l’organisation générale':key==='settings'?'Plus et réglages':label} aria-expanded={key==='todo'?orgTodosOpen:key==='settings'?settingsOpen:undefined}><span aria-hidden="true">{icon}</span><small>{label}</small></button>)}
   </nav>
  </>;
 }
