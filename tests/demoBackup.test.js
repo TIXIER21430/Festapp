@@ -15,6 +15,11 @@ test("task checklist phase survives backup and restore without becoming a due da
  const data={tasks:[{id:"phase-1",eventId:"event-1",values:["Installer la buvette","",""],phase:"Veille",done:false}]};
  assert.deepEqual(parseDemoBackup(createDemoBackup(data)),data);
 });
+test("communication, material and archive records survive backup independently of photos",()=>{
+ const data={posts:[{id:"p1",values:["Annonce","Texte Facebook","À relire"]}],equipment:[{id:"m1",values:["Tables","12","Dépôt"]}],archives:[{id:"a1",values:["Bilan","2026","À améliorer"]}]};
+ assert.deepEqual(parseDemoBackup(createDemoBackup(data)),data);
+ assert.throws(()=>createDemoBackup({photos:[{id:"img1",values:["Image","",""]}]}),/Invalid category/);
+});
 test("phase metadata cannot be smuggled into unrelated categories",()=>{
  assert.throws(()=>createDemoBackup({contacts:[{id:"c",values:["Nom","Bénévole","contact"],phase:"Veille"}]}));
 });

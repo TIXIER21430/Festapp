@@ -108,3 +108,29 @@
 .recipe-starters button{background:#2075c9;min-height:54px;border-radius:14px}
 .recipe-starters p[role="status"]{font-weight:750}
 @media(max-width:650px){.event-cockpit{padding:14px}.event-cockpit-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}.event-cockpit-tile{min-height:112px}.event-cockpit-heading h2{font-size:20px}}
+
+/* Local photo originals, communication drafts, and additional committee modules. */
+.fields textarea{display:block;width:100%;min-height:120px;resize:vertical;margin-top:6px;padding:12px;background:#101827;color:#fff;border:1px solid #455673;border-radius:10px;font:inherit;line-height:1.55}
+.module-panel form>label{display:block;margin:10px 0 16px}
+.module-panel form>label select{display:block;margin-top:7px;width:100%;min-height:52px;max-width:450px;background:#101827;color:white;border:1px solid #70809b;border-radius:12px;padding:12px;font:inherit;font-size:16px}
+.module-panel[aria-label="Communication & photos"] .fields label:nth-child(2){grid-column:span 2}
+.module-panel[aria-label="Communication & photos"] .fields textarea{font-size:16px;min-height:175px}
+.post-assistant{margin:16px 0;padding:18px;background:#e1d7ff;color:#2e2448;border-radius:18px}
+.post-assistant h3,.photo-vault h3{margin:0 0 9px}.post-assistant p{line-height:1.5}
+.post-controls,.photo-add-row{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));align-items:end;gap:12px;margin:14px 0}
+.post-controls label,.photo-add-row label{color:#26354a;font-weight:750}
+.post-controls select,.photo-add-row select{display:block;width:100%;min-height:52px;margin-top:6px;padding:12px;color:#26354a;background:white;border:2px solid #aeb8d9;border-radius:13px;font:inherit}
+.post-assistant button{min-height:54px;border-radius:14px;background:#6650ba;margin:4px 8px 4px 0}.post-assistant button.secondary{background:#45406c}
+.photo-vault{margin:20px 0;padding:18px;background:#eaf7ff;color:#25354b;border-radius:18px}
+.photo-vault>p{font-size:14px;line-height:1.5}.photo-vault button{min-height:45px;border-radius:12px}
+.photo-upload{position:relative;display:flex;min-height:54px;align-items:center;justify-content:center;border-radius:14px;background:#146fb2;color:#fff!important;text-align:center;cursor:pointer;padding:12px}
+.photo-upload input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer}
+.photo-upload:focus-within{outline:3px solid #135999;outline-offset:3px}
+.photo-gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(205px,1fr));gap:12px;margin:16px 0}
+.photo-card{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid #c3d1de;background:white;color:#243548;border-radius:16px;min-width:0}
+.photo-card img{display:block;width:100%;height:185px;object-fit:cover;border-radius:10px;background:#e1e9ee}
+.photo-card strong{display:block;overflow-wrap:anywhere}.photo-card small{display:block;color:#53647b;margin:4px 0}
+.photo-actions{display:flex;gap:8px;margin-top:auto}.photo-actions button{flex:1;padding:10px 8px;font-size:13px}.photo-actions .delete{background:#87405a}
+.photo-warning{padding:12px;border:1px solid #e3ba67;background:#fff0ce;color:#53400a;border-radius:12px}
+@media(max-width:650px){.post-assistant,.photo-vault{padding:14px}.post-controls,.photo-add-row{grid-template-columns:1fr}.photo-gallery{grid-template-columns:repeat(2,minmax(0,1fr))}.photo-card img{height:138px}.photo-actions{flex-direction:column}.module-panel[aria-label="Communication & photos"] .fields label:nth-child(2){grid-column:auto}}
+@media(max-width:380px){.photo-gallery{grid-template-columns:1fr}.photo-card img{height:190px}}

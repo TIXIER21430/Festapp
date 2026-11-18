@@ -19,6 +19,9 @@ Ces commandes ne doivent ni déployer l'application ni appliquer de migration à
 - Annuaire : bénévoles, exposants et groupes, avec leurs coordonnées.
 - Registre des écocups, mouvements et seuil d'alerte.
 - Exports CSV et utilisation sur mobile.
+- Communication locale : brouillons Facebook à relire et copier, sans publication automatique.
+- Photos originales associables aux recettes, publications et archives, stockées sur l'appareil via IndexedDB (hors sauvegarde JSON ; chaque original peut être téléchargé).
+- Inventaire matériel, archives et mémoire d'événement en mode démonstration.
 - Persistance durable et partage entre membres, uniquement après validation sur un environnement TEST indépendant.
 
 ## État et garde-fous

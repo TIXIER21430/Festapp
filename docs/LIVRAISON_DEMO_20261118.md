@@ -9,10 +9,13 @@
 - Recettes : calcul de quantités pour une recette complétée ; création explicite des brouillons « Andouillettes » et « Pâte à crêpes » sans quantité inventée.
 - Écocups, stock, exports CSV et sauvegarde/restauration JSON locale sécurisée.
 - Caisse tactile : **démo uniquement**, aucun paiement SumUp ni vente réelle enregistrée.
+- Communication : brouillons de publications Facebook préparés à partir des informations de la manifestation, modifiables et copiables. Ce service local **n'est pas une IA connectée** et ne publie rien.
+- Matériel : inventaire local et indication de prêt ou emplacement ; archives et mémoire d'une manifestation.
+- Photos : originaux JPEG/PNG/WebP/GIF/HEIC conservés sans modification dans le stockage local du navigateur pour les rubriques Recettes, Communication et Archives. Chaque original est téléchargeable ; **les photos ne sont pas incluses dans le JSON de sauvegarde** et ne sont ni synchronisées ni traitées par IA.
 
 ## Vérification de la branche
 
-- `npm test` : 369 tests passent au moment de la préparation de ce document.
+- `npm test` : 386 tests passent après ajout de Communication, Matériel, Archives et galerie de photos.
 - `npm run build` : compilation Vite réussie (avertissement non bloquant sur la taille d’un bundle JS).
 - `main` : ne pas fusionner sans validation du comité.
 

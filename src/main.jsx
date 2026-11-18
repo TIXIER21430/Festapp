@@ -2,6 +2,8 @@ import React,{useEffect,useRef,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
 import SharedAccess from "./SharedAccess.jsx";
+import PhotoVault from "./PhotoVault.jsx";
+import {createEventPostDraft} from "./lib/postDrafts.js";
 import {buildCsv} from "./lib/csv.js";
 import {CONTACT_EXPORT_COLUMNS,selectContactsWithDetailsForExport} from "./lib/contactExport.js";
 import {validateContactDetails} from "./lib/contactDetails.js";
@@ -41,7 +43,10 @@ const categories=[
 {key:"shifts",title:"Planning bénévoles",icon:"🕒",fields:["Bénévole","Créneau","Poste"]},
 {key:"feedback",title:"Retours terrain",icon:"📝",fields:["Manifestation","Type","Remarque"]},
 {key:"recipes",title:"Recettes",icon:"🍲",fields:["Nom","Ingrédients","Préparation"]},
-{key:"finance",title:"Finances",icon:"📊",fields:["Manifestation","Montant (€)","Nature"]}
+{key:"finance",title:"Finances",icon:"📊",fields:["Manifestation","Montant (€)","Nature"]},
+{key:"equipment",title:"Matériel",icon:"🧰",fields:["Matériel","Quantité","Emplacement / prêt à"]},
+{key:"posts",title:"Communication & photos",icon:"📣",fields:["Titre de la publication","Texte Facebook","Statut"]},
+{key:"archives",title:"Archives & mémoire",icon:"🗂️",fields:["Document / souvenir","Année / manifestation","Notes utiles"]}
 ];
 const eventNames=["Concours de belote","Carnaval","Chasse aux œufs","Fête des voisins","Fanfare","Vide-grenier","Saint-Laurent","Halloween","Marché de Noël"];
 const seed={events:eventNames.map((name,i)=>({id:"seed-"+i,values:[name,"",""]}))};
@@ -66,6 +71,9 @@ function App(){
  const [recipeTarget,setRecipeTarget]=useState("50");
  const [recipeOutput,setRecipeOutput]=useState("");
  const [recipeDraftStatus,setRecipeDraftStatus]=useState("");
+ const [postKind,setPostKind]=useState("annonce");
+ const [postTone,setPostTone]=useState("chaleureux");
+ const [postStatus,setPostStatus]=useState("");
  const [selectedRecipeId,setSelectedRecipeId]=useState("");
  const [overviewEvent,setOverviewEvent]=useState("Marché de Noël");
  const [checklistStatus,setChecklistStatus]=useState("");
@@ -153,6 +161,20 @@ function App(){
   if(result.added)setData(old=>({...old,recipes:addMissingRecipeDrafts(old.recipes||[]).recipes}));
   setRecipeDraftStatus(result.added?result.added+" brouillon(s) créé(s). Complétez-les avec les originaux du comité.":"Les deux fiches existent déjà. Aucune donnée modifiée.");
  }
+ function preparePostDraft(){
+  try{
+   const event=eventOptions.find(r=>r.id===recordEventId)||eventOptions.find(r=>r.values[0]===overviewEvent);
+   if(!event)throw new Error("Choisissez d'abord une manifestation.");
+   const draft=createEventPostDraft({name:event.values[0],date:event.values[1],place:event.values[2],kind:postKind,tone:postTone});
+   setForm([draft.title,draft.body,"À relire"]);setRecordEventId(event.id);setEditingId(null);
+   setPostStatus("Brouillon proposé. Vérifiez les dates, les horaires et le contenu avant de le copier sur Facebook.");
+  }catch(err){setPostStatus("⚠ "+err.message);}
+ }
+ async function copyPostDraft(){
+  if(!form[1].trim())return;
+  try{await navigator.clipboard.writeText(form[1]);setPostStatus("Texte copié. Vous pouvez le coller dans Facebook après relecture.");}
+  catch{setPostStatus("Copie impossible sur cet appareil. Sélectionnez le texte puis copiez-le manuellement.");}
+ }
  function toggleTaskDone(id){if(demoReadOnly)return;setData(d=>({...d,tasks:(d.tasks||[]).map(r=>r.id===id?{...r,done:!r.done}:r)}));}
  function downloadVolunteerNeeds(){const blob=new Blob([exportVolunteerNeeds(volunteerNeeds)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="festapp-besoins-benevoles.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
  async function uploadVolunteerNeeds(e){const file=e.target.files?.[0];e.target.value="";if(!file)return;try{if(demoReadOnly)throw new Error("Mode lecture seule.");if(file.size>1_000_000)throw new Error("Fichier trop volumineux.");const parsed=importVolunteerNeeds(await file.text());if(!window.confirm("Remplacer les besoins bénévoles enregistrés sur cet appareil ? Les affectations existantes ne seront pas modifiées."))return;localStorage.setItem(VOLUNTEER_NEEDS_KEY,JSON.stringify(parsed));setVolunteerNeeds(parsed);setNeedsWarning("Besoins importés sur cet appareil.");}catch(err){setNeedsWarning("⚠ Import refusé : "+err.message);}}
@@ -230,7 +252,10 @@ function App(){
     ["shopping","🛒","Achats",(data.shopping||[]).length+" articles"],
     ["stock","📦","Stock",(data.stock||[]).length+" fiches"],
     ["feedback","📝","Retours",(data.feedback||[]).length+" retours"],
-    ["finance","📊","Finances",(data.finance||[]).length+" écritures"]
+    ["finance","📊","Finances",(data.finance||[]).length+" écritures"],
+    ["equipment","🧰","Matériel",(data.equipment||[]).length+" fiches"],
+    ["posts","📣","Communication",(data.posts||[]).length+" publications"],
+    ["archives","🗂️","Archives",(data.archives||[]).length+" souvenirs"]
    ].map(([key,icon,title,details])=><button type="button" key={key} className="quick-access-tile" aria-label={title+" : "+details} onClick={()=>openModule(key)}><span className="quick-icon" aria-hidden="true">{icon}</span><strong>{title}</strong><small>{details}</small></button>)}
   </div>
   <p className="quick-access-note">Chiffres de démonstration de cet appareil uniquement · aucun stock partagé.</p>
@@ -252,6 +277,9 @@ function App(){
  {tab==="ecocups"&&<div className="note"><p><strong>Calcul local de démonstration uniquement — aucun stock partagé.</strong> Saisir les mouvements exactement sous la forme « entrée » ou « sortie », et une quantité entière positive.</p><div className="fields"><label>Stock initial de démonstration<input inputMode="numeric" disabled={demoReadOnly} value={ecocupOpening} onChange={e=>setEcocupOpening(e.target.value)}/></label><label>Seuil d'alerte<input inputMode="numeric" disabled={demoReadOnly} value={ecocupThreshold} onChange={e=>setEcocupThreshold(e.target.value)}/></label></div>{ecocupError?<p role="alert">⚠ Calcul impossible : {ecocupError}. Vérifiez les mouvements, sans les effacer.</p>:<div className={"ecocup-balance-card "+(ecocupSummary.alert?"ecocup-balance-alert":"ecocup-balance-ok")} role="status"><span className="ecocup-balance-icon" aria-hidden="true">{ecocupSummary.alert?"⚠️":"✅"}</span><div><strong className="ecocup-balance-count">{ecocupSummary.balance} écocups</strong><p>{ecocupSummary.alert?"Seuil atteint : prévoir au moins "+(ecocupSummary.minimumToClearAlert??"une quantité à vérifier")+" écocups supplémentaires.":"Stock de démonstration au-dessus du seuil."}</p><small>Calcul local uniquement · aucune réservation de stock réel</small></div></div>}</div>}
  {tab==="recipes"&&<div className="note"><h3>🧮 Calculateur de quantités</h3><p>Choisissez une recette enregistrée. Les ingrédients doivent être saisis un par ligne (ex. : 250 g farine). Le calcul ne modifie jamais la recette originale.</p><label>Recette à calculer<select value={selectedRecipeId} onChange={e=>{setSelectedRecipeId(e.target.value);setRecipeOutput("");}}><option value="">Choisir une recette</option>{(data.recipes||[]).map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label><div className="fields"><label>Recette prévue pour<input inputMode="numeric" value={recipeServings} onChange={e=>setRecipeServings(e.target.value)}/></label><label>Nombre de personnes souhaité<input inputMode="numeric" value={recipeTarget} onChange={e=>setRecipeTarget(e.target.value)}/></label></div><button type="button" disabled={!selectedRecipeId} onClick={()=>{try{const recipe=(data.recipes||[]).find(r=>r.id===selectedRecipeId);if(!recipe)throw new Error("Recette introuvable.");setRecipeOutput(scaleRecipeText(recipe.values[1],Number(recipeServings),Number(recipeTarget)))}catch(e){setRecipeOutput("⚠ "+e.message)}}}>Calculer les ingrédients</button>{recipeOutput&&<pre role="status" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{recipeOutput}</pre>}</div>}
  {tab==="recipes"&&<div className="recipe-starters"><h3>📒 Recettes du comité à compléter</h3><p>Andouillettes et pâte à crêpes : les recettes originales n’ont pas encore été transmises. Créez deux brouillons sans ingrédients inventés, puis complétez les fiches.</p><button type="button" disabled={demoReadOnly} onClick={addRecipeDrafts}>➕ Préparer les 2 fiches brouillon</button>{recipeDraftStatus&&<p role="status">{recipeDraftStatus}</p>}</div>}
+ {tab==="posts"&&<div className="post-assistant"><h3>✨ Préparer une publication Facebook</h3><p>Choisissez la manifestation dans la fiche ci-dessous, puis préparez un texte modifiable. C’est un <strong>brouillon guidé local, sans IA connectée</strong>. Aucune publication automatique.</p><div className="post-controls"><label>Type<select value={postKind} onChange={e=>setPostKind(e.target.value)}><option value="annonce">Annoncer une fête</option><option value="rappel">Faire un rappel</option><option value="remerciement">Remercier après l’événement</option></select></label><label>Ton<select value={postTone} onChange={e=>setPostTone(e.target.value)}><option value="chaleureux">Chaleureux</option><option value="dynamique">Dynamique</option></select></label></div><button type="button" onClick={preparePostDraft}>✨ Préparer mon texte</button><button type="button" className="secondary" disabled={!form[1]} onClick={copyPostDraft}>📋 Copier le texte</button>{postStatus&&<p role="status">{postStatus}</p>}</div>}
+ {tab==="equipment"&&<p className="note">🧰 Inventaire et prêts de matériel : renseignez les quantités et les emplacements, ou la personne à qui le matériel est prêté. Pas de déduction automatique du stock ni de réservation partagée.</p>}
+ {tab==="archives"&&<p className="note">🗂️ Conservez les bilans, anecdotes et erreurs à éviter d'une édition à la suivante. Les photos originales se rangent dans la galerie ci-dessous ; les autres documents doivent pour l'instant rester dans le Drive du comité.</p>}
  <form onSubmit={add}>
   {tab!=="events"&&tab!=="contacts"&&tab!=="ecocups"&&<label>Manifestation associée<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Non attribuée</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>}
   {formError&&<p role="alert">{formError}</p>}
@@ -264,7 +292,7 @@ function App(){
       {["bénévole","exposant","groupe","fournisseur","intervenant"].map(kind=><option key={kind} value={kind}>{kind}</option>)}
       {form[i]&&!["bénévole","exposant","groupe","fournisseur","intervenant"].includes(form[i])&&<option value={form[i]}>{form[i]} (ancienne catégorie)</option>}
      </select>:
-     <>{tab==="shifts"&&i===2&&<div className="post-choices">{volunteerPosts.map(post=><button key={post} type="button" className={form[2]===post?"post-choice selected":"post-choice"} aria-pressed={form[2]===post} onClick={()=>setForm(f=>f.map((v,j)=>j===2?post:v))}>{post}</button>)}</div>}<input required={i===0} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/></>}
+     <>{tab==="shifts"&&i===2&&<div className="post-choices">{volunteerPosts.map(post=><button key={post} type="button" className={form[2]===post?"post-choice selected":"post-choice"} aria-pressed={form[2]===post} onClick={()=>setForm(f=>f.map((v,j)=>j===2?post:v))}>{post}</button>)}</div>}{(tab==="posts"&&i===1)||(tab==="recipes"&&i>0)||(tab==="archives"&&i===2)?<textarea rows={tab==="posts"?6:4} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/>:<input required={i===0} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/>}</>}
    </label>)}
    {tab==="contacts"&&<>
     <label>E-mail<input type="email" autoComplete="off" maxLength={320} value={contactEmail} onChange={e=>setContactEmail(e.target.value)} placeholder="adresse@exemple.fr"/></label>
@@ -275,6 +303,7 @@ function App(){
   <button type="submit" disabled={demoReadOnly}>{editingId?"Enregistrer les modifications":"+ Ajouter"}</button>
   {editingId&&<button type="button" className="secondary" onClick={cancelEdit}>Annuler la modification</button>}
  </form>
+ {["recipes","posts","archives"].includes(tab)&&<PhotoVault scope={tab} records={data[tab]||[]} readOnly={demoReadOnly}/>}
  {tab==="shifts"&&<section className="volunteer-agenda" aria-label="Planning des bénévoles par manifestation"><h3>🕒 Qui fait quoi ?</h3><div className="needs-backup-actions"><button type="button" onClick={downloadVolunteerNeeds}>💾 Sauvegarder les besoins</button><label className="needs-import">📂 Restaurer les besoins<input type="file" accept=".json,application/json" disabled={demoReadOnly} onChange={uploadVolunteerNeeds}/></label></div><button type="button" className="secondary" disabled={!printEvent||!printSchedule?.total} onClick={()=>window.print()}>🖨️ Imprimer le planning</button><label>Manifestation à afficher<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Choisir une manifestation</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>{recordEventId?(()=>{const schedule=volunteerSchedule(data.shifts||[],recordEventId);const summary=volunteerPostSummary(data.shifts||[],recordEventId,volunteerPosts);return <><p role="status">{schedule.total} affectation(s) pour cette manifestation</p><div className="volunteer-role-grid" aria-label="Répartition des bénévoles par poste">{summary.posts.map(item=>{const target=volunteerNeeds[recordEventId]?.[item.post];const status=staffingStatus(item.count,target);return <div className="volunteer-role-card" key={item.post}><span>{item.post}</span><strong>{item.count}{target!==undefined?` / ${target}`:""}</strong><small>{status.label}</small><label>Besoin<input aria-label={"Besoin pour "+item.post} type="number" min="0" max="1000" step="1" disabled={demoReadOnly} value={target??""} placeholder="À définir" onChange={e=>{const value=e.target.value;if(value!==""&&(!/^\d+$/.test(value)||Number(value)>1000))return;setVolunteerNeeds(old=>{const next={...old,[recordEventId]:{...(old[recordEventId]||{})}};if(value==="")delete next[recordEventId][item.post];else next[recordEventId][item.post]=Number(value);return next;});}}/></label></div>})}</div>{needsWarning&&<p role="alert">{needsWarning}</p>}{(summary.other>0||summary.unassigned>0)&&<p className="note">{summary.other>0?`${summary.other} affectation(s) sur d’autres postes. `:""}{summary.unassigned>0?`${summary.unassigned} poste(s) à préciser.`:""}</p>}<div className="agenda-list">{schedule.scheduled.map(r=><article key={r.id} className="agenda-item"><strong className="agenda-time">{r.time}</strong><div><strong>{r.name}</strong><p>{r.post||"Poste non précisé"}</p></div></article>)}</div>{schedule.unscheduled.length>0&&<div className="note"><strong>Créneaux à préciser ({schedule.unscheduled.length})</strong>{schedule.unscheduled.map(r=><p key={r.id}>{r.name} — {r.post||"Poste non précisé"} ({r.time||"horaire manquant"})</p>)}</div>}{schedule.total===0&&<p>Aucun bénévole affecté pour le moment.</p>}</>})():<p>Sélectionnez une manifestation pour consulter ses créneaux.</p>}</section>}
  {tab==="shifts"&&<p className="note">Choisissez un bénévole dans l’annuaire ou saisissez son nom manuellement. Seuls les contacts classés « bénévole » sont proposés. Planning local : indiquez les créneaux au format 10:00-12:30. Si un bénévole a deux créneaux qui se chevauchent sur la même manifestation, l’enregistrement est refusé. Les horaires sans date ne permettent pas de vérifier les conflits entre journées différentes.</p>}
  {tab==="tasks"&&<p role="status" className="note">✅ {(data.tasks||[]).filter(r=>r.done===true).length} tâche(s) terminée(s) sur {(data.tasks||[]).length}. Cochez une tâche pour la marquer comme faite ; responsable et échéance sont conservés.</p>}

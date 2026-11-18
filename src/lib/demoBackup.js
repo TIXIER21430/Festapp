@@ -1,7 +1,7 @@
 // Offline demo backup format. Never import automatically into shared production data.
 export const DEMO_BACKUP_FORMAT = "festapp-demo-backup";
 export const DEMO_BACKUP_VERSION = 1;
-const allowed = new Set(["events","tasks","shopping","stock","ecocups","contacts","shifts","feedback","recipes","finance"]);
+const allowed = new Set(["events","tasks","shopping","stock","ecocups","contacts","shifts","feedback","recipes","finance","equipment","posts","archives"]);
 const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
 export function validateDemoData(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) throw new TypeError("Invalid demo data");
