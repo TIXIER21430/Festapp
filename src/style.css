@@ -187,6 +187,19 @@
 .shared-test-backup{margin-top:1rem;padding:1rem;background:#f0f8ff;border:2px solid #96c5ed;border-radius:18px;color:#153759}
 .shared-test-backup p{margin:.35rem 0 .8rem}
 .shared-test-backup button{max-width:100%;white-space:normal}
+.shared-access{background:linear-gradient(120deg,#e6f4ff,#ebf9ee);color:#163d5d;border-radius:22px;scroll-margin-top:18px}
+.shared-cloud-heading{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px}
+.shared-cloud-heading h2{margin:5px 0 3px;font-size:24px}.shared-cloud-heading p{margin:4px 0 8px;font-size:14px}
+.shared-cloud-kicker{font-weight:900;color:#37629a;font-size:14px}.shared-sync-pill{font-size:13px;font-weight:900;padding:9px 13px;border-radius:99px;white-space:nowrap}
+.shared-sync-pill.ready,.shared-sync-ok{background:#c3f5d2;color:#135e3e}.shared-sync-pill.offline{background:#ffe7ad;color:#745221}
+.shared-mode-note{background:#fff;color:#2c5677;border-radius:12px;padding:11px;font-size:14px}
+.shared-login input{background:#fff;color:#173451;border:1px solid #9fbed6}.shared-login label{font-size:14px;font-weight:800;color:#163d5d}
+.shared-login button,.shared-sync-actions button{min-height:50px;background:#315bb0;color:#fff;border-radius:12px;font-weight:850}
+.shared-sync-actions{display:flex;flex-wrap:wrap;gap:10px;margin:11px 0}.shared-sync-actions button{flex:1;min-width:min(100%,235px)}
+.shared-sync-actions button.secondary,.shared-actions button.secondary{background:#fff;color:#234c7d;border:2px solid #a1badb}
+.shared-preview{margin:10px 0}.shared-preview p{font-size:14px}.shared-session{font-weight:850;color:#146b4f}
+.shared-sync-warning,.shared-sync-ok{border-radius:12px;padding:12px;line-height:1.5;font-size:14px}
+.shared-sync-warning{background:#fff0d0;color:#86591a}.shared-help{font-size:13px;color:#53708c;line-height:1.5}
 .owner-setup-tools{display:flex;align-items:center;flex-wrap:wrap;gap:.8rem;margin:.75rem 0 1rem}
 .owner-setup-tools button{background:#087b74;border:0;color:white;border-radius:14px;padding:.8rem 1rem;font-weight:800;cursor:pointer}
 .owner-setup-tools small{color:#c2dff6}

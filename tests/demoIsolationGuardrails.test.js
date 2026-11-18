@@ -2,16 +2,16 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 
-// Guardrails for the local-only MVP. These checks deliberately inspect the
+// Guardrails for the local-first MVP. These checks deliberately inspect the
 // shipped entrypoint, not a test fixture. They do not validate Supabase RLS.
 const app = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 const storage = readFileSync(new URL("../src/lib/demoStorage.js", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
-test("demo UI clearly identifies device-only storage", () => {
+test("demo UI clearly identifies local storage before TEST sync activation", () => {
   assert.match(app, /Mode démonstration/);
-  assert.match(app, /Données enregistrées uniquement sur cet appareil/);
-  assert.match(app, /non partagées avec le bureau/);
+  assert.match(app, /Tes saisies restent sur cet appareil jusqu’à l’activation de la synchronisation TEST/);
+  assert.match(app, /fiches locales par défaut/);
 });
 
 test("demo records stay in the explicitly named local namespace", () => {

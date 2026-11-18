@@ -8,9 +8,9 @@ const css=readFileSync(new URL("../src/style.css",import.meta.url),"utf8");
 test("the home screen has six large direct module shortcuts above long sections",()=>{
  const shortcuts=app.indexOf('aria-label="Accès rapide aux modules"');
  assert.ok(shortcuts>app.indexOf('className="hero"'));
- assert.ok(shortcuts<app.indexOf('<SharedAccess '));
+ assert.ok(shortcuts<app.indexOf('<OwnerSetup '));
  for(const name of ['"events"','"tasks"','"contacts"','"ecocups"','"shifts"','"recipes"']){
-  assert.ok(app.slice(shortcuts,app.indexOf('<SharedAccess ')).includes(name),name);
+  assert.ok(app.slice(shortcuts,app.indexOf('<OwnerSetup ')).includes(name),name);
  }
  assert.match(app,/onClick=\{\(\)=>openModule\(key\)\}/);
  assert.match(css,/\.quick-access-grid\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
@@ -50,7 +50,7 @@ test("all ten modules remain one tap away in the colorful mobile dashboard",()=>
 
 test("event cockpit opens the chosen manifestation without changing records",()=>{
  const begin=app.indexOf('aria-label="Tableau de bord de la manifestation"');
- const end=app.indexOf('<SharedAccess ');
+ const end=app.indexOf('<section className="panel" aria-label="Sauvegarde de démonstration">');
  const cockpit=app.slice(begin,end);
  assert.match(cockpit,/selectedOverview\.taskProgress\.remaining/);
  assert.match(cockpit,/selectedOverview\.counts\.shopping/);

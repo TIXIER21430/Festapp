@@ -1,6 +1,5 @@
 // Explicitly read-only: no writes, no automatic sync, no service-role credentials.
-import {validateDemoData} from "./demoBackup.js";
-import {parseVolunteerNeeds} from "./volunteerNeeds.js";
+import {readTestSyncPayload} from "./testSyncPayload.js";
 export const FESTAPP_SPACE_ID="83d56d91-ecee-4d07-8d1f-ca8fd686f0eb";
 export const FESTAPP_SUPABASE_URL="https://pomssbugayytzmmgvflg.supabase.co";
 
@@ -15,5 +14,6 @@ export async function readSharedSpace(client,spaceId=FESTAPP_SPACE_ID){
  if(error||!row||row.space_id!==spaceId)throw new Error("Données partagées indisponibles.");
  const payload=row.payload;
  if(!payload||typeof payload!=="object"||Array.isArray(payload))throw new Error("Format des données partagées invalide.");
- return {revision:String(row.revision),updatedAt:row.updated_at,data:validateDemoData(payload.data||{}),volunteerNeeds:parseVolunteerNeeds(JSON.stringify(payload.volunteerNeeds||{}))};
+ const clean=readTestSyncPayload(payload);
+ return {revision:String(row.revision),updatedAt:row.updated_at,...clean};
 }

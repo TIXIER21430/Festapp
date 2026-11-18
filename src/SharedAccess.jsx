@@ -1,70 +1,183 @@
-import React,{useEffect,useState} from "react";
+import React,{useEffect,useMemo,useRef,useState} from "react";
 import {createFestappClient,getFestappConnection} from "./lib/supabaseClient.js";
 import {readSharedSpace} from "./lib/supabaseSharedRead.js";
-import {saveTestSnapshot,sameTestSnapshotData} from "./lib/supabaseTestSync.js";
-import {validateDemoData} from "./lib/demoBackup.js";
-import {parseVolunteerNeeds} from "./lib/volunteerNeeds.js";
+import {saveTestSnapshot} from "./lib/supabaseTestSync.js";
+import {makeTestSyncPayload,sameTestPayload,testSyncText,testSyncRecordCount} from "./lib/testSyncPayload.js";
+
 const connection=getFestappConnection();
 const client=createFestappClient();
-export default function SharedAccess({data={},volunteerNeeds={},readOnly=false}){
+
+export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,tillConfig={},onApplyRemote,readOnly=false}){
  const [email,setEmail]=useState("");
  const [password,setPassword]=useState("");
- const [status,setStatus]=useState("");
- const [preview,setPreview]=useState(null);
- const [busy,setBusy]=useState(false);
  const [signedIn,setSignedIn]=useState(false);
- const localCount=Object.values(data).reduce((sum,rows)=>sum+(Array.isArray(rows)?rows.length:0),0);
- useEffect(()=>{if(!client)return;let active=true;client.auth.getUser().then(({data,error})=>{if(active&&!error)setSignedIn(Boolean(data?.user));}).catch(()=>{});const {data:subscription}=client.auth.onAuthStateChange((_event,session)=>{if(!active)return;setSignedIn(Boolean(session?.user));setPreview(null);});return ()=>{active=false;subscription?.subscription?.unsubscribe();};},[]);
+ const [busy,setBusy]=useState(false);
+ const [syncOn,setSyncOn]=useState(false);
+ const [status,setStatus]=useState("");
+ const [remote,setRemote]=useState(null);
+ const [tick,setTick]=useState(0);
+ const base=useRef(null);
+ const lock=useRef(false);
+ const live=useMemo(()=>{
+  try{const payload=makeTestSyncPayload({data,volunteerNeeds,ecocupSettings,tillConfig});return {payload,text:testSyncText(payload)};}
+  catch{return null;}
+ },[data,volunteerNeeds,ecocupSettings,tillConfig]);
+ const latest=useRef(live);
+ latest.current=live;
+ const localCount=live?testSyncRecordCount(live.payload):0;
+
+ useEffect(()=>{
+  if(!client)return;
+  let active=true;
+  client.auth.getUser().then(({data,error})=>{if(active&&!error)setSignedIn(Boolean(data?.user));}).catch(()=>{});
+  const {data:subscription}=client.auth.onAuthStateChange((_event,session)=>{
+   if(!active)return;
+   setSignedIn(Boolean(session?.user));
+  });
+  return ()=>{active=false;subscription?.subscription?.unsubscribe();};
+ },[]);
+ useEffect(()=>{
+  if(!signedIn){setSyncOn(false);setRemote(null);base.current=null;return;}
+  void checkAccess();
+ },[signedIn]);
+
  async function login(e){
-  e.preventDefault();if(!client||busy)return;setBusy(true);setStatus("");setPreview(null);
+  e.preventDefault();if(!client||lock.current)return;
+  lock.current=true;setBusy(true);setStatus("");
   try{
    const {error}=await client.auth.signInWithPassword({email:email.trim(),password});
-   if(error)throw new Error("Connexion refusée. Vérifiez votre adresse et votre mot de passe.");
-   setPassword("");setSignedIn(true);setStatus("Connecté. Vous pouvez vérifier votre accès au comité.");
-  }catch(err){setStatus(err.message||"Connexion impossible.");}
-  finally{setBusy(false);}
+   if(error)throw new Error("Connexion refusée. Vérifie l’e-mail et le mot de passe TEST.");
+   setPassword("");setSignedIn(true);
+  }catch(error){setStatus("⚠ "+(error.message||"Connexion impossible."));}
+  finally{lock.current=false;setBusy(false);}
  }
+
  async function checkAccess(){
-  if(!client||busy)return;setBusy(true);setStatus("");setPreview(null);
+  if(!client||!signedIn||lock.current)return;
+  lock.current=true;setBusy(true);
   try{
-   const snapshot=await readSharedSpace(client,connection?.spaceId);
-   setPreview({revision:snapshot.revision,updatedAt:snapshot.updatedAt,events:snapshot.data.events?.length||0,volunteers:snapshot.data.shifts?.length||0, tasks:snapshot.data.tasks?.length||0,shopping:snapshot.data.shopping?.length||0,stock:snapshot.data.stock?.length||0,recipes:snapshot.data.recipes?.length||0,remoteCount:Object.values(snapshot.data).reduce((sum,rows)=>sum+rows.length,0)});
-   setStatus("Accès au comité vérifié. Consultation uniquement.");
-  }catch(err){setStatus(err.message||"Accès impossible.");}
-  finally{setBusy(false);}
+   const snapshot=await readSharedSpace(client,connection.spaceId);
+   setRemote(snapshot);
+   if(latest.current&&sameTestPayload(latest.current.payload,snapshot)){
+    base.current={revision:snapshot.revision,text:latest.current.text};
+    setSyncOn(true);
+    setStatus("✅ Les données locales et Supabase TEST sont identiques. Synchronisation automatique active.");
+   }else{
+    base.current=null;setSyncOn(false);
+    setStatus("🟠 Deux versions différentes. Choisis laquelle conserver avant d’activer la synchro. Rien n’a été remplacé.");
+   }
+  }catch(error){
+   base.current=null;setSyncOn(false);setRemote(null);
+   setStatus("⚠ "+(error.message||"Accès cloud indisponible.")+" Les saisies locales restent intactes.");
+  }finally{lock.current=false;setBusy(false);}
  }
- async function savePrivateTestCopy(){
-  if(!client||!connection?.testMode||!signedIn||busy||!preview||readOnly)return;
-  let checked,needs;
-  try{checked=validateDemoData(data);needs=parseVolunteerNeeds(JSON.stringify(volunteerNeeds));}
-  catch{setStatus('⚠ Les données locales ne sont pas valides : aucune copie envoyée.');return;}
-  if(!window.confirm(`Envoyer ${localCount} fiche(s) locales dans Supabase TEST ? Cette opération remplace la copie TEST actuelle (${preview.remoteCount} fiches, révision ${preview.revision}), mais ne touche pas au projet réel. Les photos originales ne sont pas incluses. Téléchargez d’abord une sauvegarde JSON.`))return;
-  setBusy(true);setStatus('Vérification de la version TEST avant écriture…');
+
+ async function saveToCloud(automatic=false){
+  if(!client||!connection?.testMode||!signedIn||readOnly||lock.current||!latest.current)return;
+  const beforeBase=base.current;
+  if(automatic&&(!syncOn||!beforeBase||latest.current.text===beforeBase.text))return;
+  if(!automatic){
+   const remoteCount=remote?testSyncRecordCount(remote):0;
+   if(!window.confirm(`Envoyer ${localCount} fiches vers Supabase TEST ? La copie distante actuelle (${remoteCount} fiches) sera remplacée, jamais la base de production. Vérifie que tu as téléchargé ton ZIP de sauvegarde. Les photos originales restent locales.`))return;
+  }
+  lock.current=true;setBusy(true);
   try{
-   const before=await readSharedSpace(client,connection.spaceId);
-   if(before.revision!==preview.revision)throw new Error('Conflit : une autre sauvegarde a changé la version TEST. Vérifiez à nouveau votre accès avant de réessayer.');
-   const saved=await saveTestSnapshot(client,{spaceId:connection.spaceId,expectedRevision:before.revision,payload:{data:checked,volunteerNeeds:needs},testMode:true});
+   const existing=await readSharedSpace(client,connection.spaceId);
+   const expected=automatic?beforeBase?.revision:remote?.revision;
+   if(!expected||existing.revision!==expected)throw new Error("Conflit : la copie cloud a changé. Aucune fiche n’a été écrasée. Recharge les versions.");
+   const outgoing=latest.current;
+   if(!outgoing)throw new Error("Les données locales ne sont pas valides.");
+   if(sameTestPayload(outgoing.payload,existing)){
+    base.current={revision:existing.revision,text:outgoing.text};
+    setRemote(existing);setSyncOn(true);setStatus("✅ Déjà enregistré dans Supabase TEST.");
+    return;
+   }
+   const saved=await saveTestSnapshot(client,{spaceId:connection.spaceId,expectedRevision:existing.revision,payload:outgoing.payload,testMode:true});
    const after=await readSharedSpace(client,connection.spaceId);
-   if(after.revision!==saved.revision||!sameTestSnapshotData(after.data,checked))throw new Error('Écriture envoyée, mais vérification incomplète : contrôlez la copie TEST avant de continuer.');
-   setPreview({revision:after.revision,updatedAt:after.updatedAt,events:after.data.events?.length||0,volunteers:after.data.shifts?.length||0,tasks:after.data.tasks?.length||0,shopping:after.data.shopping?.length||0,stock:after.data.stock?.length||0,recipes:after.data.recipes?.length||0,remoteCount:Object.values(after.data).reduce((sum,rows)=>sum+rows.length,0)});
-   setStatus(`✅ ${localCount} fiche(s) enregistrée(s) et relue(s) dans Supabase TEST. Aucune donnée envoyée au projet réel.`);
-  }catch(err){setPreview(null);setStatus('⚠ '+(err.message||'Sauvegarde TEST impossible. Aucune confirmation de succès.'));}
-  finally{setBusy(false);}
+   if(after.revision!==saved.revision||!sameTestPayload(after,outgoing.payload))throw new Error("Envoi non confirmé par la relecture. Contrôle nécessaire avant une nouvelle sauvegarde.");
+   base.current={revision:after.revision,text:outgoing.text};
+   setRemote(after);setSyncOn(true);
+   setStatus(`✅ ${testSyncRecordCount(outgoing.payload)} fiches sauvegardées dans Supabase TEST (révision ${after.revision}). Les prochaines modifications seront envoyées automatiquement.`);
+  }catch(error){
+   base.current=null;setSyncOn(false);
+   setStatus("⚠ "+(error.message||"Synchronisation interrompue.")+" Les modifications restent sur cet appareil.");
+  }finally{lock.current=false;setBusy(false);setTick(n=>n+1);}
  }
+
+ async function loadFromCloud(){
+  if(!client||!connection?.testMode||!signedIn||readOnly||lock.current||!remote)return;
+  if(!window.confirm("Charger la copie Supabase TEST sur CET appareil ? Les fiches et réglages locaux seront remplacés. Fais d’abord une sauvegarde ZIP. Les photos originales ne seront pas supprimées."))return;
+  lock.current=true;setBusy(true);
+  try{
+   const newest=await readSharedSpace(client,connection.spaceId);
+   if(newest.revision!==remote.revision)throw new Error("La copie TEST a changé : vérifie de nouveau l’accès avant de charger.");
+   if(typeof onApplyRemote!=="function")throw new Error("Restauration locale indisponible.");
+   setSyncOn(false);
+   onApplyRemote(newest);
+   base.current={revision:newest.revision,text:testSyncText(newest)};
+   setRemote(newest);setSyncOn(true);
+   setStatus(`✅ ${testSyncRecordCount(newest)} fiches récupérées depuis Supabase TEST. Synchronisation automatique activée.`);
+  }catch(error){
+   base.current=null;setSyncOn(false);
+   setStatus("⚠ "+(error.message||"Récupération impossible.")+" Conserve ta sauvegarde locale.");
+  }finally{lock.current=false;setBusy(false);setTick(n=>n+1);}
+ }
+
+ // Once a chosen baseline is in place, edits are written after a short pause.
+ // A version mismatch stops writes: a second device can never be overwritten silently.
+ useEffect(()=>{
+  if(!syncOn||!signedIn||readOnly||!live||!base.current||live.text===base.current.text)return;
+  const timer=setTimeout(()=>{void saveToCloud(true);},1400);
+  return ()=>clearTimeout(timer);
+ },[syncOn,signedIn,readOnly,live?.text,tick]);
+
+ // Read updates from another device. Only apply them automatically if no
+ // unsaved local edit exists. Otherwise ask the user to resolve the conflict.
+ useEffect(()=>{
+  if(!syncOn||!signedIn||readOnly||!client)return;
+  let alive=true;
+  const interval=setInterval(async()=>{
+   if(!alive||lock.current||!base.current)return;
+   lock.current=true;
+   try{
+    const snapshot=await readSharedSpace(client,connection.spaceId);
+    if(snapshot.revision===base.current?.revision)return;
+    if(latest.current?.text!==base.current?.text){
+     base.current=null;setSyncOn(false);
+     setStatus("⚠ Conflit entre deux appareils. Tes modifications locales sont conservées. Vérifie les versions.");
+     return;
+    }
+    if(typeof onApplyRemote!=="function")throw new Error("Chargement indisponible.");
+    onApplyRemote(snapshot);
+    base.current={revision:snapshot.revision,text:testSyncText(snapshot)};
+    setRemote(snapshot);
+    setStatus("✅ Modifications de l’autre appareil récupérées depuis Supabase TEST.");
+   }catch{
+    base.current=null;setSyncOn(false);
+    setStatus("⚠ Connexion TEST interrompue. Tes fiches locales sont conservées ; relance la vérification.");
+   }finally{lock.current=false;setTick(n=>n+1);}
+  },20000);
+  return ()=>{alive=false;clearInterval(interval);};
+ },[syncOn,signedIn,readOnly,onApplyRemote]);
+
  async function logout(){
-  if(!client||busy)return;setBusy(true);
-  try{await client.auth.signOut();setPreview(null);setPassword("");setSignedIn(false);setStatus("Déconnecté.");}
-  catch{setStatus("Déconnexion impossible.");}finally{setBusy(false);}
+  if(!client||lock.current)return;
+  lock.current=true;setBusy(true);
+  try{await client.auth.signOut();setSignedIn(false);setSyncOn(false);setRemote(null);base.current=null;setPassword("");setStatus("Déconnecté de Supabase TEST. Tu peux continuer en local.");}
+  catch{setStatus("⚠ Déconnexion impossible.");}
+  finally{lock.current=false;setBusy(false);}
  }
- return <section className="panel shared-access" aria-label="Accès des membres"><h2>🔐 Espace du comité {connection?.testMode?"🧪 TEST":""}</h2>
-  {!client?<p>Connexion partagée désactivée sur cette installation. Le remplissage local reste disponible, sans transfert vers la base réelle.</p>:<>
-   <p>{connection?.testMode?"Environnement de test séparé : aucune donnée du comité réel n’est modifiée.":"Connexion réservée aux membres autorisés. Aucune donnée locale n’est remplacée."}</p>
-   {!signedIn&&<form onSubmit={login} className="shared-login"><label>Adresse e-mail<input type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Mot de passe<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button disabled={busy} type="submit">🔑 Se connecter</button></form>}
-   {signedIn&&<p className="shared-session">✅ Session active sur cet appareil</p>}
-   <div className="shared-actions"><button type="button" disabled={busy||!signedIn} onClick={checkAccess}>👀 Vérifier mon accès</button><button type="button" className="secondary" disabled={busy||!signedIn} onClick={logout}>Se déconnecter</button></div>
-   {preview&&<div className="shared-preview"><strong>✅ Espace accessible</strong><div className="shared-preview-grid">{[["🎉","Manifestations",preview.events],["✅","Tâches",preview.tasks],["🛒","Achats",preview.shopping],["📦","Stock",preview.stock],["🍲","Recettes",preview.recipes],["👥","Affectations",preview.volunteers]].map(([icon,label,count])=><div className="shared-preview-tile" key={label}><span aria-hidden="true">{icon}</span><strong>{count}</strong><small>{label}</small></div>)}</div><p>Révision TEST : {preview.revision} · {preview.remoteCount} fiches dans la copie distante · {localCount} fiches locales.</p><small>La consultation ne remplace jamais tes données locales. Les éventuelles écritures TEST sont volontaires et vérifiées.</small></div>}
-   {connection?.testMode&&<div className="shared-test-backup"><p><strong>🧪 Copie de sécurité TEST (optionnelle)</strong></p><p>Après avoir vérifié ton accès, tu peux enregistrer volontairement les fiches dans le projet TEST isolé. Cette fonction n’active ni le partage entre les membres ni la base réelle.</p><button type="button" disabled={busy||!signedIn||!preview||readOnly} onClick={savePrivateTestCopy}>💾 Enregistrer ma copie dans Supabase TEST</button></div>}
-   {status&&<p role="status">{status}</p>}
+
+ return <section className="panel shared-access" aria-label="Sauvegarde et synchronisation Supabase">
+  <div className="shared-cloud-heading"><div><span className="shared-cloud-kicker">☁️ Sauvegarde multi-appareils</span><h2>Mes fiches en sécurité</h2><p>Ordinateur et téléphone : une même copie après connexion et activation.</p></div><span className={"shared-sync-pill "+(syncOn?"ready":"offline")}>{syncOn?"✅ Synchronisé":connection?.testMode?"🧪 TEST à connecter":"🔒 Local uniquement"}</span></div>
+  {!client?<p className="shared-sync-warning">Connexion Supabase TEST indisponible sur cette version. Les fiches restent sur cet appareil ; télécharge régulièrement une sauvegarde ZIP.</p>:<>
+   <p className="shared-mode-note">🧪 Projet Supabase TEST isolé, sans paiement et sans accès pour les autres membres pour le moment. Les photos originales restent sur l’appareil.</p>
+   {!signedIn&&<form onSubmit={login} className="shared-login"><label>Adresse e-mail du compte TEST<input type="email" autoComplete="username" value={email} onChange={e=>setEmail(e.target.value)} required/></label><label>Mot de passe TEST<input type="password" autoComplete="current-password" value={password} onChange={e=>setPassword(e.target.value)} required/></label><button disabled={busy} type="submit">🔑 Me connecter</button></form>}
+   {!signedIn&&<p className="shared-help">Le compte TEST doit d’abord être créé et autorisé dans Supabase. Il est distinct de ta connexion ChatGPT.</p>}
+   {signedIn&&<div className="shared-actions"><span className="shared-session">✅ Compte TEST connecté</span><button type="button" className="secondary" disabled={busy} onClick={()=>void checkAccess()}>🔄 Vérifier les versions</button><button type="button" className="secondary" disabled={busy} onClick={logout}>Me déconnecter</button></div>}
+   {remote&&<div className="shared-preview"><strong>Supabase TEST : {testSyncRecordCount(remote)} fiche(s) · révision {remote.revision}</strong><p>Cet appareil : {localCount} fiche(s). {syncOn?"Les modifications sont sauvegardées après chaque saisie.":"Choisis une version pour démarrer sans écraser les données par erreur."}</p><div className="shared-sync-actions"><button type="button" disabled={busy||readOnly||!live||syncOn} onClick={()=>void saveToCloud(false)}>☁️ Envoyer mes fiches vers Supabase</button><button type="button" className="secondary" disabled={busy||readOnly||syncOn} onClick={loadFromCloud}>📲 Récupérer la copie Supabase</button></div></div>}
+   {status&&<p role="status" className={syncOn?"shared-sync-ok":"shared-sync-warning"}>{status}</p>}
+   <p className="shared-help">⚠ En cas de conflit ou de coupure, tes saisies restent locales : vérifie les versions avant de reprendre. Une sauvegarde ZIP complète est recommandée. Aucun paiement SumUp ni IA payante.</p>
   </>}
  </section>;
 }

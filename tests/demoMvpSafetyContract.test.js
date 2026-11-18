@@ -5,9 +5,9 @@ import { readFileSync } from 'node:fs';
 const app = readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf8');
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
-test('demo visibly discloses local-only, non-shared storage', () => {
+test('demo visibly discloses local-first storage and the optional TEST sync', () => {
   assert.match(app, /Mode démonstration/);
-  assert.match(app, /Données enregistrées uniquement sur cet appareil/);
+  assert.match(app, /Tes saisies restent sur cet appareil jusqu’à l’activation de la synchronisation TEST/);
   assert.match(app, /aucun stock partagé/);
 });
 
