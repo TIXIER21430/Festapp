@@ -19,6 +19,8 @@
 
 **Limite du fichier :** l'ensemble du JSON, y compris les besoins bénévoles, doit tenir dans 10 Mo (octets UTF-8). Si l'export affiche un refus, les fiches locales restent présentes mais **aucune sauvegarde exploitable n'a été téléchargée**. Réduire la taille des données de test ou répartir les essais avant de retenter. Ne jamais considérer un export refusé comme une sauvegarde réussie.
 
+**Si un stockage local est illisible :** FEST'APP se verrouille en lecture seule dès le chargement des fiches, des besoins bénévoles ou des réglages écocups. Ne pas vider le cache, réinitialiser le navigateur ni tenter une restauration dans ce profil : cela pourrait rendre la donnée d'origine irrécupérable. Conserver l'appareil et demander un diagnostic avant toute correction. Le bouton d'export JSON refuse de produire une sauvegarde potentiellement incomplète.
+
 ## Avant une mise en service partagée (non réalisée)
 - Créer un projet Supabase de test indépendant, avec clés et utilisateurs de test distincts.
 - Prévoir migrations **additives** versionnées, RLS activée et tests d'autorisation (10 membres du bureau ; bénévoles sans accès).
