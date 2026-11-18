@@ -48,3 +48,18 @@ test("preview labels orphan event links without exposing contact details",()=>{
  assert.match(app,/lien\(s\) vers des manifestations absentes/);
  assert.match(app,/plan\.safeToAppend && ecocupSafe|plan\.safeToAppend&&ecocupSafe/);
 });
+
+test("restore explains a missing linked event and preserves the input",()=>{
+ const current={events:[row("e1","Fanfare")],contacts:[row("c1","Contact existant")]};
+ const before=JSON.stringify(current);
+ const backup=createDemoBackup({tasks:[row("t1","Installer le bar","absent")],contacts:[row("c2","Nouveau")]});
+ assert.throws(()=>applyDemoRestore(current,backup,{confirmed:true}),/linked manifestation missing/);
+ assert.equal(JSON.stringify(current),before);
+});
+
+test("restore distinguishes duplicate identifiers from a category limit",()=>{
+ const current={events:[row("e1","Fanfare")]};
+ const backup=createDemoBackup({events:[row("e1","Autre nom")]});
+ assert.throws(()=>applyDemoRestore(current,backup,{confirmed:true}),/duplicate record identifiers/);
+ assert.equal(current.events[0].values[0],"Fanfare");
+});
