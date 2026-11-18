@@ -197,6 +197,21 @@
 .photo-zip small{color:#d2e8f6}
 .owner-setup-tools .owner-backup-secondary{background:#253b5c;border:1px solid #8bb4d7}
 .owner-setup-tools button:disabled{opacity:.55;cursor:not-allowed}
+.owner-audit{margin:18px 0 25px;padding:18px;border:2px solid #a8c5f9;border-radius:18px;background:linear-gradient(115deg,#f0f6ff,#faf5ff);color:#233854}
+.owner-audit-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:13px}
+.owner-audit-kicker{font-size:12px;font-weight:900;color:#5b3e91;letter-spacing:.03em}
+.owner-audit-heading h3{font-size:21px;margin:5px 0 7px}.owner-audit-heading p{font-size:13px;line-height:1.5;margin:0;max-width:690px;color:#4d5c74}
+.owner-audit-count{padding:9px 12px;border-radius:99px;background:#efe0ff;color:#59338c;font-size:13px;font-weight:900;white-space:nowrap}
+.owner-audit-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.owner-audit-card{display:flex;gap:11px;background:#fff;border:1px solid #dce5f4;border-radius:14px;padding:13px;min-width:0;box-shadow:0 5px 14px #294d7510}
+.owner-audit-icon{font-size:27px;flex:none}.owner-audit-card>div{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.owner-audit-card small{font-size:11px;font-weight:900;text-transform:uppercase;letter-spacing:.04em;color:#8b5285}
+.owner-audit-card h4{font-size:15px;margin:5px 0;color:#1d3d60}.owner-audit-card p{font-size:13px;line-height:1.5;color:#4c6075;margin:0 0 11px;flex:1}
+.owner-audit-card button{background:#315cbe;color:#fff;border-radius:11px;min-height:44px;border:0;padding:8px 12px;font-size:13px;font-weight:850;cursor:pointer}
+.owner-audit-card button:focus-visible{outline:3px solid #f2ad39;outline-offset:2px}
+.owner-audit-empty{background:#dcf7e4;padding:13px;border-radius:13px;color:#155c39;font-weight:700;font-size:14px}
+.owner-audit-note{margin:12px 0 0;font-size:12px;color:#5a5d79}
+@media(max-width:650px){.owner-audit{padding:13px}.owner-audit-grid{grid-template-columns:1fr}.owner-audit-heading h3{font-size:19px}}
 .owner-backup-status{padding:.65rem .85rem;border-radius:12px;background:#e1f7ee;color:#125f49;font-weight:700}
 .free-ai-helper{margin:1.35rem 0;background:linear-gradient(125deg,#173960,#53349a);border:2px solid #a0caff;border-radius:23px;padding:1.3rem;color:#fff;box-shadow:0 12px 35px #0003}
 .free-ai-heading{display:flex;align-items:flex-start;gap:1rem}
