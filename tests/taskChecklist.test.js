@@ -11,7 +11,7 @@ test("task completion rejects wrong types and other modules",()=>{
  assert.throws(()=>validateDemoData({finance:[{id:"f1",values:["","",""],done:true}]}),TypeError);
 });
 test("task checkbox is interactive but disabled in recovery mode",()=>{
- const app=readFileSync(new URL("../src/main.jsx",import.meta.url),"utf8");
- assert.match(app,/checked=\{r\.done===true\} disabled=\{demoReadOnly\}/);
- assert.match(app,/onChange=\{\(\)=>toggleTaskDone\(r\.id\)\}/);
+ const cards=readFileSync(new URL("../src/RecordCardGrid.jsx",import.meta.url),"utf8");
+ assert.match(cards,/checked=\{record\.done===true\} disabled=\{readOnly\}/);
+ assert.match(cards,/onChange=\{\(\)=>onToggleDone\(record\.id\)\}/);
 });

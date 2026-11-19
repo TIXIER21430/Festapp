@@ -10,8 +10,8 @@ test('contact directory starts with compact search and add, hides entry form unt
  assert.match(main,/contactSearchOpen,setContactSearchOpen/);
  assert.match(main,/aria-expanded=\{contactSearchOpen\}>🔍/);
  assert.match(main,/＋ Ajouter/);
- assert.match(main,/tab!=="contacts"\|\|contactFormOpen\)\&\&<form/);
- assert.match(main,/tab!=="contacts"\&\&<label className="search"/);
+ assert.match(main,/tab==="contacts"\?contactFormOpen:tab==="equipment"\?equipmentFormOpen:moduleFormOpen\)\&\&<form/);
+ assert.match(main,/tab==="contacts"&&<div className="festapp-directory-tools"/);
  assert.doesNotMatch(main,/Exporter uniquement ces contacts en CSV/);
 });
 

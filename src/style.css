@@ -387,3 +387,56 @@ footer{display:none}
 .festapp-export-center .festapp-export-status{padding:10px 12px;background:#fff;border-radius:10px;color:#184566}
 .festapp-export-center .festapp-export-privacy{font-size:12px;margin-top:12px}
 @media(max-width:580px){.festapp-export-center{padding:13px}.festapp-export-complete{width:100%}.festapp-export-select{grid-template-columns:1fr;padding:12px}}
+
+/* Material inventory: large photo tiles, quick search, and one-tap details. */
+.festapp-equipment-hint{color:#c4d4ed;font-size:13px;margin:0 0 12px}
+.festapp-equipment-count{color:#bdd1e9;font-size:13px;margin:7px 0 0;text-align:right}
+.festapp-equipment-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.festapp-equipment-tile{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;text-align:left;padding:9px 9px 13px;min-height:186px;background:#fff4db;color:#213348;border:2px solid transparent;border-radius:17px;box-shadow:0 5px 15px #08132533;touch-action:manipulation}
+.festapp-equipment-tile:nth-child(3n+2){background:#dbf4ff}
+.festapp-equipment-tile:nth-child(3n){background:#e6dcff}
+.festapp-equipment-tile:focus-visible{outline:3px solid white;outline-offset:3px}
+.festapp-equipment-tile:active{transform:scale(.98)}
+.festapp-equipment-image{display:grid;place-items:center;aspect-ratio:5/4;width:100%;overflow:hidden;background:#f7fbff;border-radius:12px}
+.festapp-equipment-image img{display:block;width:100%;height:100%;object-fit:cover}
+.festapp-equipment-image>span{font-size:clamp(42px,6vw,66px);line-height:1}
+.festapp-equipment-tile strong{display:block;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
+.festapp-equipment-tile small{display:block;color:#4d6378;font-size:13px;font-weight:750;overflow-wrap:anywhere}
+.festapp-equipment-empty{background:#34445e;color:#d9e6f6;padding:18px;border-radius:14px}
+.festapp-equipment-backdrop{position:fixed;z-index:230;inset:0;display:flex;justify-content:center;align-items:center;padding:16px;background:#071526bb}
+.festapp-equipment-detail{width:min(100%,480px);max-height:90dvh;overflow-y:auto;background:#f5f9ff;color:#24354b;border:2px solid #b8d5ec;border-radius:21px;padding:19px;box-shadow:0 18px 42px #0007}
+.festapp-equipment-detail-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.festapp-equipment-detail-heading h3{font-size:23px;margin:0;overflow-wrap:anywhere}
+.festapp-equipment-detail-heading button{min-height:44px;min-width:44px}
+.festapp-equipment-detail-image{display:block;max-height:210px;max-width:100%;object-fit:contain;margin:10px auto;border-radius:13px}
+.festapp-equipment-detail p{font-size:16px;margin:13px 0;overflow-wrap:anywhere}
+.festapp-equipment-detail-actions{display:grid;gap:9px;margin-top:15px}
+.festapp-equipment-detail-actions>button,.festapp-equipment-photo-action{min-height:50px;border-radius:12px;padding:13px;font-size:15px;font-weight:800;text-align:center;cursor:pointer}
+.festapp-equipment-photo-action{position:relative;background:#bbebff;color:#22425e}
+.festapp-equipment-photo-action:focus-within{outline:3px solid #2360a7;outline-offset:2px}
+.festapp-equipment-photo-action input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.festapp-equipment-photo-manage{margin-top:18px;padding:10px 12px;border-radius:13px;background:#2c3b52;color:#e2efff}
+.festapp-equipment-photo-manage>summary{cursor:pointer;min-height:44px;padding:11px 5px;font-weight:750}
+@media(min-width:650px){.festapp-equipment-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1000px){.festapp-equipment-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:380px){.festapp-equipment-grid{gap:8px}.festapp-equipment-tile{padding:7px;min-height:155px}.festapp-equipment-tile strong{font-size:15px}.festapp-equipment-tile small{font-size:12px}}
+
+/* Shared, readable cards for contacts, recipes, volunteers and other modules. */
+.festapp-record-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.festapp-record-tile{display:flex;flex-direction:column;min-width:0;border-radius:17px;background:#f9e7ff;color:#20344c;box-shadow:0 5px 15px #08132533;overflow:hidden}
+.festapp-record-tile:nth-child(3n+2){background:#d7f5e5}
+.festapp-record-tile:nth-child(3n){background:#fff0c7}
+.festapp-record-preview{width:100%;flex:1;display:flex;flex-direction:column;align-items:stretch;gap:7px;text-align:left;padding:9px;background:transparent;color:inherit;border-radius:17px;min-height:170px}
+.festapp-record-preview:focus-visible{outline:3px solid #164f9a;outline-offset:-3px}
+.festapp-record-preview:active{transform:scale(.98)}
+.festapp-record-image{display:grid;place-items:center;width:100%;aspect-ratio:5/4;background:#ffffffae;border-radius:12px;overflow:hidden}
+.festapp-record-image img{width:100%;height:100%;object-fit:cover}
+.festapp-record-image>span{font-size:clamp(42px,6vw,66px);line-height:1}
+.festapp-record-preview strong{font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.festapp-record-preview small{font-size:12px;color:#425a74;font-weight:750;line-height:1.3;overflow-wrap:anywhere}
+.festapp-record-check{display:flex;align-items:center;gap:8px;padding:6px 9px 10px;color:#28445a;font-size:13px;font-weight:750}
+.festapp-record-check input{display:inline-block;width:24px;height:24px;flex:none;margin:0;accent-color:#148b5a}
+.festapp-equipment-detail a{color:#14548a;font-weight:800;overflow-wrap:anywhere}
+@media(min-width:650px){.festapp-record-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1000px){.festapp-record-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:380px){.festapp-record-grid{gap:8px}.festapp-record-preview{min-height:150px;padding:7px}.festapp-record-preview strong{font-size:14px}}

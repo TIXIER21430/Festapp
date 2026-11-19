@@ -12,7 +12,7 @@ function OriginalCard({photo,title,onDelete,readOnly}){
  </article>;
 }
 
-export default function PhotoVault({scope,records=[],readOnly=false,photoRefreshRevision=0}){
+export default function PhotoVault({scope,records=[],readOnly=false,photoRefreshRevision=0,onChange}){
  const [photos,setPhotos]=useState([]);
  const [recordId,setRecordId]=useState("");
  const [status,setStatus]=useState("");
@@ -29,12 +29,12 @@ export default function PhotoVault({scope,records=[],readOnly=false,photoRefresh
    for(const file of files){await savePhotoOriginal(file,scope,recordId);saved++;}
    setStatus(`${saved} photo(s) originale(s) conservée(s) sur cet appareil.`);
   }catch(err){setStatus(`⚠ ${saved} photo(s) conservée(s). ${err.message}`);}
-  finally{try{await refresh();}catch(err){setStatus("⚠ Photos enregistrées mais liste non disponible : "+err.message);}setBusy(false);}
+  finally{try{await refresh();}catch(err){setStatus("⚠ Photos enregistrées mais liste non disponible : "+err.message);}if(saved>0)onChange?.();setBusy(false);}
  }
  async function remove(photo){
   if(readOnly||busy||!window.confirm("Supprimer définitivement cette photo locale ? Téléchargez d’abord l’original si vous voulez la garder."))return;
   setBusy(true);
-  try{await deletePhotoOriginal(photo.id);await refresh();setStatus("Photo locale supprimée.");}
+  try{await deletePhotoOriginal(photo.id);await refresh();onChange?.();setStatus("Photo locale supprimée.");}
   catch(err){setStatus("⚠ "+err.message);}
   finally{setBusy(false);}
  }
