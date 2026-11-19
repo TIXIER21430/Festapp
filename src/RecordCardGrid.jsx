@@ -16,7 +16,7 @@ export function cardSummary(category,record){
  return [values[1],values[2]].filter(Boolean).join(' · ')||'Fiche à compléter';
 }
 
-export default function RecordCardGrid({category,fields,records=[],readOnly=false,onEdit,onDelete,onToggleDone,photoRevision=0,onPhotoChange}){
+export default function RecordCardGrid({category,fields,records=[],readOnly=false,onEdit,onDelete,onToggleDone,onCalculateRecipe,photoRevision=0,onPhotoChange}){
  const [photos,setPhotos]=useState(new Map());
  const [selectedId,setSelectedId]=useState('');
  const [status,setStatus]=useState('');
@@ -67,6 +67,7 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
    <section className="festapp-equipment-detail" role="dialog" aria-modal="true" aria-label={'Fiche : '+selected.values[0]} onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape')setSelectedId('');}}>
     <div className="festapp-equipment-detail-heading"><h3>{selected.values[0]}</h3><button type="button" className="secondary" ref={closeRef} aria-label="Fermer la fiche" onClick={()=>setSelectedId('')}>✕</button></div>
     {photos.get(selected.id)&&<img className="festapp-equipment-detail-image" src={photos.get(selected.id)} alt={'Photo de '+selected.values[0]}/>}
+    {category==='recipes'&&<button type="button" className="festapp-recipe-calculate-action" onClick={()=>{onCalculateRecipe?.(selected);setSelectedId('');}}>🧮 Adapter les quantités</button>}
     {fields.slice(1).map((field,i)=><p key={field}><strong>{field} :</strong> {selected.values[i+1]||'À préciser'}</p>)}
     {category==='contacts'&&<>{selected.phone&&<p><a href={'tel:'+selected.phone}>📞 {selected.phone}</a></p>}{selected.email&&<p><a href={'mailto:'+selected.email}>✉️ {selected.email}</a></p>}</>}
     {category==='archives'&&/^https:\/\/(?:drive|docs)\.google\.com\//.test(selected.values[2]||'')&&<p><a href={selected.values[2]} target="_blank" rel="noopener noreferrer">📄 Voir l’original dans Drive</a></p>}
