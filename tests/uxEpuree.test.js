@@ -34,5 +34,6 @@ test('till stays in the event and advanced controls do not crowd the payment gri
  assert.match(app,/activeManifestation&&tillOpen&&<EventTill/);
  assert.match(till,/onClick=\{onClose\}>← Retour à la fête/);
  assert.match(till,/<details className="festapp-till-settings">/);
- assert.match(till,/aucun encaissement ni vente enregistrée/);
+ assert.match(till,/elle n’encaisse rien elle-même/);
+ assert.match(till,/Enregistrer cette vente/);
 });

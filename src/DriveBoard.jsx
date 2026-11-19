@@ -1,4 +1,5 @@
 import React,{useMemo,useState} from 'react';
+import {DRIVE_FOLDERS} from './lib/driveFolders.js';
 
 const filters=[['Tous','Tous les fichiers'],['Administratif','📊 Administratif'],['Manifestations','🎉 Manifestations'],['Communication','📣 Communication'],['Economat','📦 Stocks'],['Compte rendu','📝 Comptes rendus'],['Subventions','🤝 Subventions'],['Matériel','🧰 Matériel'],['Drive/','📁 Racine']];
 const icons={pdf:'📕',image:'🖼️',audio:'🎵',video:'🎬',document:'📄',spreadsheet:'📊',other:'📁'};
@@ -15,9 +16,9 @@ export default function DriveBoard({catalog,loading,error,importStatus,onImport,
  const visible=matches.slice(0,limit);
  const count=catalog?.files?.length||0;
  return <section id="drive-library" className="drive-board" aria-label="Documents Google Drive du comité">
-  <div className="drive-board-top"><div><h2>🗂️ Le Drive du comité</h2><p>Documents du Comité des fêtes de Liernais, retrouvables en quelques secondes.</p></div><span className="drive-count">{count} fichiers</span></div>
+  <div className="drive-board-top"><div><h2>🗂️ Le Drive du comité</h2><p>{catalog?'Retrouve un document en quelques secondes.':'Ouvre directement les dossiers du comité dans Google Drive.'}</p></div><span className="drive-count">{catalog?`${count} fichiers`:'Accès Drive'}</span></div>
   {loading&&<p role="status">Chargement du catalogue Drive…</p>}
-  {error&&<p role="alert">⚠ {error}</p>}
+  {!catalog&&!loading&&<div className="drive-fallback"><h3>📁 Accéder aux dossiers</h3><p>Le catalogue de recherche interne n'est pas encore disponible. Les documents restent accessibles dans le Drive d'origine, avec les droits habituels du comité.</p><div className="drive-fallback-grid">{DRIVE_FOLDERS.map(folder=><a key={folder.name} href={folder.url} target="_blank" rel="noopener noreferrer">{folder.icon} {folder.name}</a>)}</div></div>}
   {catalog&&<>
    <div className="drive-stats" aria-label="Répartition des fichiers"><span>📄 {catalog.stats.documents} documents</span><span>🖼️ {catalog.stats.images} images</span><span>🎵 {catalog.stats.audio} sons</span><span>🎬 {catalog.stats.videos} vidéos</span></div>
    <div className="drive-source"><div><strong>✨ Fiches préparées depuis le Drive</strong><small>Marché de Noël 2026, achats, listes de tâches, bilans 2025 et retours terrain. Import local sans écraser tes fiches.</small></div><button type="button" disabled={readOnly} onClick={onImport}>➕ Ajouter les fiches manquantes</button></div>

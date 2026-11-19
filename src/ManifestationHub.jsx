@@ -41,7 +41,7 @@ export default function ManifestationHub({events=[],tasks=[],selectedId='',onSel
  const cards=homeManifestations(events);
  useEffect(()=>{setShowTasks(false);setChecklistMessage('');},[selectedId]);
  const scrollHere=()=>rootRef.current?.scrollIntoView({behavior:'smooth',block:'start'});
- function goTo(record){onSelect(record.id);scrollHere();}
+ function goTo(record){if(onSelect(record.id)!==false)scrollHere();}
  function doFeature(key){
   if(key==='tasks'){setShowTasks(visible=>!visible);return;}
   if(key==='till'){onOpenTill(chosen);return;}
@@ -59,7 +59,7 @@ export default function ManifestationHub({events=[],tasks=[],selectedId='',onSel
     </button>;
    })}</div>
   </>:<>
-   <button type="button" className="festapp-hub-back" onClick={()=>{onBack();scrollHere();}}>← Toutes les manifestations</button>
+   <button type="button" className="festapp-hub-back" onClick={()=>{if(onBack()!==false)scrollHere();}}>← Toutes les manifestations</button>
    <div className="festapp-event-heading"><span aria-hidden="true">{ICONS[baseName(chosen.values[0])]||'🎉'}</span><div><small>Ma manifestation</small><h2>{chosen.values[0]}</h2><p>📅 {chosen.values[1]||'Date à confirmer'}{chosen.values[2]?' · 📍 '+chosen.values[2]:''}</p></div></div>
    {!tillOpen&&<>
     {total>0&&<div className="festapp-event-progress"><div><strong>{done} / {total}</strong><span>tâches terminées</span></div><progress max={Math.max(1,total)} value={done} aria-label="Tâches terminées pour cette manifestation"/></div>}

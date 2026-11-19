@@ -9,8 +9,9 @@ test("edit action retains the original id and replaces the row rather than dupli
  assert.match(app,/existing\.id===editingId\?withRecordEventId\(\{\.\.\.existing,values:row\.values/);
 });
 test("editing can be cancelled and is disabled in read-only recovery mode",()=>{
- assert.match(app,/function cancelEdit\(\)/);
- assert.match(app,/onClick=\{cancelEdit\}/);
+ assert.match(app,/function cancelEdit\(skipConfirmation=false\)/);
+ assert.match(app,/onClick=\{\(\)=>cancelEdit\(\)\}/);
+ assert.match(app,/if\(!allowDiscardDraft\(\)\)return/);
  assert.match(app,/readOnly=\{demoReadOnly\} onEdit=\{beginEdit\}/);
  assert.match(cards,/onEdit\(selected\)/);
  assert.match(cards,/disabled=\{readOnly\}/);

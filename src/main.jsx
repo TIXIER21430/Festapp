@@ -40,7 +40,9 @@ import {readDemoEcocupSettings,readDemoVolunteerNeeds} from "./lib/demoAuxStorag
 import {exportVolunteerNeeds,importVolunteerNeeds} from "./lib/volunteerNeedsBackup.js";
 import {scaleRecipeText} from "./lib/recipeText.js";
 import {addMissingRecipeDrafts} from "./lib/recipeStarters.js";
+import {hasUnsavedDraft} from "./lib/unsavedDraft.js";
 import {TILL_PRODUCTS} from "./lib/quickTill.js";
+import {createTillFinanceRecord,summarizeTillSales} from "./lib/tillSales.js";
 import {loadTillConfig,eventTillProducts,saveTillConfig,exportTillConfig,importTillConfig} from "./lib/tillConfig.js";
 import {summarizeEcocups} from "./lib/ecocupDemoBalance.js";
 import {ECOCUP_DEMO_SETTINGS_KEY,serializeDemoEcocupSettings} from "./lib/ecocupDemoSettings.js";
@@ -51,6 +53,7 @@ import {planDemoRestore} from "./lib/demoRestorePlan.js";
 import {previewRestoreImpact} from "./lib/restorePreview.js";
 import {applyDemoRestore} from "./lib/applyDemoRestore.js";
 import {mergeDriveSeed} from "./lib/mergeDriveSeed.js";
+import {DRIVE_FOLDERS} from "./lib/driveFolders.js";
 import {BULK_ENTRY_CATEGORIES,appendBulkEntry} from "./lib/bulkEntry.js";
 
 const DRIVE_IMPORT_KEY="festapp-drive-snapshot-20261118-v1";
@@ -73,7 +76,13 @@ const categories=[
 const eventModuleShortcuts=["tasks","shifts","shopping","recipes","equipment","posts","finance","feedback","archives","stock","ecocups"];
 const eventNames=["Concours de belote","Carnaval","Chasse aux œufs","Fête des voisins","Fanfare","Vide-grenier","Saint-Laurent","Halloween","Marché de Noël"];
 const seed={events:eventNames.map((name,i)=>({id:"seed-"+i,values:[name,"",""]}))};
-function load(){return readDemoStorage(localStorage,seed)}
+function load(){
+ const result=readDemoStorage(localStorage,seed);
+ if(result.readOnly)return result;
+ // Show the two specifically requested recipes as unapproved drafts. Never
+ // replace a recipe already imported or edited by the committee.
+ return {...result,data:{...result.data,recipes:addMissingRecipeDrafts(result.data.recipes||[]).recipes}};
+}
 function App(){
  const [initialStorage]=useState(load);
  const [initialNeedsStorage]=useState(()=>readDemoVolunteerNeeds(localStorage));
@@ -134,6 +143,8 @@ function App(){
  const [needsWarning,setNeedsWarning]=useState("");
  const eventOptions=(data.events||[]).filter(r=>r?.id&&r?.values?.[0]);
  const [tillCart,setTillCart]=useState({});
+ const [tillSaleStatus,setTillSaleStatus]=useState("");
+ const recordingTillSaleRef=useRef(false);
  const [tillEvent,setTillEvent]=useState("Marché de Noël");
  const [initialTillConfig]=useState(()=>loadTillConfig(localStorage));
  const [tillConfig,setTillConfig]=useState(initialTillConfig.config);
@@ -142,6 +153,7 @@ function App(){
  const tillImportRef=useRef(null);
  const [tillDraft,setTillDraft]=useState([]);
  const tillProducts=eventTillProducts(tillEvent,tillConfig);
+ const tillSaleSummary=summarizeTillSales(data.finance||[],hubEventId);
  const activeManifestation=eventOptions.find(event=>event.id===hubEventId);
  const [backupPreview,setBackupPreview]=useState("");
  const [restoreCandidate,setRestoreCandidate]=useState(null);
@@ -198,6 +210,20 @@ function App(){
   ?(contactType==="tous"||normalizeContact(r.values[1])===normalizeContact(contactType))&&[...r.values,r.email||"",r.phone||""].some(value=>normalizeContact(value).includes(normalizeContact(filter)))
   :r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
  const records=tab==="contacts"?sortContactsByName(filteredRecords):filteredRecords;
+ const draftIsDirty=hasUnsavedDraft({
+  open:tab==="contacts"?contactFormOpen:tab==="equipment"?equipmentFormOpen:moduleFormOpen,
+  form,editingId,records:data[tab]||[],eventId:recordEventId,
+  email:tab==="contacts"?contactEmail:"",phone:tab==="contacts"?contactPhone:""
+ });
+ function allowDiscardDraft(){
+  return !draftIsDirty||window.confirm("Cette fiche n'est pas enregistrée. Quitter sans conserver les modifications ?");
+ }
+ useEffect(()=>{
+  if(!draftIsDirty)return;
+  const warn=event=>{event.preventDefault();event.returnValue="";};
+  window.addEventListener('beforeunload',warn);
+  return ()=>window.removeEventListener('beforeunload',warn);
+ },[draftIsDirty]);
  function add(e){
   e.preventDefault();
   if(demoReadOnly){setFormError("Mode lecture seule : les données locales existantes sont protégées.");return;}
@@ -227,9 +253,10 @@ function App(){
   if(tab==="equipment")setEquipmentFormOpen(false);
   if(tab!=="contacts"&&tab!=="equipment")setModuleFormOpen(false);
  }
- function beginEdit(record){if(demoReadOnly)return;setEditingId(record.id);setForm([...record.values]);setContactEmail(record.email||"");setContactPhone(record.phone||"");setRecordEventId(record.eventId||"");setFormError("");if(tab==="contacts")setContactFormOpen(true);else if(tab==="equipment")setEquipmentFormOpen(true);else setModuleFormOpen(true);window.requestAnimationFrame(()=>{const target=tab==="contacts"?contactFormRef.current:tab==="equipment"?equipmentFormRef.current:moduleFormRef.current;target?.scrollIntoView({behavior:"smooth",block:"start"});target?.querySelector('input')?.focus({preventScroll:true});});}
- function cancelEdit(){setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setRecordEventId(moduleScopeEventId);setFormError("");if(tab==="contacts")setContactFormOpen(false);if(tab==="equipment")setEquipmentFormOpen(false);if(tab!=="contacts"&&tab!=="equipment")setModuleFormOpen(false);}
+ function beginEdit(record){if(demoReadOnly||!allowDiscardDraft())return;setEditingId(record.id);setForm([...record.values]);setContactEmail(record.email||"");setContactPhone(record.phone||"");setRecordEventId(record.eventId||"");setFormError("");if(tab==="contacts")setContactFormOpen(true);else if(tab==="equipment")setEquipmentFormOpen(true);else setModuleFormOpen(true);window.requestAnimationFrame(()=>{const target=tab==="contacts"?contactFormRef.current:tab==="equipment"?equipmentFormRef.current:moduleFormRef.current;target?.scrollIntoView({behavior:"smooth",block:"start"});target?.querySelector('input')?.focus({preventScroll:true});});}
+ function cancelEdit(skipConfirmation=false){if(!skipConfirmation&&!allowDiscardDraft())return;setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setRecordEventId(moduleScopeEventId);setFormError("");if(tab==="contacts")setContactFormOpen(false);if(tab==="equipment")setEquipmentFormOpen(false);if(tab!=="contacts"&&tab!=="equipment")setModuleFormOpen(false);}
  function openModule(key,eventId=""){
+  if(!allowDiscardDraft())return;
   setOrgTodosOpen(false);
   setSettingsOpen(false);
   if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=true;
@@ -247,6 +274,7 @@ function App(){
   });
  }
  function openDriveLibrary(){
+  if(!allowDiscardDraft())return;
   setOrgTodosOpen(false);setSettingsOpen(true);
   if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;
   window.requestAnimationFrame(()=>{
@@ -262,7 +290,7 @@ function App(){
   if(recipeCalculatorRef.current)recipeCalculatorRef.current.open=true;
   window.requestAnimationFrame(()=>recipeCalculatorRef.current?.scrollIntoView({behavior:'smooth',block:'start'}));
  }
- function remove(id){if(demoReadOnly)return;if(!confirm("Supprimer cette fiche ?"))return;if(editingId===id)cancelEdit();setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
+ function remove(id){if(demoReadOnly||!allowDiscardDraft())return;if(!confirm("Supprimer cette fiche ?"))return;if(editingId===id)cancelEdit(true);setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
  function addRecipeDrafts(){
   if(demoReadOnly){setRecipeDraftStatus("Lecture seule : fiches locales protégées.");return;}
   const result=addMissingRecipeDrafts(data.recipes||[]);
@@ -270,6 +298,7 @@ function App(){
   setRecipeDraftStatus(result.added?result.added+" brouillon(s) créé(s). Complétez-les avec les originaux du comité.":"Les deux fiches existent déjà. Aucune donnée modifiée.");
  }
  function preparePostDraft(){
+  if(!allowDiscardDraft())return;
   try{
    const event=eventOptions.find(r=>r.id===recordEventId)||eventOptions.find(r=>r.values[0]===overviewEvent);
    if(!event)throw new Error("Choisissez d'abord une manifestation.");
@@ -302,13 +331,16 @@ function App(){
   return `✅ ${drafts.length} tâche(s) ajoutée(s), toutes non cochées.`;
  }
  function selectManifestation(id){
+  if(!allowDiscardDraft())return false;
   const event=eventOptions.find(row=>row.id===id);
-  setHubEventId(id);setTillOpen(false);setTillCart({});setTillEdit(false);
+  setHubEventId(id);setTillOpen(false);setTillCart({});setTillEdit(false);setTillSaleStatus("");
   if(event)setTillEvent(event.values[0].replace(/\s+20\d{2}$/,''));
+  return true;
  }
- function goToHome(){selectManifestation('');setOrgTodosOpen(false);setSettingsOpen(false);setModuleScopeEventId('');if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>document.querySelector('[aria-label="Accueil des manifestations"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
- function openSettings(){setOrgTodosOpen(false);setTillOpen(false);setSettingsOpen(true);if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'smooth'}));}
+ function goToHome(){if(!selectManifestation(''))return;setOrgTodosOpen(false);setSettingsOpen(false);setModuleScopeEventId('');if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>document.querySelector('[aria-label="Accueil des manifestations"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
+ function openSettings(){if(!allowDiscardDraft())return;setOrgTodosOpen(false);setTillOpen(false);setSettingsOpen(true);if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'smooth'}));}
  function applyCloudSnapshot(snapshot){
+  if(!allowDiscardDraft())throw new Error('Saisie non enregistrée : restauration annulée.');
   if(demoReadOnly||initialTillConfig.warning)throw new Error('Données locales illisibles : restauration cloud interdite.');
   const clean=persistCloudSnapshot(localStorage,snapshot);
   setData(clean.data);setVolunteerNeeds(clean.volunteerNeeds);setEcocupSettings(clean.ecocupSettings);setTillConfig(clean.tillConfig);
@@ -316,11 +348,25 @@ function App(){
  }
  function openOwnerSetup(){setSettingsOpen(true);window.requestAnimationFrame(()=>{if(advancedRef.current)advancedRef.current.open=true;ownerSetupRef.current?.scrollIntoView({behavior:'smooth',block:'start'});});}
  function openTillForEvent(event){
-  if(!event||event.id!==hubEventId)return;
+  if(!event||event.id!==hubEventId||!allowDiscardDraft())return;
   const nextOpen=!tillOpen;
   setTillEvent(event.values[0].replace(/\s+20\d{2}$/,''));
   setTillOpen(nextOpen);setOrgTodosOpen(false);
   if(nextOpen)window.requestAnimationFrame(()=>document.querySelector('[aria-label="Caisse tactile"]')?.scrollIntoView({behavior:'smooth',block:'start'}));
+ }
+ function updateTillCart(updater){setTillSaleStatus("");setTillCart(updater);recordingTillSaleRef.current=false;}
+ function recordTillSale(method){
+  if(recordingTillSaleRef.current)return;
+  recordingTillSaleRef.current=true;
+  try{
+   if(demoReadOnly)throw new Error("Données locales protégées en lecture seule.");
+   const receipt=createTillFinanceRecord({id:crypto.randomUUID(),eventId:hubEventId,cart:tillCart,products:tillProducts,method,at:new Date().toISOString()});
+   const next={...data,finance:[...(data.finance||[]),receipt]};
+   const stored=writeDemoStorage(localStorage,next);
+   if(!stored.saved)throw new Error("Impossible de sauvegarder sur cet appareil. Le panier a été conservé : réessayez après avoir vérifié le stockage.");
+   setData(next);setTillCart({});setTillSaleStatus("✅ Vente notée dans le bilan financier de cette manifestation. Paiement non effectué par FEST’APP.");
+  }catch(error){setTillSaleStatus("⚠ "+error.message);}
+  finally{recordingTillSaleRef.current=false;}
  }
  function downloadVolunteerNeeds(){const blob=new Blob([exportVolunteerNeeds(volunteerNeeds)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="festapp-besoins-benevoles.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
  async function uploadVolunteerNeeds(e){const file=e.target.files?.[0];e.target.value="";if(!file)return;try{if(demoReadOnly)throw new Error("Mode lecture seule.");if(file.size>1_000_000)throw new Error("Fichier trop volumineux.");const parsed=importVolunteerNeeds(await file.text());if(!window.confirm("Remplacer les besoins bénévoles enregistrés sur cet appareil ? Les affectations existantes ne seront pas modifiées."))return;localStorage.setItem(VOLUNTEER_NEEDS_KEY,JSON.stringify(parsed));setVolunteerNeeds(parsed);setNeedsWarning("Besoins importés sur cet appareil.");}catch(err){setNeedsWarning("⚠ Import refusé : "+err.message);}}
@@ -451,12 +497,12 @@ function App(){
   window.requestAnimationFrame(()=>contactSearchRef.current?.focus());
  }
  function openContactForm(){
-  if(demoReadOnly)return;
+  if(demoReadOnly||!allowDiscardDraft())return;
   setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setFormError("");setContactFormOpen(true);
   window.requestAnimationFrame(()=>{contactFormRef.current?.scrollIntoView({behavior:"smooth",block:"start"});contactFormRef.current?.querySelector('input')?.focus({preventScroll:true});});
  }
  function openEquipmentForm(){
-  if(demoReadOnly)return;
+  if(demoReadOnly||!allowDiscardDraft())return;
   setEditingId(null);setForm(["","",""]);setRecordEventId(moduleScopeEventId);setFormError("");setEquipmentFormOpen(true);
   window.requestAnimationFrame(()=>{equipmentFormRef.current?.scrollIntoView({behavior:"smooth",block:"start"});equipmentFormRef.current?.querySelector('input')?.focus({preventScroll:true});});
  }
@@ -466,7 +512,7 @@ function App(){
   window.requestAnimationFrame(()=>equipmentSearchRef.current?.focus());
  }
  function openModuleForm(){
-  if(demoReadOnly)return;
+  if(demoReadOnly||!allowDiscardDraft())return;
   setEditingId(null);setForm(["","",""]);setFormError("");setRecordEventId(moduleScopeEventId);setModuleFormOpen(true);
   window.requestAnimationFrame(()=>{moduleFormRef.current?.scrollIntoView({behavior:"smooth",block:"start"});moduleFormRef.current?.querySelector('input')?.focus({preventScroll:true});});
  }
@@ -482,7 +528,7 @@ function App(){
  {initialEcocupStorage.warning&&<p role="alert" className="note">⚠ {initialEcocupStorage.warning}</p>}
  {!settingsOpen&&<>
   <ManifestationHub events={eventOptions} tasks={data.tasks||[]} selectedId={hubEventId} onSelect={selectManifestation} onBack={()=>selectManifestation('')} onOpenModule={openModule} onOpenTill={openTillForEvent} tillOpen={tillOpen} onToggleTodo={toggleTaskDone} onAddTodo={addQuickTodo} onChecklist={addChecklistToEvent} readOnly={demoReadOnly}/>
-  {activeManifestation&&tillOpen&&<EventTill eventName={activeManifestation.values[0]} onClose={()=>openTillForEvent(activeManifestation)} products={tillProducts} cart={tillCart} setCart={setTillCart} editing={tillEdit} onToggleEdit={()=>tillEdit?setTillEdit(false):openTillEditor()} draft={tillDraft} setDraft={setTillDraft} onSave={saveTillEditor} configWarning={tillConfigWarning} configReadOnly={!!initialTillConfig.warning} onImport={()=>tillImportRef.current?.click()} importRef={tillImportRef} onImportFile={importMenus}/>}
+  {activeManifestation&&tillOpen&&<EventTill eventName={activeManifestation.values[0]} onClose={()=>openTillForEvent(activeManifestation)} products={tillProducts} cart={tillCart} setCart={updateTillCart} onRecordSale={recordTillSale} saleStatus={tillSaleStatus} saleSummary={tillSaleSummary} readOnly={demoReadOnly} editing={tillEdit} onToggleEdit={()=>tillEdit?setTillEdit(false):openTillEditor()} draft={tillDraft} setDraft={setTillDraft} onSave={saveTillEditor} configWarning={tillConfigWarning} configReadOnly={!!initialTillConfig.warning} onImport={()=>tillImportRef.current?.click()} importRef={tillImportRef} onImportFile={importMenus}/>}
  </>}
  {settingsOpen&&<>
  <section className="festapp-settings-head"><button type="button" className="festapp-back-action" onClick={()=>setSettingsOpen(false)}>← Retour aux fêtes</button><h1>⚙ Plus et réglages</h1><p>Sauvegardes, documents et outils de gestion.</p><button type="button" onClick={openOwnerSetup}>✍️ Vérifier les fiches avant de les partager</button></section>
@@ -549,10 +595,10 @@ function App(){
  {scopeEvent&&<div className="festapp-module-scope" role="status"><strong>🎉 {scopeEvent.values[0]} · Les nouvelles fiches sont automatiquement rattachées à cette fête.</strong></div>}
  {tab==="ecocups"&&<div className="note"><p><strong>Calcul local de démonstration uniquement — aucun stock partagé.</strong> Saisir les mouvements exactement sous la forme « entrée » ou « sortie », et une quantité entière positive.</p><div className="fields"><label>Stock initial de démonstration<input inputMode="numeric" disabled={demoReadOnly} value={ecocupOpening} onChange={e=>setEcocupOpening(e.target.value)}/></label><label>Seuil d'alerte<input inputMode="numeric" disabled={demoReadOnly} value={ecocupThreshold} onChange={e=>setEcocupThreshold(e.target.value)}/></label></div>{ecocupError?<p role="alert">⚠ Calcul impossible : {ecocupError}. Vérifiez les mouvements, sans les effacer.</p>:<div className={"ecocup-balance-card "+(ecocupSummary.alert?"ecocup-balance-alert":"ecocup-balance-ok")} role="status"><span className="ecocup-balance-icon" aria-hidden="true">{ecocupSummary.alert?"⚠️":"✅"}</span><div><strong className="ecocup-balance-count">{ecocupSummary.balance} écocups</strong><p>{ecocupSummary.alert?"Seuil atteint : prévoir au moins "+(ecocupSummary.minimumToClearAlert??"une quantité à vérifier")+" écocups supplémentaires.":"Stock de démonstration au-dessus du seuil."}</p><small>Calcul local uniquement · aucune réservation de stock réel</small></div></div>}</div>}
  {tab==="recipes"&&<details className="festapp-optional-tool" ref={recipeCalculatorRef}><summary>🧮 Calculer les quantités</summary><div className="note"><h3>🧮 Calculateur de quantités</h3><p>Les ingrédients doivent être saisis un par ligne (ex. : 250 g farine). Le calcul ne modifie jamais la recette originale.</p><label>Recette à calculer<select value={selectedRecipeId} onChange={e=>{setSelectedRecipeId(e.target.value);setRecipeOutput("");}}><option value="">Choisir une recette</option>{recordsForManifestation(data.recipes||[],"recipes",moduleScopeEventId).map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label><div className="fields"><label>Recette prévue pour<input inputMode="numeric" value={recipeServings} onChange={e=>setRecipeServings(e.target.value)}/></label><label>Nombre de personnes souhaité<input inputMode="numeric" value={recipeTarget} onChange={e=>setRecipeTarget(e.target.value)}/></label></div><button type="button" disabled={!selectedRecipeId} onClick={()=>{try{const recipe=(data.recipes||[]).find(r=>r.id===selectedRecipeId);if(!recipe)throw new Error("Recette introuvable.");setRecipeOutput(scaleRecipeText(recipe.values[1],Number(recipeServings),Number(recipeTarget)))}catch(e){setRecipeOutput("⚠ "+e.message)}}}>Calculer les ingrédients</button>{recipeOutput&&<pre role="status" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{recipeOutput}</pre>}</div></details>}
- {tab==="recipes"&&<details className="festapp-optional-tool"><summary>📒 Préparer les recettes manquantes</summary><div className="recipe-starters"><h3>📒 Recettes du comité à compléter</h3><p>Andouillettes et pâte à crêpes : les recettes originales n’ont pas encore été transmises. Créez deux brouillons sans ingrédients inventés, puis complétez les fiches.</p><button type="button" disabled={demoReadOnly} onClick={addRecipeDrafts}>➕ Préparer les 2 fiches brouillon</button>{recipeDraftStatus&&<p role="status">{recipeDraftStatus}</p>}</div></details>}
+ {tab==="recipes"&&<details className="festapp-optional-tool"><summary>📒 Recettes du comité à compléter</summary><div className="recipe-starters"><h3>📒 Recettes originales à vérifier</h3><p>Andouillettes et pâte à crêpes : deux fiches brouillon sont prévues sans ingrédients inventés. Ajoutez les photos originales et renseignez les quantités avant de les utiliser.</p><button type="button" disabled={demoReadOnly} onClick={addRecipeDrafts}>Vérifier les deux brouillons</button>{recipeDraftStatus&&<p role="status">{recipeDraftStatus}</p>}</div></details>}
  {tab==="posts"&&<details className="festapp-optional-tool"><summary>✨ Préparer une publication</summary><div className="post-assistant"><h3>✨ Préparer une publication Facebook</h3><p>Prépare un texte modifiable pour {scopeEvent?.values[0]||'une fête'}. C’est un <strong>brouillon local, sans IA connectée</strong> et sans publication automatique.</p><div className="post-controls"><label>Type<select value={postKind} onChange={e=>setPostKind(e.target.value)}><option value="annonce">Annoncer une fête</option><option value="rappel">Faire un rappel</option><option value="remerciement">Remercier après l’événement</option></select></label><label>Ton<select value={postTone} onChange={e=>setPostTone(e.target.value)}><option value="chaleureux">Chaleureux</option><option value="dynamique">Dynamique</option></select></label></div><button type="button" onClick={preparePostDraft}>✨ Préparer mon texte</button><button type="button" className="secondary" disabled={!form[1]} onClick={copyPostDraft}>📋 Copier le texte</button>{postStatus&&<p role="status">{postStatus}</p>}</div></details>}
  {tab==="equipment"&&<p className="festapp-equipment-hint">Touche un matériel pour voir sa fiche, modifier sa quantité ou ajouter sa photo.</p>}
- {tab==="archives"&&<p className="note">🗂️ Les documents d’origine restent dans le Drive. <a href="#drive-library" className="archive-drive-link" onClick={event=>{event.preventDefault();openDriveLibrary();}}>🔎 Rechercher parmi les {driveCatalog?.files?.length||0} documents du comité</a>. Vous pouvez aussi ajouter vos souvenirs et photos locales ci-dessous.</p>}
+ {tab==="archives"&&<p className="note">🗂️ Les documents d’origine restent dans le Drive. {driveCatalog?<a href="#drive-library" className="archive-drive-link" onClick={event=>{event.preventDefault();openDriveLibrary();}}>🔎 Rechercher parmi les {driveCatalog.files.length} documents du comité</a>:<a href={DRIVE_FOLDERS[0].url} className="archive-drive-link" target="_blank" rel="noopener noreferrer">📁 Ouvrir les dossiers des manifestations dans Google Drive</a>}. Vous pouvez aussi ajouter vos souvenirs et photos locales ci-dessous.</p>}
  {tab==="finance"&&<p className="note">🧾 Vous pouvez photographier les justificatifs en bas de cette rubrique, en gardant leur original sur cet appareil. La photo n’inscrit aucun montant automatiquement : saisissez puis contrôlez l’écriture ci-dessous.</p>}
  {tab==="contacts"&&<div className="festapp-directory-tools"><div className="festapp-directory-actions"><button type="button" className="festapp-directory-search-action" onClick={toggleContactSearch} aria-expanded={contactSearchOpen}>🔍 {contactSearchOpen?"Fermer":"Rechercher"}</button><button type="button" className="festapp-directory-add-action" disabled={demoReadOnly} onClick={openContactForm}>＋ Ajouter</button></div>{contactSearchOpen&&<label className="festapp-directory-search">Rechercher un contact<input ref={contactSearchRef} type="search" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Nom, téléphone, e-mail…"/></label>}<div className="festapp-directory-filters"><label>Catégorie<select value={contactType} onChange={e=>setContactType(e.target.value)}><option value="tous">Tous les contacts</option><option value="bénévole">Bénévoles</option><option value="exposant">Exposants</option><option value="groupe">Groupes</option><option value="fournisseur">Fournisseurs</option><option value="intervenant">Intervenants</option></select></label><span role="status">{records.length} contact{records.length>1?"s":""}</span></div></div>}
  {tab==="equipment"&&<div className="festapp-directory-tools"><div className="festapp-directory-actions"><button type="button" className="festapp-directory-search-action" aria-expanded={equipmentSearchOpen} onClick={toggleEquipmentSearch}>🔍 {equipmentSearchOpen?"Fermer":"Rechercher"}</button><button type="button" className="festapp-directory-add-action" disabled={demoReadOnly} onClick={openEquipmentForm}>＋ Ajouter</button></div>{equipmentSearchOpen&&<label className="festapp-directory-search">Rechercher du matériel<input ref={equipmentSearchRef} type="search" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Nom, emplacement…"/></label>}<p className="festapp-equipment-count" role="status">{records.length} matériel{records.length>1?"s":""}</p></div>}
@@ -579,7 +625,7 @@ function App(){
   </div>
   {tab==="contacts"&&<p className="note">Les anciennes coordonnées du champ libre restent intactes. Recopiez-les dans E-mail ou Téléphone après vérification.</p>}
   <button type="submit" disabled={demoReadOnly}>{editingId?"Enregistrer les modifications":"+ Ajouter"}</button>
-  {editingId&&<button type="button" className="secondary" onClick={cancelEdit}>Annuler la modification</button>}
+  <button type="button" className="secondary" onClick={()=>cancelEdit()}>Annuler</button>
  </form>}
  {tab==="shifts"&&<details className="festapp-optional-tool"><summary>🕒 Répartition et planning des bénévoles</summary><section className="volunteer-agenda" aria-label="Planning des bénévoles par manifestation"><h3>🕒 Qui fait quoi ?</h3><div className="needs-backup-actions"><label className="needs-import">📂 Restaurer les besoins<input type="file" accept=".json,application/json" disabled={demoReadOnly} onChange={uploadVolunteerNeeds}/></label></div><button type="button" className="secondary" disabled={!printEvent||!printSchedule?.total} onClick={()=>window.print()}>🖨️ Imprimer le planning</button><label>Manifestation à afficher<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Choisir une manifestation</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>{recordEventId?(()=>{const schedule=volunteerSchedule(data.shifts||[],recordEventId);const summary=volunteerPostSummary(data.shifts||[],recordEventId,volunteerPosts);return <><p role="status">{schedule.total} affectation(s) pour cette manifestation</p><div className="volunteer-role-grid" aria-label="Répartition des bénévoles par poste">{summary.posts.map(item=>{const target=volunteerNeeds[recordEventId]?.[item.post];const status=staffingStatus(item.count,target);return <div className="volunteer-role-card" key={item.post}><span>{item.post}</span><strong>{item.count}{target!==undefined?` / ${target}`:""}</strong><small>{status.label}</small><label>Besoin<input aria-label={"Besoin pour "+item.post} type="number" min="0" max="1000" step="1" disabled={demoReadOnly} value={target??""} placeholder="À définir" onChange={e=>{const value=e.target.value;if(value!==""&&(!/^\d+$/.test(value)||Number(value)>1000))return;setVolunteerNeeds(old=>{const next={...old,[recordEventId]:{...(old[recordEventId]||{})}};if(value==="")delete next[recordEventId][item.post];else next[recordEventId][item.post]=Number(value);return next;});}}/></label></div>})}</div>{needsWarning&&<p role="alert">{needsWarning}</p>}{(summary.other>0||summary.unassigned>0)&&<p className="note">{summary.other>0?`${summary.other} affectation(s) sur d’autres postes. `:""}{summary.unassigned>0?`${summary.unassigned} poste(s) à préciser.`:""}</p>}<div className="agenda-list">{schedule.scheduled.map(r=><article key={r.id} className="agenda-item"><strong className="agenda-time">{r.time}</strong><div><strong>{r.name}</strong><p>{r.post||"Poste non précisé"}</p></div></article>)}</div>{schedule.unscheduled.length>0&&<div className="note"><strong>Créneaux à préciser ({schedule.unscheduled.length})</strong>{schedule.unscheduled.map(r=><p key={r.id}>{r.name} — {r.post||"Poste non précisé"} ({r.time||"horaire manquant"})</p>)}</div>}{schedule.total===0&&<p>Aucun bénévole affecté pour le moment.</p>}</>})():<p>Sélectionnez une manifestation pour consulter ses créneaux.</p>}</section>
  <p className="note">Choisissez un bénévole dans l’annuaire ou saisissez son nom manuellement. Seuls les contacts classés « bénévole » sont proposés. Planning local : indiquez les créneaux au format 10:00-12:30. Si un bénévole a deux créneaux qui se chevauchent sur la même manifestation, l’enregistrement est refusé. Les horaires sans date ne permettent pas de vérifier les conflits entre journées différentes.</p></details>}

@@ -33,7 +33,7 @@ test('private preparation shortcuts open their destinations, including event sco
  assert.doesNotMatch(app,/onClick=\{\(\)=>\{setTab\(key\);setFilter\(""\)/);
 });
 
-test('archives search opens the hidden Drive section and focuses its search',()=>{
+test('archives search opens the hidden Drive section when the internal catalog exists',()=>{
  const openDrive=app.slice(app.indexOf('function openDriveLibrary()'),app.indexOf('function openRecipeCalculator('));
  assert.match(openDrive,/setSettingsOpen\(true\)/);
  assert.match(openDrive,/moduleWorkbenchRef\.current\.open=false/);
@@ -41,6 +41,7 @@ test('archives search opens the hidden Drive section and focuses its search',()=
  assert.match(openDrive,/getElementById\('drive-library'\)\?\.scrollIntoView/);
  assert.match(openDrive,/querySelector\('#drive-library input\[type="search"\]'\)\?\.focus/);
  assert.match(app,/className="archive-drive-link" onClick=\{event=>\{event\.preventDefault\(\);openDriveLibrary\(\);\}\}/);
+ assert.match(app,/DRIVE_FOLDERS\[0\]\.url/);
 });
 
 test('a recipe detail offers quantity calculations with that recipe already selected',()=>{

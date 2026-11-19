@@ -445,3 +445,17 @@ footer{display:none}
 @media(min-width:650px){.festapp-record-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:1000px){.festapp-record-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
 @media(max-width:380px){.festapp-record-grid{gap:8px}.festapp-record-preview{min-height:150px;padding:7px}.festapp-record-preview strong{font-size:14px}}
+.festapp-till-sale{display:grid;gap:10px;margin:16px 0;padding:17px;border:2px solid #89c7a7;border-radius:19px;background:#e5f8ed;color:#174830}
+.festapp-till-sale label{display:grid;gap:5px;font-weight:800;color:#194934}
+.festapp-till-sale select{width:100%;min-height:49px;background:#fff;color:#20344f;border:1px solid #9ac9ae;border-radius:12px;padding:9px}
+.festapp-till-sale>button{min-height:56px;border-radius:14px;background:#08764f;color:white;font-weight:900;font-size:18px}
+.festapp-till-sale>button:disabled{opacity:.48;cursor:not-allowed}
+.festapp-till-sale small{color:#315e4b;font-size:14px}
+.festapp-till-sale [role="status"]{margin:0;padding:10px;background:#fff;border-radius:10px}
+.festapp-till-sale-total{margin:3px 0 0;font-size:15px;font-weight:750}
+.drive-fallback{display:grid;gap:10px;padding:15px;border-radius:16px;background:#f1f6ff;border:1px solid #bed2ed}
+.drive-fallback h3{margin:0;font-size:19px;color:#183a66}
+.drive-fallback p{margin:0;color:#425b78}
+.drive-fallback-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.drive-fallback-grid a{display:flex;align-items:center;gap:9px;min-height:56px;padding:13px;background:#fff;color:#123d73;border:1px solid #c2d7f3;border-radius:13px;text-decoration:none;font-weight:800}
+@media(max-width:420px){.drive-fallback-grid{grid-template-columns:1fr}}

@@ -21,7 +21,7 @@ export function createEventPostDraft({name,date="",place="",kind="annonce",tone=
   title=`À venir : ${event}`;
   body=tone==="dynamique"
    ?`🎊 Rendez-vous pour ${event} ! Le Comité des fêtes de Liernais vous prépare un beau moment. Venez nombreux !`
-   :`✨ Le Comité des fêtes de Liernais vous invite à ${event}. Nous serons heureux de vous retrouver pour un moment convivial !`;
+   :`✨ Le Comité des fêtes de Liernais vous donne rendez-vous pour ${event}. Nous serons heureux de vous retrouver pour un moment convivial !`;
  }
  return {title,body:[body,details,"ℹ️ Horaires, programme et informations à vérifier avant publication.","#Liernais #ComitéDesFêtes"].filter(Boolean).join("\n\n")};
 }
