@@ -5,9 +5,10 @@ import { readFileSync } from 'node:fs';
 const app = readFileSync(new URL('../src/main.jsx', import.meta.url), 'utf8');
 const pkg = JSON.parse(readFileSync(new URL('../package.json', import.meta.url), 'utf8'));
 
-test('demo visibly discloses local-first storage and the optional TEST sync', () => {
+test('demo discloses local-first storage within optional settings', () => {
   assert.match(app, /Mode démonstration/);
-  assert.match(app, /Tes saisies restent sur cet appareil jusqu’à l’activation de la synchronisation TEST/);
+  assert.match(app, /Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée/);
+  assert.match(app, /☁️ Sauvegarde et synchronisation/);
   assert.match(app, /aucun stock partagé/);
 });
 
@@ -19,8 +20,9 @@ test('demo backup inspection does not perform a restore', () => {
 });
 
 test('CSV export and mobile navigation remain accessible in demo', () => {
-  assert.match(app, /buildCsv\(current\.fields,rows\)/);
-  assert.match(app, /Exporter CSV/);
+  assert.match(app, /buildCsv\(category==="contacts"\?CONTACT_EXPORT_COLUMNS:selected\.fields,rows\)/);
+  assert.match(app, /Exporter une rubrique en CSV/);
+  assert.match(app, /Télécharger CSV/);
   assert.match(app, /<nav aria-label="Modules">/);
   assert.match(app, /categories\.map\(c=>/);
 });

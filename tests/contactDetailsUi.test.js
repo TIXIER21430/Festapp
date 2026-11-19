@@ -15,7 +15,7 @@ test("mobile contact form offers separate fields and validates them before savin
 
 test("export and search include structured fields without discarding legacy free text",()=>{
  assert.match(app,/selectContactsWithDetailsForExport\(data\.contacts\|\|\[\]/);
- assert.match(app,/buildCsv\(CONTACT_EXPORT_COLUMNS,rows\)/);
+ assert.match(app,/buildCsv\(category==="contacts"\?CONTACT_EXPORT_COLUMNS:selected\.fields,rows\)/);
  assert.match(app,/r\.email\|\|"",r\.phone\|\|""/);
  assert.match(app,/Les anciennes coordonnées du champ libre restent intactes/);
 });

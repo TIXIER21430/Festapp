@@ -36,7 +36,7 @@ test('event tiles lead to a scoped form and list without losing the event contex
  assert.match(source,/setModuleScopeEventId\(eventId\)/);
  assert.match(source,/setRecordEventId\(moduleScopeEventId\)/);
  assert.match(source,/recordsForManifestation\(data\[tab\]\|\|\[\],tab,moduleScopeEventId\)\.filter/);
- assert.match(source,/const rows=tab==="contacts"[\s\S]*?recordsForManifestation\(data\[tab\]\|\|\[\],tab,moduleScopeEventId\)\.map/);
+ assert.match(source,/const rows=category==="contacts"[\s\S]*?\(data\[category\]\|\|\[\]\)\.map/);
  assert.match(source,/scopeEvent\?<p className="festapp-module-attached"/);
  assert.match(source,/data-event-scoped=\{!!scopeEvent\}/);
  assert.match(hub,/onOpenModule\(key,chosen.id\)/);
