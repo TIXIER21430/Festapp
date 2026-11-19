@@ -11,6 +11,7 @@ import OwnerSetup from "./OwnerSetup.jsx";
 import BulkEntry from "./BulkEntry.jsx";
 import FreeAiHelper from "./FreeAiHelper.jsx";
 import ManifestationHub from "./ManifestationHub.jsx";
+import FestivalSettings from "./FestivalSettings.jsx";
 import EventTill from "./EventTill.jsx";
 import BottomNavigation from "./BottomNavigation.jsx";
 import {createTodo} from "./lib/eventTodo.js";
@@ -29,6 +30,7 @@ import {eventOverview} from "./lib/eventOverview.js";
 import {suggestChecklistTasks,suggestDriveChecklistTasks,DRIVE_CHECKLISTS} from "./lib/eventChecklist.js";
 import {checklistProgress} from "./lib/checklistProgress.js";
 import {planNextEdition} from "./lib/eventEdition.js";
+import {createFestivalEdition,updateEventDetails} from "./lib/eventEditions.js";
 import {suggestEventPurchases} from "./lib/eventPurchases.js";
 import {compareShoppingWithStock,summarizeStockComparison} from "./lib/stockComparison.js";
 import {findVolunteerConflicts,parseShiftSlot} from "./lib/volunteerPlanning.js";
@@ -292,6 +294,17 @@ function App(){
   window.requestAnimationFrame(()=>recipeCalculatorRef.current?.scrollIntoView({behavior:'smooth',block:'start'}));
  }
  function remove(id){if(demoReadOnly||!allowDiscardDraft())return;if(!confirm("Supprimer cette fiche ?"))return;if(editingId===id)cancelEdit(true);setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
+ function updateFestival(id,values){
+  if(demoReadOnly)throw new Error('Les fiches locales sont protégées en lecture seule.');
+  const updated=updateEventDetails(data.events||[],id,values).find(event=>event.id===id);
+  setData(old=>({...old,events:(old.events||[]).map(event=>event.id===id?updated:event)}));
+ }
+ function createHistoricalEdition(base,year){
+  if(demoReadOnly)throw new Error('Les fiches locales sont protégées en lecture seule.');
+  const row=createFestivalEdition(data.events||[],base,year,crypto.randomUUID());
+  setData(old=>({...old,events:[...(old.events||[]),row]}));
+  return row;
+ }
  function addRecipeDrafts(){
   if(demoReadOnly){setRecipeDraftStatus("Lecture seule : fiches locales protégées.");return;}
   const result=addMissingRecipeDrafts(data.recipes||[]);
@@ -547,6 +560,7 @@ function App(){
  </>}
  {settingsOpen&&<>
  <section className="festapp-settings-head"><button type="button" className="festapp-back-action" onClick={()=>setSettingsOpen(false)}>← Retour aux fêtes</button><h1>⚙ Plus et réglages</h1><p>Sauvegardes, documents et outils de gestion.</p><button type="button" onClick={openOwnerSetup}>✍️ Vérifier les fiches avant de les partager</button></section>
+ <FestivalSettings events={eventOptions} finance={data.finance||[]} archives={data.archives||[]} driveCatalog={driveCatalog} readOnly={demoReadOnly} onUpdate={updateFestival} onCreateEdition={createHistoricalEdition} onOpenFinance={eventId=>openModule('finance',eventId)} onOpenDrive={openDriveLibrary}/>
  <section className="festapp-export-center" aria-label="Exports de FEST'APP">
   <h2>📤 Exports</h2>
   <p>Retrouve ici tous les téléchargements, quand tu en as besoin.</p>

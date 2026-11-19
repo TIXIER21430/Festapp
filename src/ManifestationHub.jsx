@@ -1,10 +1,13 @@
 import React,{useEffect,useRef,useState} from 'react';
 import EventTodoList from './EventTodoList.jsx';
 import {collectEventTodos} from './lib/eventTodo.js';
+import {eventEditionYear} from './lib/eventEditions.js';
 
 const ICONS={'Concours de belote':'🃏','Carnaval':'🎭','Chasse aux œufs':'🐣','Fête des voisins':'🏡','Fanfare':'🎺','Vide-grenier':'🛍️','Saint-Laurent':'🎪','Halloween':'🎃','Marché de Noël':'🎄'};
 const baseName=name=>String(name||'').replace(/\s+20\d{2}$/,'');
 export function homeManifestations(events){
+ const currentYear=new Date().getFullYear();
+ const rank=event=>{const year=eventEditionYear(event);return year===null?1000:year>=currentYear?10000+year:year;};
  const list=[];const used=new Set();
  for(const record of events||[]){
   if(!record?.id||!record?.values?.[0])continue;
@@ -12,7 +15,7 @@ export function homeManifestations(events){
   if(!used.has(base)){used.add(base);list.push(record);continue;}
   const i=list.findIndex(row=>baseName(row.values[0])===base);
   const current=list[i];
-  if(i>=0&&(!current.values[1]&&record.values[1]||/20\d{2}$/.test(record.values[0])&&!/20\d{2}$/.test(current.values[0])))list[i]=record;
+  if(i>=0&&(rank(record)>rank(current)||rank(record)===rank(current)&&!current.values[1]&&record.values[1]))list[i]=record;
  }
  return list;
 }
