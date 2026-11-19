@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {listPhotoOriginals,savePhotoOriginal} from './lib/photoVault.js';
+import {isTillAccountingRecord} from './lib/tillSales.js';
 
 const PHOTO_SCOPES=new Set(['recipes','posts','archives','finance','events']);
 const ICONS={events:'🎉',tasks:'✅',shopping:'🛒',stock:'📦',ecocups:'🥤',contacts:'👤',shifts:'🕒',feedback:'💬',recipes:'🍲',finance:'💶',posts:'📣',archives:'🗂️'};
@@ -23,6 +24,7 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
  const [busy,setBusy]=useState(false);
  const closeRef=useRef(null);
  const selected=records.find(row=>row.id===selectedId);
+ const lockedTillEntry=category==='finance'&&isTillAccountingRecord(selected);
  const supportsPhotos=PHOTO_SCOPES.has(category);
 
  useEffect(()=>{if(selectedId)closeRef.current?.focus();},[selectedId]);
@@ -71,9 +73,10 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
     {fields.slice(1).map((field,i)=><p key={field}><strong>{field} :</strong> {selected.values[i+1]||'À préciser'}</p>)}
     {category==='contacts'&&<>{selected.phone&&<p><a href={'tel:'+selected.phone}>📞 {selected.phone}</a></p>}{selected.email&&<p><a href={'mailto:'+selected.email}>✉️ {selected.email}</a></p>}</>}
     {category==='archives'&&/^https:\/\/(?:drive|docs)\.google\.com\//.test(selected.values[2]||'')&&<p><a href={selected.values[2]} target="_blank" rel="noopener noreferrer">📄 Voir l’original dans Drive</a></p>}
-    <div className="festapp-equipment-detail-actions"><button type="button" disabled={readOnly} onClick={()=>{onEdit(selected);setSelectedId('');}}>✏️ Modifier</button>
+    {lockedTillEntry&&<p className="note">🔒 Écriture de caisse conservée pour l’historique. Pour corriger une vente, ouvre sa manifestation puis la caisse et utilise « Annuler cette vente ».</p>}
+    <div className="festapp-equipment-detail-actions">{!lockedTillEntry&&<button type="button" disabled={readOnly} onClick={()=>{onEdit(selected);setSelectedId('');}}>✏️ Modifier</button>}
      {supportsPhotos&&<label className="festapp-equipment-photo-action">📷 Ajouter une photo<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" disabled={readOnly||busy} onChange={addPhoto}/></label>}
-     <button type="button" className="delete" disabled={readOnly} onClick={()=>{onDelete(selected.id);setSelectedId('');}}>Supprimer</button>
+     {!lockedTillEntry&&<button type="button" className="delete" disabled={readOnly} onClick={()=>{onDelete(selected.id);setSelectedId('');}}>Supprimer</button>}
     </div>
     {status&&<p role="status">{status}</p>}
    </section>

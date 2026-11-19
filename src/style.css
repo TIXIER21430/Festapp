@@ -293,6 +293,8 @@ header .demo{font-size:11px;white-space:nowrap}
 .festapp-manif-card{min-height:156px}
 .festapp-manif-card small{font-size:12px}
 .festapp-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.festapp-event-feature-section{margin-top:16px}
+.festapp-event-feature-section h3{color:#294b76;font-size:16px;font-weight:850;margin:0 0 9px;padding-left:3px}
 .festapp-feature-tile{min-height:116px;gap:8px}
 .festapp-feature-tile strong{font-size:18px}
 .festapp-feature-grid.secondary .festapp-feature-tile{min-height:90px}
@@ -453,6 +455,18 @@ footer{display:none}
 .festapp-till-sale small{color:#315e4b;font-size:14px}
 .festapp-till-sale [role="status"]{margin:0;padding:10px;background:#fff;border-radius:10px}
 .festapp-till-sale-total{margin:3px 0 0;font-size:15px;font-weight:750}
+.festapp-till-history{margin:12px 0;padding:13px 15px;background:#f3f7fd;border:1px solid #b7cee8;border-radius:16px;color:#1d3455}
+.festapp-till-history>summary{cursor:pointer;font-weight:850;font-size:16px;min-height:29px}
+.festapp-till-history-note{color:#4e6380;font-size:14px}
+.festapp-till-history-list{display:grid;gap:8px}
+.festapp-till-history-list article{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-radius:12px;background:#fff;border:1px solid #cbdced}
+.festapp-till-history-list article>div{display:grid;gap:5px;min-width:0}
+.festapp-till-history-list article>div:last-child{justify-items:end;flex:0 0 auto}
+.festapp-till-history-list article small{font-size:13px;color:#607089}
+.festapp-till-history-list article button{font-size:14px;padding:8px 10px;min-height:40px}
+.festapp-till-history-list article.cancelled{opacity:.66;background:#eef1f6}
+.festapp-till-history-list article.cancelled span{font-weight:800;color:#7d4d50}
+@media(max-width:520px){.festapp-till-history-list article{align-items:stretch;flex-direction:column}.festapp-till-history-list article>div:last-child{display:flex;align-items:center;justify-content:space-between}}
 .drive-fallback{display:grid;gap:10px;padding:15px;border-radius:16px;background:#f1f6ff;border:1px solid #bed2ed}
 .drive-fallback h3{margin:0;font-size:19px;color:#183a66}
 .drive-fallback p{margin:0;color:#425b78}

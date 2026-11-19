@@ -42,7 +42,7 @@ import {scaleRecipeText} from "./lib/recipeText.js";
 import {addMissingRecipeDrafts} from "./lib/recipeStarters.js";
 import {hasUnsavedDraft} from "./lib/unsavedDraft.js";
 import {TILL_PRODUCTS} from "./lib/quickTill.js";
-import {createTillFinanceRecord,summarizeTillSales} from "./lib/tillSales.js";
+import {createTillFinanceRecord,createTillCorrectionRecord,listTillSales,summarizeTillSales} from "./lib/tillSales.js";
 import {loadTillConfig,eventTillProducts,saveTillConfig,exportTillConfig,importTillConfig} from "./lib/tillConfig.js";
 import {summarizeEcocups} from "./lib/ecocupDemoBalance.js";
 import {ECOCUP_DEMO_SETTINGS_KEY,serializeDemoEcocupSettings} from "./lib/ecocupDemoSettings.js";
@@ -154,6 +154,7 @@ function App(){
  const [tillDraft,setTillDraft]=useState([]);
  const tillProducts=eventTillProducts(tillEvent,tillConfig);
  const tillSaleSummary=summarizeTillSales(data.finance||[],hubEventId);
+ const tillSaleHistory=listTillSales(data.finance||[],hubEventId);
  const activeManifestation=eventOptions.find(event=>event.id===hubEventId);
  const [backupPreview,setBackupPreview]=useState("");
  const [restoreCandidate,setRestoreCandidate]=useState(null);
@@ -368,6 +369,20 @@ function App(){
   }catch(error){setTillSaleStatus("⚠ "+error.message);}
   finally{recordingTillSaleRef.current=false;}
  }
+ function cancelTillSale(saleId){
+  if(recordingTillSaleRef.current)return;
+  try{
+   if(demoReadOnly)throw new Error("Données locales protégées en lecture seule.");
+   const correction=createTillCorrectionRecord({id:crypto.randomUUID(),eventId:hubEventId,saleId,finance:data.finance||[],at:new Date().toISOString()});
+   if(!window.confirm("Annuler cette vente de "+correction.values[1].slice(1).replace('.',',')+" € ? Une écriture négative sera ajoutée au bilan sans effacer la vente initiale."))return;
+   recordingTillSaleRef.current=true;
+   const next={...data,finance:[...(data.finance||[]),correction]};
+   const stored=writeDemoStorage(localStorage,next);
+   if(!stored.saved)throw new Error("Sauvegarde impossible : la vente n'a pas été annulée. Vérifie l'espace disponible.");
+   setData(next);setTillSaleStatus("✅ Vente annulée : l'écriture d'origine et sa correction restent dans le bilan.");
+  }catch(error){setTillSaleStatus("⚠ "+error.message);}
+  finally{recordingTillSaleRef.current=false;}
+ }
  function downloadVolunteerNeeds(){const blob=new Blob([exportVolunteerNeeds(volunteerNeeds)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="festapp-besoins-benevoles.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);}
  async function uploadVolunteerNeeds(e){const file=e.target.files?.[0];e.target.value="";if(!file)return;try{if(demoReadOnly)throw new Error("Mode lecture seule.");if(file.size>1_000_000)throw new Error("Fichier trop volumineux.");const parsed=importVolunteerNeeds(await file.text());if(!window.confirm("Remplacer les besoins bénévoles enregistrés sur cet appareil ? Les affectations existantes ne seront pas modifiées."))return;localStorage.setItem(VOLUNTEER_NEEDS_KEY,JSON.stringify(parsed));setVolunteerNeeds(parsed);setNeedsWarning("Besoins importés sur cet appareil.");}catch(err){setNeedsWarning("⚠ Import refusé : "+err.message);}}
  function exportMenus(){const blob=new Blob([exportTillConfig(tillConfig)],{type:"application/json"});const url=URL.createObjectURL(blob);const a=document.createElement("a");a.href=url;a.download="festapp-menus-caisse.json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
@@ -528,7 +543,7 @@ function App(){
  {initialEcocupStorage.warning&&<p role="alert" className="note">⚠ {initialEcocupStorage.warning}</p>}
  {!settingsOpen&&<>
   <ManifestationHub events={eventOptions} tasks={data.tasks||[]} selectedId={hubEventId} onSelect={selectManifestation} onBack={()=>selectManifestation('')} onOpenModule={openModule} onOpenTill={openTillForEvent} tillOpen={tillOpen} onToggleTodo={toggleTaskDone} onAddTodo={addQuickTodo} onChecklist={addChecklistToEvent} readOnly={demoReadOnly}/>
-  {activeManifestation&&tillOpen&&<EventTill eventName={activeManifestation.values[0]} onClose={()=>openTillForEvent(activeManifestation)} products={tillProducts} cart={tillCart} setCart={updateTillCart} onRecordSale={recordTillSale} saleStatus={tillSaleStatus} saleSummary={tillSaleSummary} readOnly={demoReadOnly} editing={tillEdit} onToggleEdit={()=>tillEdit?setTillEdit(false):openTillEditor()} draft={tillDraft} setDraft={setTillDraft} onSave={saveTillEditor} configWarning={tillConfigWarning} configReadOnly={!!initialTillConfig.warning} onImport={()=>tillImportRef.current?.click()} importRef={tillImportRef} onImportFile={importMenus}/>}
+  {activeManifestation&&tillOpen&&<EventTill eventName={activeManifestation.values[0]} onClose={()=>openTillForEvent(activeManifestation)} products={tillProducts} cart={tillCart} setCart={updateTillCart} onRecordSale={recordTillSale} onCancelSale={cancelTillSale} saleStatus={tillSaleStatus} saleSummary={tillSaleSummary} saleHistory={tillSaleHistory} readOnly={demoReadOnly} editing={tillEdit} onToggleEdit={()=>tillEdit?setTillEdit(false):openTillEditor()} draft={tillDraft} setDraft={setTillDraft} onSave={saveTillEditor} configWarning={tillConfigWarning} configReadOnly={!!initialTillConfig.warning} onImport={()=>tillImportRef.current?.click()} importRef={tillImportRef} onImportFile={importMenus}/>}
  </>}
  {settingsOpen&&<>
  <section className="festapp-settings-head"><button type="button" className="festapp-back-action" onClick={()=>setSettingsOpen(false)}>← Retour aux fêtes</button><h1>⚙ Plus et réglages</h1><p>Sauvegardes, documents et outils de gestion.</p><button type="button" onClick={openOwnerSetup}>✍️ Vérifier les fiches avant de les partager</button></section>

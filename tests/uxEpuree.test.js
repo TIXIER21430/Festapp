@@ -17,7 +17,7 @@ test('home is reserved for manifestations and technical tools live under Plus',(
 });
 
 test('each event shows six main actions and keeps secondary actions behind disclosure',()=>{
- assert.match(hub,/const features=\[[\s\S]*?\['posts','📣','Communication'\]/);
+ assert.match(hub,/const featureGroups=\[[\s\S]*?'Préparer la fête'[\s\S]*?'Le jour J'[\s\S]*?\['posts','📣','Communication'\]/);
  assert.match(hub,/const secondaryFeatures=\[[\s\S]*?\['feedback','📝','Retours'\]/);
  assert.match(hub,/<details className="festapp-event-more" key=\{chosen.id\}>/);
  assert.match(hub,/onOpenModule\(key,chosen.id\)/);
