@@ -15,3 +15,8 @@ test("unknown event or template is rejected",()=>{
  assert.throws(()=>createEventPostDraft({name:"  "}),/manifestation/);
  assert.throws(()=>createEventPostDraft({name:"Fête",kind:"sponsorisé"}),/invalide/);
 });
+test('announcement sounds natural even with a name like Marché de Noël 2026',()=>{
+ const text=createEventPostDraft({name:'Marché de Noël 2026'}).body;
+ assert.match(text,/donne rendez-vous pour Marché de Noël 2026/);
+ assert.doesNotMatch(text,/invite à Marché de Noël/);
+});

@@ -34,11 +34,12 @@ test('the till is event-only and never appears on the unselected home page',()=>
  assert.match(hub,/\['till','🧾','Caisse \/ SumUp'/);
  assert.match(hub,/onOpenTill\(chosen\)/);
  assert.match(app,/\{activeManifestation&&tillOpen&&<EventTill/);
- assert.match(app,/setHubEventId\(id\);setTillOpen\(false\);setTillCart\(\{\}\)/);
+ assert.match(app,/setHubEventId\(id\);setTillOpen\(false\);setTillCart\(\{\}\);setTillEdit\(false\)/);
  assert.match(app,/setTillEvent\(event\.values\[0\]\.replace/);
  assert.match(till,/aria-label="Caisse tactile"/);
  assert.match(till,/\{eventName\}/);
  assert.doesNotMatch(app,/<section className="panel" aria-label="Caisse tactile"/);
  assert.doesNotMatch(till,/<select value=\{tillEvent\}/);
- assert.match(till,/Les ventes de ce panier ne sont pas comptabilisées dans le bilan financier/);
+ assert.match(till,/Une recette sera ajoutée au bilan de/);
+ assert.match(till,/les ventes entre les téléphones/);
 });

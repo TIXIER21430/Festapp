@@ -6,7 +6,7 @@ import {OWNER_MODULES,parseOwnerReviews,fingerprintOwnerModule} from './ownerSet
 import {parseVolunteerNeeds} from './volunteerNeeds.js';
 import {serializeDemoEcocupSettings,DEFAULT_ECOCUP_SETTINGS} from './ecocupDemoSettings.js';
 import {summarizeEcocups} from './ecocupDemoBalance.js';
-import {validatePhotoInput} from './photoVault.js';
+import {PHOTO_CATEGORIES,validatePhotoInput} from './photoVault.js';
 
 const decoder=new TextDecoder('utf-8',{fatal:true});
 const required=['FESTAPP-sauvegarde.json','FESTAPP-menus-caisse.json','FESTAPP-verifications.json','FESTAPP-liste-des-photos.json'];
@@ -142,7 +142,7 @@ export async function planCompleteZipRestore(archive,currentData,{volunteerNeeds
   if(currentKeys.has(key))unchangedPhotos++;else{addPhotos.push(photo);currentKeys.add(key);}
  }
  if(photos.length+addPhotos.length>500)conflicts.push('Plus de 500 photos : restauration bloquée');
- for(const scope of ['recipes','posts','archives','finance','equipment','events']){
+ for(const scope of PHOTO_CATEGORIES){
   const count=photos.filter(photo=>photo.scope===scope).length+addPhotos.filter(photo=>photo.scope===scope).length;
   if(count>100)conflicts.push('Plus de 100 photos dans la rubrique '+scope);
  }

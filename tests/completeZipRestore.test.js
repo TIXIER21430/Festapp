@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {createCombinedDemoBackup} from '../src/lib/combinedDemoBackup.js';
 import {makeCompleteBackupZip} from '../src/lib/photoZip.js';
 import {readCompleteBackupZip,planCompleteZipRestore} from '../src/lib/completeZipRestore.js';
+import {PHOTO_CATEGORIES} from '../src/lib/photoVault.js';
 
 const settings={openingBalance:'50',alertThreshold:'10'};
 const data={events:[{id:'e1',values:['Fête','2026-12-06','Liernais']}],tasks:[{id:'t1',values:['Affiches','Jocelyn','demain'],eventId:'e1'}]};
@@ -58,4 +59,22 @@ test('restores real photo blobs and deduplicates an identical original without d
  assert.equal(repeat.unchangedPhotos,1);
  const changed=await planCompleteZipRestore(parsed,{}, {...extras,photos:[{...photo,blob:new Blob(['xyz'])}]});
  assert.equal(changed.addedPhotos,1);
+});
+
+test('full ZIP backs up and previews original icon photos from every module',async()=>{
+ const originals=PHOTO_CATEGORIES.map((scope,index)=>({scope,fileName:`${scope}.jpg`,recordId:`record-${index}`,addedAt:'2026-11-20T10:00:00Z',size:3,blob:new Blob(['abc'])}));
+ const archive=await readCompleteBackupZip(await zip(originals));
+ assert.deepEqual(new Set(archive.photos.map(photo=>photo.scope)),new Set(PHOTO_CATEGORIES));
+ const plan=await planCompleteZipRestore(archive,{},extras);
+ assert.equal(plan.safe,true,plan.conflicts.join('; '));
+ assert.equal(plan.addedPhotos,PHOTO_CATEGORIES.length);
+ for(const photo of archive.photos)assert.equal(await photo.blob.text(),'abc');
+});
+
+test('ZIP restore refuses more than 100 original photos for a newly added section',async()=>{
+ const originals=Array.from({length:101},(_,index)=>({scope:'contacts',fileName:`benevole-${index}.jpg`,recordId:`contact-${index}`,addedAt:'2026-11-20T10:00:00Z',size:1,blob:new Blob(['a'])}));
+ const archive=await readCompleteBackupZip(await zip(originals));
+ const plan=await planCompleteZipRestore(archive,{},extras);
+ assert.equal(plan.safe,false);
+ assert.match(plan.conflicts.join(' '),/100 photos.*contacts/);
 });

@@ -8,10 +8,11 @@ const app = readFileSync(new URL("../src/main.jsx", import.meta.url), "utf8");
 const storage = readFileSync(new URL("../src/lib/demoStorage.js", import.meta.url), "utf8");
 const packageJson = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8"));
 
-test("demo UI clearly identifies local storage before TEST sync activation", () => {
+test("demo clearly identifies local storage in settings without technical footer", () => {
   assert.match(app, /Mode démonstration/);
-  assert.match(app, /Tes saisies restent sur cet appareil jusqu’à l’activation de la synchronisation TEST/);
-  assert.match(app, /fiches locales par défaut/);
+  assert.match(app, /Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée/);
+  assert.match(app, /festapp-sync-settings/);
+  assert.doesNotMatch(app, /<footer>.*Supabase TEST/);
 });
 
 test("demo records stay in the explicitly named local namespace", () => {

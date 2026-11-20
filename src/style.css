@@ -63,9 +63,6 @@
 .shared-preview-tile span{font-size:25px}.shared-preview-tile strong{font-size:27px}.shared-preview-tile small{font-size:12px;font-weight:750}
 @media(max-width:420px){.shared-preview-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 
-/* One-tap filtered directory export on mobile */
-.contact-export-button{min-height:56px;border-radius:16px;background:#ffdf9c;color:#20283a;padding:14px 18px;font-weight:800;font-size:15px;max-width:100%}.contact-export-button:disabled{opacity:.5;cursor:not-allowed}.contact-export-button:focus-visible{outline:3px solid #fff;outline-offset:3px}.contact-export-note{font-size:12px;color:#d5e1f4}
-
 /* FEST'APP ecocup balance: large accessible warning, demo only. */
 .ecocup-balance-card{display:flex;align-items:center;gap:15px;padding:18px;margin:12px 0;border-radius:18px;color:#182a38;border:2px solid transparent}
 .ecocup-balance-ok{background:#c7f4db;border-color:#26935b}.ecocup-balance-alert{background:#ffe1a8;border-color:#c07915}
@@ -296,6 +293,8 @@ header .demo{font-size:11px;white-space:nowrap}
 .festapp-manif-card{min-height:156px}
 .festapp-manif-card small{font-size:12px}
 .festapp-feature-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+.festapp-event-feature-section{margin-top:16px}
+.festapp-event-feature-section h3{color:#294b76;font-size:16px;font-weight:850;margin:0 0 9px;padding-left:3px}
 .festapp-feature-tile{min-height:116px;gap:8px}
 .festapp-feature-tile strong{font-size:18px}
 .festapp-feature-grid.secondary .festapp-feature-tile{min-height:90px}
@@ -325,6 +324,10 @@ header .demo{font-size:11px;white-space:nowrap}
 .festapp-other-modules>summary{cursor:pointer;padding:10px 14px;font-weight:750}
 .festapp-other-modules nav{flex-wrap:wrap}
 .festapp-other-modules nav button{min-height:40px}
+.festapp-event-switcher{position:sticky;top:61px;z-index:2;display:flex;flex-wrap:nowrap;gap:8px;max-width:880px;margin:0 auto 14px;padding:8px 2px 12px;background:#17263f;overflow-x:auto;overscroll-behavior-x:contain;scrollbar-width:thin;scrollbar-color:#90b8e3 #17263f}
+.festapp-event-switcher button{flex:none;min-height:45px;padding:10px 13px;background:#30435f;border:1px solid #6984a6;border-radius:999px;color:#ecf6ff;font-size:14px;font-weight:750}
+.festapp-event-switcher button.active{background:#b8e7ff;color:#163451;border-color:#b8e7ff}
+.festapp-event-switcher button:focus-visible{outline:3px solid #ffdf9c;outline-offset:2px}
 .festapp-module-scope{padding:10px 12px;margin:3px 0 16px}
 .festapp-module-scope strong{font-size:14px}
 .festapp-export-actions{position:relative;color:#d7e6ff}
@@ -353,3 +356,192 @@ footer{display:none}
 .free-ai-actions a{background:#fdf1a5;color:#1b2747}
 .free-ai-note{color:#d8e9ff;font-size:.86rem;line-height:1.5;margin:.65rem 0 0}
 @media(max-width:650px){.free-ai-helper{padding:1rem}.free-ai-heading{gap:.6rem}.free-ai-actions>*{flex:1 1 100%}}
+
+/* Directory: phone-like search and add actions above the contact list. */
+.festapp-directory-tools{margin:6px 0 16px}
+.festapp-directory-actions{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.festapp-directory-actions button{min-height:56px;border-radius:15px;font-size:16px;font-weight:800;padding:12px}
+.festapp-directory-search-action{background:#b8e7ff;color:#163451}
+.festapp-directory-add-action{background:#ffd998;color:#302543}
+.festapp-directory-search{display:block;margin:12px 0 0;font-weight:750}
+.festapp-directory-search input{min-height:52px;font-size:16px;border:2px solid #9bc8f0}
+.festapp-directory-filters{display:flex;align-items:end;justify-content:space-between;gap:12px;margin-top:13px}
+.festapp-directory-filters label{flex:1;max-width:270px}
+.festapp-directory-filters select{display:block;width:100%;margin-top:5px;min-height:45px;padding:9px 12px;border-radius:12px;background:#f3f8ff;color:#20334d;border:1px solid #bdd6ef;font:inherit;font-size:15px}
+.festapp-directory-filters span{font-size:13px;color:#bfcee3;white-space:nowrap;padding-bottom:12px}
+.festapp-directory-form{background:#273954;border:1px solid #6686ae;border-radius:16px;padding:15px;margin:12px 0 18px;scroll-margin-top:80px}
+.festapp-directory-form .fields{margin-top:8px}
+.module-panel[data-directory="true"] .records article{flex-wrap:wrap}
+.module-panel[data-directory="true"] .records article>div{flex:1 1 100%;overflow-wrap:anywhere}
+.module-panel[data-directory="true"] .records article>button{flex:1;min-height:43px}
+@media(max-width:390px){.festapp-directory-actions{gap:7px}.festapp-directory-actions button{padding:9px;font-size:14px}.festapp-directory-filters{align-items:stretch;flex-direction:column;gap:0}.festapp-directory-filters span{padding:4px 0}}
+
+/* Exports live in the secondary settings area, not in everyday modules. */
+.festapp-export-center{margin:15px 0;padding:19px;background:#e8f4ff;border-radius:20px;color:#223854}
+.festapp-export-center h2{margin:0 0 6px;font-size:23px}
+.festapp-export-center>p{margin:5px 0 14px;color:#4d6380}
+.festapp-export-center>small{display:block;margin:8px 0 16px;font-size:12px;color:#50637e}
+.festapp-export-complete{background:#176e78;color:white;min-height:56px;border-radius:14px;font-size:17px;padding:12px 18px}
+.festapp-export-select{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end;padding:16px;background:white;border-radius:15px;border:1px solid #c7d8ed}
+.festapp-export-select label{color:#314763;font-weight:750;font-size:13px}
+.festapp-export-select select{display:block;width:100%;min-height:50px;margin-top:7px;padding:10px;border:1px solid #a4bfdc;background:#f4f8ff;color:#203852;border-radius:11px;font:inherit;font-size:15px}
+.festapp-export-select button{min-height:50px;border-radius:11px;font-size:15px}
+.festapp-export-extras{margin:13px 0 0;padding:0 4px}
+.festapp-export-extras summary{cursor:pointer;font-size:14px;font-weight:750;min-height:36px;padding:8px}
+.festapp-export-extra-actions{display:flex;gap:9px;flex-wrap:wrap;padding:5px 0 12px}
+.festapp-export-extra-actions button{min-height:44px}
+.festapp-export-center .festapp-export-status{padding:10px 12px;background:#fff;border-radius:10px;color:#184566}
+.festapp-export-center .festapp-export-privacy{font-size:12px;margin-top:12px}
+@media(max-width:580px){.festapp-export-center{padding:13px}.festapp-export-complete{width:100%}.festapp-export-select{grid-template-columns:1fr;padding:12px}}
+
+/* Material inventory: large photo tiles, quick search, and one-tap details. */
+.festapp-equipment-hint{color:#c4d4ed;font-size:13px;margin:0 0 12px}
+.festapp-equipment-count{color:#bdd1e9;font-size:13px;margin:7px 0 0;text-align:right}
+.festapp-equipment-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.festapp-equipment-tile{display:flex;flex-direction:column;align-items:stretch;gap:7px;min-width:0;text-align:left;padding:9px 9px 13px;min-height:186px;background:#fff4db;color:#213348;border:2px solid transparent;border-radius:17px;box-shadow:0 5px 15px #08132533;touch-action:manipulation}
+.festapp-equipment-tile:nth-child(3n+2){background:#dbf4ff}
+.festapp-equipment-tile:nth-child(3n){background:#e6dcff}
+.festapp-equipment-tile:focus-visible{outline:3px solid white;outline-offset:3px}
+.festapp-equipment-tile:active{transform:scale(.98)}
+.festapp-equipment-image{display:grid;place-items:center;aspect-ratio:5/4;width:100%;overflow:hidden;background:#f7fbff;border-radius:12px}
+.festapp-equipment-image img{display:block;width:100%;height:100%;object-fit:cover}
+.festapp-equipment-image>span{font-size:clamp(42px,6vw,66px);line-height:1}
+.festapp-equipment-tile strong{display:block;font-size:17px;line-height:1.2;overflow-wrap:anywhere}
+.festapp-equipment-tile small{display:block;color:#4d6378;font-size:13px;font-weight:750;overflow-wrap:anywhere}
+.festapp-equipment-empty{background:#34445e;color:#d9e6f6;padding:18px;border-radius:14px}
+.festapp-equipment-backdrop{position:fixed;z-index:230;inset:0;display:flex;justify-content:center;align-items:center;padding:16px;background:#071526bb}
+.festapp-equipment-detail{width:min(100%,480px);max-height:90dvh;overflow-y:auto;background:#f5f9ff;color:#24354b;border:2px solid #b8d5ec;border-radius:21px;padding:19px;box-shadow:0 18px 42px #0007}
+.festapp-equipment-detail-heading{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.festapp-equipment-detail-heading h3{font-size:23px;margin:0;overflow-wrap:anywhere}
+.festapp-equipment-detail-heading button{min-height:44px;min-width:44px}
+.festapp-equipment-detail-image{display:block;max-height:210px;max-width:100%;object-fit:contain;margin:10px auto;border-radius:13px}
+.festapp-equipment-detail p{font-size:16px;margin:13px 0;overflow-wrap:anywhere}
+.festapp-equipment-detail-actions{display:grid;gap:9px;margin-top:15px}
+.festapp-recipe-calculate-action{display:block;width:100%;min-height:54px;margin-top:14px;background:#19785e;color:white;border-radius:13px;font-weight:850}
+.festapp-equipment-detail-actions>button,.festapp-equipment-photo-action{min-height:50px;border-radius:12px;padding:13px;font-size:15px;font-weight:800;text-align:center;cursor:pointer}
+.festapp-equipment-photo-action{position:relative;background:#bbebff;color:#22425e}
+.festapp-equipment-photo-action:focus-within{outline:3px solid #2360a7;outline-offset:2px}
+.festapp-equipment-photo-action input{position:absolute;width:1px;height:1px;opacity:0;overflow:hidden}
+.festapp-equipment-photo-manage{margin-top:18px;padding:10px 12px;border-radius:13px;background:#2c3b52;color:#e2efff}
+.festapp-equipment-photo-manage>summary{cursor:pointer;min-height:44px;padding:11px 5px;font-weight:750}
+@media(min-width:650px){.festapp-equipment-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1000px){.festapp-equipment-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:380px){.festapp-equipment-grid{gap:8px}.festapp-equipment-tile{padding:7px;min-height:155px}.festapp-equipment-tile strong{font-size:15px}.festapp-equipment-tile small{font-size:12px}}
+
+/* Shared, readable cards for contacts, recipes, volunteers and other modules. */
+.festapp-record-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:11px}
+.festapp-record-tile{display:flex;flex-direction:column;min-width:0;border-radius:17px;background:#f9e7ff;color:#20344c;box-shadow:0 5px 15px #08132533;overflow:hidden}
+.festapp-record-tile:nth-child(3n+2){background:#d7f5e5}
+.festapp-record-tile:nth-child(3n){background:#fff0c7}
+.festapp-record-preview{width:100%;flex:1;display:flex;flex-direction:column;align-items:stretch;gap:7px;text-align:left;padding:9px;background:transparent;color:inherit;border-radius:17px;min-height:170px}
+.festapp-record-preview:focus-visible{outline:3px solid #164f9a;outline-offset:-3px}
+.festapp-record-preview:active{transform:scale(.98)}
+.festapp-record-image{display:grid;place-items:center;width:100%;aspect-ratio:5/4;background:#ffffffae;border-radius:12px;overflow:hidden}
+.festapp-record-image img{width:100%;height:100%;object-fit:cover}
+.festapp-record-image>span{font-size:clamp(42px,6vw,66px);line-height:1}
+.festapp-record-preview strong{font-size:16px;line-height:1.25;overflow-wrap:anywhere}
+.festapp-record-preview small{font-size:12px;color:#425a74;font-weight:750;line-height:1.3;overflow-wrap:anywhere}
+.festapp-record-check{display:flex;align-items:center;gap:8px;padding:6px 9px 10px;color:#28445a;font-size:13px;font-weight:750}
+.festapp-record-check input{display:inline-block;width:24px;height:24px;flex:none;margin:0;accent-color:#148b5a}
+
+/* Refined photo frames and lightweight consistent pictograms across all cards. */
+.festapp-line-glyph{display:block;width:100%;height:100%;flex:none}
+.festapp-record-tile,.festapp-equipment-tile{border:1px solid #ffffffa8;box-shadow:0 5px 16px #11223823,0 1px 3px #1122381a}
+.festapp-record-image,.festapp-equipment-image{position:relative;isolation:isolate;background:linear-gradient(145deg,#ffffffec,#eff5ffb8);border:2px solid #fff;box-shadow:inset 0 0 0 1px #738fac35,0 2px 8px #142e3a16;border-radius:15px}
+.festapp-record-image img,.festapp-equipment-image img{display:block;width:100%;height:100%;object-fit:cover}
+.festapp-icon-frame{display:grid;place-items:center;width:clamp(64px,16vw,82px);aspect-ratio:1;border-radius:22px;background:#fff;color:#315d86;border:1.5px solid #c1d4e6;box-shadow:0 3px 8px #20426021,inset 0 0 0 4px #f7fbff}
+.festapp-record-tile:nth-child(3n+2) .festapp-icon-frame,.festapp-equipment-tile:nth-child(3n+2) .festapp-icon-frame{color:#24715b;border-color:#b0dfd0}
+.festapp-record-tile:nth-child(3n) .festapp-icon-frame,.festapp-equipment-tile:nth-child(3n) .festapp-icon-frame{color:#79539c;border-color:#d6c8e6}
+.festapp-icon-frame .festapp-line-glyph{width:52%;height:52%}
+.festapp-record-preview strong,.festapp-equipment-tile strong{letter-spacing:-.012em}
+.festapp-equipment-detail-image{border:2px solid #fff;box-shadow:0 0 0 1px #bacde1,0 6px 16px #17324f24}
+.festapp-equipment-photo-action{display:flex;align-items:center;justify-content:center;gap:10px}
+.festapp-equipment-photo-action .festapp-line-glyph{width:23px;height:23px}
+.festapp-feature-tile .festapp-feature-icon{display:grid;place-items:center;width:60px;height:60px;border:1.5px solid #ffffffd9;border-radius:19px;background:#ffffffbc;color:#315a84;box-shadow:0 2px 8px #0c36531a,inset 0 0 0 3px #ffffff57}
+.festapp-feature-tile .festapp-feature-icon .festapp-line-glyph{width:32px;height:32px}
+.festapp-bottom-nav .festapp-nav-icon{display:grid;place-items:center;width:34px;height:34px;border:1px solid #c8d9ee;border-radius:11px;background:#f2f7ff;color:#275a91}
+.festapp-bottom-nav .festapp-nav-icon .festapp-line-glyph{width:20px;height:20px}
+.festapp-bottom-nav button.active .festapp-nav-icon{background:#d1e9ff;border-color:#7bb4eb}
+.festapp-manif-card .festapp-manif-icon{display:grid;place-items:center;width:76px;height:76px;overflow:hidden;border:2px solid #fff;border-radius:21px;background:#ffffffd9;box-shadow:0 3px 10px #1d426321;font-size:40px}
+.festapp-manif-card .festapp-manif-icon img,.festapp-event-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.festapp-event-heading .festapp-event-cover{display:grid;place-items:center;flex:none;width:78px;height:78px;overflow:hidden;border:2px solid #ffffffc9;border-radius:20px;background:#ffffff30;box-shadow:0 3px 13px #0e204a26;font-size:45px}
+@media(max-width:420px){.festapp-feature-tile .festapp-feature-icon{width:54px;height:54px}.festapp-manif-card .festapp-manif-icon{width:66px;height:66px}.festapp-event-heading .festapp-event-cover{width:62px;height:62px;font-size:36px}}
+.festapp-equipment-detail a{color:#14548a;font-weight:800;overflow-wrap:anywhere}
+@media(min-width:650px){.festapp-record-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+@media(min-width:1000px){.festapp-record-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:380px){.festapp-record-grid{gap:8px}.festapp-record-preview{min-height:150px;padding:7px}.festapp-record-preview strong{font-size:14px}}
+.festapp-till-sale{display:grid;gap:10px;margin:16px 0;padding:17px;border:2px solid #89c7a7;border-radius:19px;background:#e5f8ed;color:#174830}
+.festapp-till-sale label{display:grid;gap:5px;font-weight:800;color:#194934}
+.festapp-till-sale select{width:100%;min-height:49px;background:#fff;color:#20344f;border:1px solid #9ac9ae;border-radius:12px;padding:9px}
+.festapp-till-sale>button{min-height:56px;border-radius:14px;background:#08764f;color:white;font-weight:900;font-size:18px}
+.festapp-till-sale>button:disabled{opacity:.48;cursor:not-allowed}
+.festapp-till-sale small{color:#315e4b;font-size:14px}
+.festapp-till-sale [role="status"]{margin:0;padding:10px;background:#fff;border-radius:10px}
+.festapp-till-sale-total{margin:3px 0 0;font-size:15px;font-weight:750}
+.festapp-till-history{margin:12px 0;padding:13px 15px;background:#f3f7fd;border:1px solid #b7cee8;border-radius:16px;color:#1d3455}
+.festapp-till-history>summary{cursor:pointer;font-weight:850;font-size:16px;min-height:29px}
+.festapp-till-history-note{color:#4e6380;font-size:14px}
+.festapp-till-history-list{display:grid;gap:8px}
+.festapp-till-history-list article{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px;border-radius:12px;background:#fff;border:1px solid #cbdced}
+.festapp-till-history-list article>div{display:grid;gap:5px;min-width:0}
+.festapp-till-history-list article>div:last-child{justify-items:end;flex:0 0 auto}
+.festapp-till-history-list article small{font-size:13px;color:#607089}
+.festapp-till-history-list article button{font-size:14px;padding:8px 10px;min-height:40px}
+.festapp-till-history-list article.cancelled{opacity:.66;background:#eef1f6}
+.festapp-till-history-list article.cancelled span{font-weight:800;color:#7d4d50}
+@media(max-width:520px){.festapp-till-history-list article{align-items:stretch;flex-direction:column}.festapp-till-history-list article>div:last-child{display:flex;align-items:center;justify-content:space-between}}
+.drive-fallback{display:grid;gap:10px;padding:15px;border-radius:16px;background:#f1f6ff;border:1px solid #bed2ed}
+.drive-fallback h3{margin:0;font-size:19px;color:#183a66}
+.drive-fallback p{margin:0;color:#425b78}
+.drive-fallback-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}
+.drive-fallback-grid a{display:flex;align-items:center;gap:9px;min-height:56px;padding:13px;background:#fff;color:#123d73;border:1px solid #c2d7f3;border-radius:13px;text-decoration:none;font-weight:800}
+@media(max-width:420px){.drive-fallback-grid{grid-template-columns:1fr}}
+.festapp-festival-settings{display:grid;gap:10px;margin:14px 0}
+.festapp-settings-menu{background:#eaf3ff;color:#203755;border:1px solid #adc7e5;border-radius:18px;overflow:hidden}
+.festapp-settings-menu>summary{min-height:75px;padding:13px 16px;cursor:pointer;list-style:none;display:flex;gap:13px;align-items:center}
+.festapp-settings-menu>summary::-webkit-details-marker{display:none}
+.festapp-settings-menu>summary>span:first-child{font-size:31px;line-height:1}
+.festapp-settings-menu>summary>span:last-child{display:grid;gap:3px;min-width:0}
+.festapp-settings-menu>summary strong{font-size:19px}
+.festapp-settings-menu>summary small{font-size:14px;color:#52698a}
+.festapp-settings-menu[open]>summary{background:#d7e8ff;border-bottom:1px solid #aec7e7}
+.festapp-settings-menu-content{padding:15px;display:grid;gap:13px}
+.festapp-settings-menu-content>p{margin:0;color:#4b6380;font-size:14px;line-height:1.5}
+.festapp-settings-menu label{display:grid;gap:6px;color:#25425f;font-size:15px;font-weight:850}
+.festapp-settings-menu input,.festapp-settings-menu select{width:100%;min-height:48px;border:1px solid #9cb7d5;border-radius:11px;background:#fff;color:#203755;padding:9px 12px;font-size:16px}
+.festapp-festival-edit{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;padding:15px;background:#fff;border:1px solid #c1d7ed;border-radius:14px}
+.festapp-festival-edit label:first-child{grid-column:1/-1}
+.festapp-festival-edit button{grid-column:1/-1;min-height:49px;background:#2066b8;color:#fff}
+.festapp-festival-edit small{grid-column:1/-1;color:#576d89;font-size:13px}
+.festapp-festival-status{grid-column:1/-1;margin:0;padding:10px;background:#e5f5e9;color:#1b6547;border-radius:10px;font-size:14px;font-weight:750}
+.festapp-festival-add{padding:10px 13px;border:1px solid #bdd1e9;border-radius:13px;background:#f8fbff}
+.festapp-festival-add>summary{cursor:pointer;color:#1c4f86;font-size:15px;font-weight:850;min-height:28px}
+.festapp-festival-add-fields{display:grid;grid-template-columns:1fr 120px;gap:10px;margin-top:14px}
+.festapp-festival-add-fields button{grid-column:1/-1;min-height:48px;background:#2167ac;color:#fff}
+.festapp-festival-add p{margin:11px 0 0;font-size:13px;color:#526b89}
+.festapp-festival-balance{background:#fff;border:1px solid #c2d5eb;border-radius:14px;overflow:hidden}
+.festapp-festival-balance>summary{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:58px;padding:11px 13px;cursor:pointer;list-style:none}
+.festapp-festival-balance>summary::-webkit-details-marker{display:none}
+.festapp-festival-balance>summary strong{font-size:16px;color:#203e65}
+.festapp-festival-balance>summary span{font-size:13px;color:#5d7390;text-align:right}
+.festapp-festival-balance[open]>summary{background:#e9f3ff}
+.festapp-festival-balance-body{display:grid;gap:12px;padding:13px}
+.festapp-festival-balance-body>p{margin:0;color:#4e6481;font-size:14px;line-height:1.5}
+.festapp-balance-figures{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.festapp-balance-figures>div{display:grid;gap:6px;background:#eaf7f0;padding:14px 8px;text-align:center;border-radius:12px;overflow-wrap:anywhere}
+.festapp-balance-figures>div:nth-child(2){background:#fff0dd}
+.festapp-balance-figures>div:nth-child(3){background:#deebff}
+.festapp-balance-figures small{font-size:13px;color:#3c5871;font-weight:800}
+.festapp-balance-figures strong{font-size:clamp(15px,3.1vw,21px);color:#183c5f}
+.festapp-balance-action,.festapp-balance-drive{min-height:48px;background:#2469ae;color:#fff;font-weight:850;border-radius:11px}
+.festapp-balance-drive{background:#5162a0}
+.festapp-balance-records{border-radius:10px;background:#f2f7ff;padding:10px}
+.festapp-balance-records>summary{cursor:pointer;font-size:14px;color:#204a7d;font-weight:850}
+.festapp-balance-records ul{list-style:none;margin:10px 0 0;padding:0;display:grid;gap:6px}
+.festapp-balance-records li{display:grid;grid-template-columns:1fr auto;gap:4px;padding:9px;background:white;border-radius:8px;color:#26445f;font-size:14px}
+.festapp-balance-records li small{grid-column:1/-1;color:#637993}
+.festapp-balance-documents{display:grid;gap:7px;padding:10px;background:#f2f7ff;border-radius:10px}
+.festapp-balance-documents a{color:#1a558f;font-size:14px;font-weight:800;overflow-wrap:anywhere}
+.festapp-balance-documents p{margin:0;font-size:14px;color:#4e607d}
+.festapp-settings-menu .festapp-balance-caption{font-size:13px;color:#61758e}
+@media(max-width:590px){.festapp-festival-edit{grid-template-columns:1fr}.festapp-festival-add-fields{grid-template-columns:1fr 95px}.festapp-balance-figures{grid-template-columns:repeat(2,minmax(0,1fr))}.festapp-balance-figures>div:nth-child(3){grid-column:1/-1}}

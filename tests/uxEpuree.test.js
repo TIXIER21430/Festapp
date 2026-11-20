@@ -17,7 +17,7 @@ test('home is reserved for manifestations and technical tools live under Plus',(
 });
 
 test('each event shows six main actions and keeps secondary actions behind disclosure',()=>{
- assert.match(hub,/const features=\[[\s\S]*?\['posts','📣','Communication'\]/);
+ assert.match(hub,/const featureGroups=\[[\s\S]*?'Préparer la fête'[\s\S]*?'Le jour J'[\s\S]*?\['posts','📣','Communication'\]/);
  assert.match(hub,/const secondaryFeatures=\[[\s\S]*?\['feedback','📝','Retours'\]/);
  assert.match(hub,/<details className="festapp-event-more" key=\{chosen.id\}>/);
  assert.match(hub,/onOpenModule\(key,chosen.id\)/);
@@ -34,5 +34,6 @@ test('till stays in the event and advanced controls do not crowd the payment gri
  assert.match(app,/activeManifestation&&tillOpen&&<EventTill/);
  assert.match(till,/onClick=\{onClose\}>← Retour à la fête/);
  assert.match(till,/<details className="festapp-till-settings">/);
- assert.match(till,/aucun encaissement ni vente enregistrée/);
+ assert.match(till,/elle n’encaisse rien elle-même/);
+ assert.match(till,/Enregistrer cette vente/);
 });
