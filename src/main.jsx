@@ -300,7 +300,7 @@ function App(){
   if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=true;
   if(eventId)setHubEventId(eventId);
   setModuleScopeEventId(eventId);
-  setTab(key);if(key==="equipment")setEquipmentView("catalogue");setRecipeOutput("");setContactType("tous");setEditingId(null);
+  setTab(key);setRecipeOutput("");setContactType("tous");setEditingId(null);if(key==="equipment")setEquipmentView("catalogue");
   setContactFormOpen(false);setContactSearchOpen(false);
   setContactPhotoFile(null);setReturnToVolunteerEventId("");
   setEquipmentFormOpen(false);setEquipmentSearchOpen(false);
@@ -330,6 +330,11 @@ function App(){
   if(recipeCalculatorRef.current)recipeCalculatorRef.current.open=true;
   window.requestAnimationFrame(()=>recipeCalculatorRef.current?.scrollIntoView({behavior:'smooth',block:'start'}));
  }
+ function remove(id){if(demoReadOnly||!allowDiscardDraft())return;
+  if(tab==="equipment"&&(data.equipmentLoans||[]).some(row=>readEquipmentLoan(row).equipmentId===id)){
+   alert("Cette fiche est liée à un historique de prêt. Conservez-la pour préserver les mouvements.");return;
+  }
+  if(!confirm("Supprimer cette fiche ?"))return;if(editingId===id)cancelEdit(true);setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
  function persistEquipmentLoanRows(rows){
   if(demoReadOnly)throw new Error("Mode lecture seule : prêts non modifiés.");
   const next={...data,equipmentLoans:rows};
@@ -347,11 +352,6 @@ function App(){
   const changed=recordEquipmentReturn(existing,{...payload,id:crypto.randomUUID()});
   persistEquipmentLoanRows((data.equipmentLoans||[]).map(row=>row.id===loanId?changed:row));
  }
- function remove(id){if(demoReadOnly||!allowDiscardDraft())return;
-  if(tab==="equipment"&&(data.equipmentLoans||[]).some(row=>readEquipmentLoan(row).equipmentId===id)){
-   alert("Cette fiche est liée à un historique de prêt. Conservez-la pour préserver les mouvements.");return;
-  }
-  if(!confirm("Supprimer cette fiche ?"))return;if(editingId===id)cancelEdit(true);setData(d=>({...d,[tab]:(d[tab]||[]).filter(r=>r.id!==id)}))}
  function updateFestival(id,values){
   if(demoReadOnly)throw new Error('Les fiches locales sont protégées en lecture seule.');
   const updated=updateEventDetails(data.events||[],id,values).find(event=>event.id===id);
@@ -741,7 +741,7 @@ function App(){
    <button type="button" role="tab" aria-selected={equipmentView==="catalogue"} className={equipmentView==="catalogue"?"selected":""} onClick={()=>{if(allowDiscardDraft()){setEquipmentView("catalogue");setEquipmentFormOpen(false);}}}>🧰 Fiches avec photos</button>
    <button type="button" role="tab" aria-selected={equipmentView==="loans"} className={equipmentView==="loans"?"selected":""} onClick={()=>{if(allowDiscardDraft()){setEquipmentView("loans");setEquipmentFormOpen(false);}}}>🤝 Prêts / retours</button>
   </div>}
- {tab==="equipment"&&equipmentView==="catalogue"&&<EquipmentGrid records={records} loans={data.equipmentLoans||[]} readOnly={demoReadOnly} onEdit={beginEdit} onDelete={remove} photoRevision={photoRefreshRevision} onPhotoChange={()=>setPhotoRefreshRevision(v=>v+1)}/>}
+ {equipmentView==="catalogue"&&tab==="equipment"&&<EquipmentGrid records={records} loans={data.equipmentLoans||[]} readOnly={demoReadOnly} onEdit={beginEdit} onDelete={remove} photoRevision={photoRefreshRevision} onPhotoChange={()=>setPhotoRefreshRevision(v=>v+1)}/>}
  {tab==="equipment"&&equipmentView==="loans"&&<EquipmentLoans equipment={data.equipment||[]} loans={data.equipmentLoans||[]} readOnly={demoReadOnly} onIssue={issueEquipmentLoan} onReturn={returnEquipmentLoan}/>}
  {tab!=="equipment"&&<RecordCardGrid category={tab} fields={current.fields} records={records} readOnly={demoReadOnly} onEdit={beginEdit} onDelete={remove} onToggleDone={toggleTaskDone} onCalculateRecipe={openRecipeCalculator} photoRevision={photoRefreshRevision} onPhotoChange={()=>setPhotoRefreshRevision(v=>v+1)}/>}
  {PHOTO_CATEGORIES.includes(tab)&&tab!=="equipment"&&<details className="festapp-equipment-photo-manage"><summary>📸 Gérer les photos de cette rubrique</summary><PhotoVault scope={tab} records={recordsForManifestation(data[tab]||[],tab,moduleScopeEventId)} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision} onChange={()=>setPhotoRefreshRevision(v=>v+1)}/></details>}
