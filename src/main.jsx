@@ -6,6 +6,8 @@ import {persistCloudSnapshot} from "./lib/supabaseCloudImport.js";
 import PhotoVault from "./PhotoVault.jsx";
 import EquipmentGrid from "./EquipmentGrid.jsx";
 import RecordCardGrid from "./RecordCardGrid.jsx";
+import VolunteerPhotoPicker from "./VolunteerPhotoPicker.jsx";
+import ModuleGlyph from "./ModuleGlyph.jsx";
 import DriveBoard from "./DriveBoard.jsx";
 import OwnerSetup from "./OwnerSetup.jsx";
 import BulkEntry from "./BulkEntry.jsx";
@@ -16,7 +18,7 @@ import EventTill from "./EventTill.jsx";
 import BottomNavigation from "./BottomNavigation.jsx";
 import {createTodo} from "./lib/eventTodo.js";
 import {recordsForManifestation,withRecordEventId} from "./lib/manifestationScope.js";
-import {PHOTO_CATEGORIES,listAllPhotoOriginals,saveRestoredPhotoOriginals,rollbackRestoredPhotoOriginals} from "./lib/photoVault.js";
+import {PHOTO_CATEGORIES,listAllPhotoOriginals,savePhotoOriginal,validatePhotoInput,saveRestoredPhotoOriginals,rollbackRestoredPhotoOriginals} from "./lib/photoVault.js";
 import {makeCompleteBackupZip} from "./lib/photoZip.js";
 import {readCompleteBackupZip,planCompleteZipRestore} from "./lib/completeZipRestore.js";
 import {persistCompleteZipRestore} from "./lib/completeZipCommit.js";
@@ -106,6 +108,11 @@ function App(){
  const [form,setForm]=useState(["","",""]);
  const [contactEmail,setContactEmail]=useState("");
  const [contactPhone,setContactPhone]=useState("");
+ const [contactPhotoFile,setContactPhotoFile]=useState(null);
+ const [contactPhotoPreview,setContactPhotoPreview]=useState("");
+ const [contactPhotoBusy,setContactPhotoBusy]=useState(false);
+ const contactPhotoSavingRef=useRef(false);
+ const [returnToVolunteerEventId,setReturnToVolunteerEventId]=useState("");
  const [filter,setFilter]=useState("");
  const [contactType,setContactType]=useState("tous");
  const [contactFormOpen,setContactFormOpen]=useState(false);
@@ -177,6 +184,12 @@ function App(){
  }catch(e){ecocupError=e.message||"Mouvements invalides";}
  useEffect(()=>{if(initialRender.current){initialRender.current=false;return;}if(demoReadOnly)return;const result=writeDemoStorage(localStorage,data);setStorageWarning(result.warning||"")},[data]);
  useEffect(()=>{
+  if(!contactPhotoFile){setContactPhotoPreview("");return;}
+  const url=URL.createObjectURL(contactPhotoFile);
+  setContactPhotoPreview(url);
+  return ()=>URL.revokeObjectURL(url);
+ },[contactPhotoFile]);
+ useEffect(()=>{
   let cancelled=false;
   fetch(`${import.meta.env.BASE_URL}drive-data.json`,{cache:"no-store"}).then(async response=>{
    if(!response.ok)throw new Error("Le catalogue privé n'est pas disponible sur cette installation.");
@@ -217,8 +230,9 @@ function App(){
   open:tab==="contacts"?contactFormOpen:tab==="equipment"?equipmentFormOpen:moduleFormOpen,
   form,editingId,records:data[tab]||[],eventId:recordEventId,
   email:tab==="contacts"?contactEmail:"",phone:tab==="contacts"?contactPhone:""
- });
+ })||!!contactPhotoFile;
  function allowDiscardDraft(){
+  if(contactPhotoSavingRef.current)return false;
   return !draftIsDirty||window.confirm("Cette fiche n'est pas enregistrée. Quitter sans conserver les modifications ?");
  }
  useEffect(()=>{
@@ -227,7 +241,7 @@ function App(){
   window.addEventListener('beforeunload',warn);
   return ()=>window.removeEventListener('beforeunload',warn);
  },[draftIsDirty]);
- function add(e){
+ async function add(e){
   e.preventDefault();
   if(demoReadOnly){setFormError("Mode lecture seule : les données locales existantes sont protégées.");return;}
   if(!form[0].trim())return;
@@ -249,17 +263,31 @@ function App(){
     summarizeEcocups([...(data.ecocups||[]).filter(r=>r.id!==editingId),row],{openingBalance:Number(ecocupOpening),alertThreshold:Number(ecocupThreshold)});
    }catch(err){setFormError("Mouvement refusé : "+(err instanceof RangeError?"stock insuffisant ou quantité trop grande.":"type ou quantité invalide. Utilisez entrée/sortie et un entier positif."));return;}
   }
+  if(tab==="contacts"&&contactPhotoFile){
+   if(contactPhotoSavingRef.current)return;
+   contactPhotoSavingRef.current=true;setContactPhotoBusy(true);
+   try{await savePhotoOriginal(contactPhotoFile,"contacts",row.id);}
+   catch(error){setFormError("Photo non enregistrée : "+error.message+". Choisis une autre photo ou retire-la pour conserver la fiche sans photo.");return;}
+   finally{contactPhotoSavingRef.current=false;setContactPhotoBusy(false);}
+   setPhotoRefreshRevision(value=>value+1);
+  }
   setFormError("");
   setData(d=>({...d,[tab]:editingId?(d[tab]||[]).map(existing=>existing.id===editingId?withRecordEventId({...existing,values:row.values,...(tab==="contacts"?details:{})},tab!=="events"?recordEventId:""):existing):[...(d[tab]||[]),row]}));
-  setEditingId(null);setForm(["","",""]);setRecordEventId(moduleScopeEventId);setContactEmail("");setContactPhone("");
+  setEditingId(null);setForm(["","",""]);setRecordEventId(moduleScopeEventId);setContactEmail("");setContactPhone("");setContactPhotoFile(null);
   if(tab==="contacts")setContactFormOpen(false);
   if(tab==="equipment")setEquipmentFormOpen(false);
   if(tab!=="contacts"&&tab!=="equipment")setModuleFormOpen(false);
+  if(tab==="contacts"&&returnToVolunteerEventId&&row.values[1].normalize("NFC").toLocaleLowerCase("fr")==="bénévole"){
+   const eventId=returnToVolunteerEventId;
+   setReturnToVolunteerEventId("");setTab("shifts");setModuleScopeEventId(eventId);setRecordEventId(eventId);
+   setForm([row.values[0],"",""]);setModuleFormOpen(true);setFilter("");
+   window.requestAnimationFrame(()=>moduleFormRef.current?.scrollIntoView({behavior:"smooth",block:"start"}));
+  }else setReturnToVolunteerEventId("");
  }
- function beginEdit(record){if(demoReadOnly||!allowDiscardDraft())return;setEditingId(record.id);setForm([...record.values]);setContactEmail(record.email||"");setContactPhone(record.phone||"");setRecordEventId(record.eventId||"");setFormError("");if(tab==="contacts")setContactFormOpen(true);else if(tab==="equipment")setEquipmentFormOpen(true);else setModuleFormOpen(true);window.requestAnimationFrame(()=>{const target=tab==="contacts"?contactFormRef.current:tab==="equipment"?equipmentFormRef.current:moduleFormRef.current;target?.scrollIntoView({behavior:"smooth",block:"start"});target?.querySelector('input')?.focus({preventScroll:true});});}
- function cancelEdit(skipConfirmation=false){if(!skipConfirmation&&!allowDiscardDraft())return;setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setRecordEventId(moduleScopeEventId);setFormError("");if(tab==="contacts")setContactFormOpen(false);if(tab==="equipment")setEquipmentFormOpen(false);if(tab!=="contacts"&&tab!=="equipment")setModuleFormOpen(false);}
+ function beginEdit(record){if(demoReadOnly||!allowDiscardDraft())return;setEditingId(record.id);setForm([...record.values]);setContactEmail(record.email||"");setContactPhone(record.phone||"");setContactPhotoFile(null);setReturnToVolunteerEventId("");setRecordEventId(record.eventId||"");setFormError("");if(tab==="contacts")setContactFormOpen(true);else if(tab==="equipment")setEquipmentFormOpen(true);else setModuleFormOpen(true);window.requestAnimationFrame(()=>{const target=tab==="contacts"?contactFormRef.current:tab==="equipment"?equipmentFormRef.current:moduleFormRef.current;target?.scrollIntoView({behavior:"smooth",block:"start"});target?.querySelector('input')?.focus({preventScroll:true});});}
+ function cancelEdit(skipConfirmation=false){if(!skipConfirmation&&!allowDiscardDraft())return;setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setContactPhotoFile(null);setReturnToVolunteerEventId("");setRecordEventId(moduleScopeEventId);setFormError("");if(tab==="contacts")setContactFormOpen(false);if(tab==="equipment")setEquipmentFormOpen(false);if(tab!=="contacts"&&tab!=="equipment")setModuleFormOpen(false);}
  function openModule(key,eventId=""){
-  if(!allowDiscardDraft())return;
+  if(!allowDiscardDraft())return false;
   setOrgTodosOpen(false);
   setSettingsOpen(false);
   if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=true;
@@ -267,6 +295,7 @@ function App(){
   setModuleScopeEventId(eventId);
   setTab(key);setRecipeOutput("");setContactType("tous");setEditingId(null);
   setContactFormOpen(false);setContactSearchOpen(false);
+  setContactPhotoFile(null);setReturnToVolunteerEventId("");
   setEquipmentFormOpen(false);setEquipmentSearchOpen(false);
   setModuleFormOpen(false);setModuleSearchOpen(false);
   setRecordEventId(eventId);setForm(["","",""]);setContactEmail("");setContactPhone("");
@@ -275,6 +304,7 @@ function App(){
    modulePanelRef.current?.focus({preventScroll:true});
    modulePanelRef.current?.scrollIntoView({behavior:"smooth",block:"start"});
   });
+  return true;
  }
  function openDriveLibrary(){
   if(!allowDiscardDraft())return;
@@ -526,8 +556,26 @@ function App(){
  }
  function openContactForm(){
   if(demoReadOnly||!allowDiscardDraft())return;
-  setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setFormError("");setContactFormOpen(true);
+  setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setContactPhotoFile(null);setReturnToVolunteerEventId("");setFormError("");setContactFormOpen(true);
   window.requestAnimationFrame(()=>{contactFormRef.current?.scrollIntoView({behavior:"smooth",block:"start"});contactFormRef.current?.querySelector('input')?.focus({preventScroll:true});});
+ }
+ function chooseVolunteerForEvent(person){
+  if(demoReadOnly||!allowDiscardDraft())return;
+  setEditingId(null);setForm([person.name,"",""]);setRecordEventId(moduleScopeEventId);setFormError("");setModuleFormOpen(true);
+  window.requestAnimationFrame(()=>{moduleFormRef.current?.scrollIntoView({behavior:"smooth",block:"start"});moduleFormRef.current?.querySelector('input[placeholder="Créneau"]')?.focus({preventScroll:true});});
+ }
+ function openNewVolunteerForEvent(){
+  if(demoReadOnly||!moduleScopeEventId)return;
+  const eventId=moduleScopeEventId;
+  if(openModule("contacts")===false)return;
+  setReturnToVolunteerEventId(eventId);setContactType("bénévole");setForm(["","bénévole",""]);setContactFormOpen(true);
+  window.requestAnimationFrame(()=>{contactFormRef.current?.scrollIntoView({behavior:"smooth",block:"start"});contactFormRef.current?.querySelector('input')?.focus({preventScroll:true});});
+ }
+ function chooseContactPhoto(event){
+  const file=event.target.files?.[0];event.target.value="";
+  if(!file||demoReadOnly||contactPhotoSavingRef.current)return;
+  try{validatePhotoInput(file,"contacts");setContactPhotoFile(file);setFormError("");}
+  catch(error){setFormError(error.message||"Photo invalide.");}
  }
  function openEquipmentForm(){
   if(demoReadOnly||!allowDiscardDraft())return;
@@ -622,6 +670,7 @@ function App(){
  </nav>:<details className="festapp-other-modules"><summary>Changer de rubrique</summary><nav aria-label="Modules">{categories.map(c=><button type="button" key={c.key} className={tab===c.key?"active":""} onClick={()=>openModule(c.key)}>{c.icon} {c.title}</button>)}</nav></details>}
  <section className="panel module-panel" ref={modulePanelRef} tabIndex={-1} aria-label={current.title} data-directory={tab==="contacts"}><div className="heading"><h2>{current.icon} {current.title}</h2></div>
  {scopeEvent&&<div className="festapp-module-scope" role="status"><strong>🎉 {scopeEvent.values[0]} · Les nouvelles fiches sont automatiquement rattachées à cette fête.</strong></div>}
+ {tab==="shifts"&&scopeEvent&&<VolunteerPhotoPicker volunteers={volunteers} assignments={recordsForManifestation(data.shifts||[],"shifts",scopeEvent.id)} selectedName={moduleFormOpen?form[0]:""} readOnly={demoReadOnly} photoRevision={photoRefreshRevision} onSelect={chooseVolunteerForEvent} onAdd={openNewVolunteerForEvent}/>}
  {tab==="ecocups"&&<div className="note"><p><strong>Calcul local de démonstration uniquement — aucun stock partagé.</strong> Saisir les mouvements exactement sous la forme « entrée » ou « sortie », et une quantité entière positive.</p><div className="fields"><label>Stock initial de démonstration<input inputMode="numeric" disabled={demoReadOnly} value={ecocupOpening} onChange={e=>setEcocupOpening(e.target.value)}/></label><label>Seuil d'alerte<input inputMode="numeric" disabled={demoReadOnly} value={ecocupThreshold} onChange={e=>setEcocupThreshold(e.target.value)}/></label></div>{ecocupError?<p role="alert">⚠ Calcul impossible : {ecocupError}. Vérifiez les mouvements, sans les effacer.</p>:<div className={"ecocup-balance-card "+(ecocupSummary.alert?"ecocup-balance-alert":"ecocup-balance-ok")} role="status"><span className="ecocup-balance-icon" aria-hidden="true">{ecocupSummary.alert?"⚠️":"✅"}</span><div><strong className="ecocup-balance-count">{ecocupSummary.balance} écocups</strong><p>{ecocupSummary.alert?"Seuil atteint : prévoir au moins "+(ecocupSummary.minimumToClearAlert??"une quantité à vérifier")+" écocups supplémentaires.":"Stock de démonstration au-dessus du seuil."}</p><small>Calcul local uniquement · aucune réservation de stock réel</small></div></div>}</div>}
  {tab==="recipes"&&<details className="festapp-optional-tool" ref={recipeCalculatorRef}><summary>🧮 Calculer les quantités</summary><div className="note"><h3>🧮 Calculateur de quantités</h3><p>Les ingrédients doivent être saisis un par ligne (ex. : 250 g farine). Le calcul ne modifie jamais la recette originale.</p><label>Recette à calculer<select value={selectedRecipeId} onChange={e=>{setSelectedRecipeId(e.target.value);setRecipeOutput("");}}><option value="">Choisir une recette</option>{recordsForManifestation(data.recipes||[],"recipes",moduleScopeEventId).map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label><div className="fields"><label>Recette prévue pour<input inputMode="numeric" value={recipeServings} onChange={e=>setRecipeServings(e.target.value)}/></label><label>Nombre de personnes souhaité<input inputMode="numeric" value={recipeTarget} onChange={e=>setRecipeTarget(e.target.value)}/></label></div><button type="button" disabled={!selectedRecipeId} onClick={()=>{try{const recipe=(data.recipes||[]).find(r=>r.id===selectedRecipeId);if(!recipe)throw new Error("Recette introuvable.");setRecipeOutput(scaleRecipeText(recipe.values[1],Number(recipeServings),Number(recipeTarget)))}catch(e){setRecipeOutput("⚠ "+e.message)}}}>Calculer les ingrédients</button>{recipeOutput&&<pre role="status" style={{whiteSpace:"pre-wrap",overflowWrap:"anywhere"}}>{recipeOutput}</pre>}</div></details>}
  {tab==="recipes"&&<details className="festapp-optional-tool"><summary>📒 Recettes du comité à compléter</summary><div className="recipe-starters"><h3>📒 Recettes originales à vérifier</h3><p>Andouillettes et pâte à crêpes : deux fiches brouillon sont prévues sans ingrédients inventés. Ajoutez les photos originales et renseignez les quantités avant de les utiliser.</p><button type="button" disabled={demoReadOnly} onClick={addRecipeDrafts}>Vérifier les deux brouillons</button>{recipeDraftStatus&&<p role="status">{recipeDraftStatus}</p>}</div></details>}
@@ -652,9 +701,10 @@ function App(){
     <label>Téléphone<input type="tel" inputMode="tel" autoComplete="off" maxLength={64} value={contactPhone} onChange={e=>setContactPhone(e.target.value)} placeholder="06 00 00 00 00"/></label>
    </>}
   </div>
+  {tab==="contacts"&&<div className="festapp-contact-photo-field"><label className="festapp-contact-photo-add"><span className="festapp-contact-photo-preview">{contactPhotoPreview?<img src={contactPhotoPreview} alt="Aperçu du portrait choisi"/>:<ModuleGlyph kind="camera"/>}<span className="festapp-contact-photo-plus" aria-hidden="true">＋</span></span><span><strong>{contactPhotoFile?"Changer la photo":"＋ Ajouter une photo"}</strong><small>{contactPhotoFile?contactPhotoFile.name:"Facultatif · depuis la galerie du téléphone"}</small></span><input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" disabled={demoReadOnly||contactPhotoBusy} onChange={chooseContactPhoto}/></label>{contactPhotoFile&&<button type="button" className="secondary" disabled={contactPhotoBusy} onClick={()=>setContactPhotoFile(null)}>Retirer la photo choisie</button>}<p>La photo sera liée à cette fiche lors de l’enregistrement et restera sur cet appareil. Elle sera incluse dans le ZIP complet.</p></div>}
   {tab==="contacts"&&<p className="note">Les anciennes coordonnées du champ libre restent intactes. Recopiez-les dans E-mail ou Téléphone après vérification.</p>}
-  <button type="submit" disabled={demoReadOnly}>{editingId?"Enregistrer les modifications":"+ Ajouter"}</button>
-  <button type="button" className="secondary" onClick={()=>cancelEdit()}>Annuler</button>
+  <button type="submit" disabled={demoReadOnly||contactPhotoBusy}>{contactPhotoBusy?"Enregistrement de la photo…":editingId?"Enregistrer les modifications":"+ Ajouter"}</button>
+  <button type="button" className="secondary" disabled={contactPhotoBusy} onClick={()=>cancelEdit()}>Annuler</button>
  </form>}
  {tab==="shifts"&&<details className="festapp-optional-tool"><summary>🕒 Répartition et planning des bénévoles</summary><section className="volunteer-agenda" aria-label="Planning des bénévoles par manifestation"><h3>🕒 Qui fait quoi ?</h3><div className="needs-backup-actions"><label className="needs-import">📂 Restaurer les besoins<input type="file" accept=".json,application/json" disabled={demoReadOnly} onChange={uploadVolunteerNeeds}/></label></div><button type="button" className="secondary" disabled={!printEvent||!printSchedule?.total} onClick={()=>window.print()}>🖨️ Imprimer le planning</button><label>Manifestation à afficher<select value={recordEventId} onChange={e=>setRecordEventId(e.target.value)}><option value="">Choisir une manifestation</option>{eventOptions.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>{recordEventId?(()=>{const schedule=volunteerSchedule(data.shifts||[],recordEventId);const summary=volunteerPostSummary(data.shifts||[],recordEventId,volunteerPosts);return <><p role="status">{schedule.total} affectation(s) pour cette manifestation</p><div className="volunteer-role-grid" aria-label="Répartition des bénévoles par poste">{summary.posts.map(item=>{const target=volunteerNeeds[recordEventId]?.[item.post];const status=staffingStatus(item.count,target);return <div className="volunteer-role-card" key={item.post}><span>{item.post}</span><strong>{item.count}{target!==undefined?` / ${target}`:""}</strong><small>{status.label}</small><label>Besoin<input aria-label={"Besoin pour "+item.post} type="number" min="0" max="1000" step="1" disabled={demoReadOnly} value={target??""} placeholder="À définir" onChange={e=>{const value=e.target.value;if(value!==""&&(!/^\d+$/.test(value)||Number(value)>1000))return;setVolunteerNeeds(old=>{const next={...old,[recordEventId]:{...(old[recordEventId]||{})}};if(value==="")delete next[recordEventId][item.post];else next[recordEventId][item.post]=Number(value);return next;});}}/></label></div>})}</div>{needsWarning&&<p role="alert">{needsWarning}</p>}{(summary.other>0||summary.unassigned>0)&&<p className="note">{summary.other>0?`${summary.other} affectation(s) sur d’autres postes. `:""}{summary.unassigned>0?`${summary.unassigned} poste(s) à préciser.`:""}</p>}<div className="agenda-list">{schedule.scheduled.map(r=><article key={r.id} className="agenda-item"><strong className="agenda-time">{r.time}</strong><div><strong>{r.name}</strong><p>{r.post||"Poste non précisé"}</p></div></article>)}</div>{schedule.unscheduled.length>0&&<div className="note"><strong>Créneaux à préciser ({schedule.unscheduled.length})</strong>{schedule.unscheduled.map(r=><p key={r.id}>{r.name} — {r.post||"Poste non précisé"} ({r.time||"horaire manquant"})</p>)}</div>}{schedule.total===0&&<p>Aucun bénévole affecté pour le moment.</p>}</>})():<p>Sélectionnez une manifestation pour consulter ses créneaux.</p>}</section>
  <p className="note">Choisissez un bénévole dans l’annuaire ou saisissez son nom manuellement. Seuls les contacts classés « bénévole » sont proposés. Planning local : indiquez les créneaux au format 10:00-12:30. Si un bénévole a deux créneaux qui se chevauchent sur la même manifestation, l’enregistrement est refusé. Les horaires sans date ne permettent pas de vérifier les conflits entre journées différentes.</p></details>}
