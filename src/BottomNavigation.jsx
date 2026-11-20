@@ -17,6 +17,7 @@ export default function BottomNavigation({onHome,onOpenModule,onSettings,setting
     ['home','🏠','Fêtes',onHome],
     ['todo','✅','À faire',onToggleOrgTodos],
     ['contacts','👥','Annuaire',()=>onOpenModule('contacts')],
+    ['equipment','🧰','Matériel',()=>onOpenModule('equipment')],
     ['stock','📦','Stock',()=>onOpenModule('stock')],
     ['settings','⚙️','Plus',onSettings]
    ].map(([key,icon,label,action])=><button type="button" key={key} onClick={action} className={(key==='todo'&&orgTodosOpen)||(key==='settings'&&settingsOpen)?'active':''} aria-label={key==='todo'?'À faire pour l’organisation générale':key==='settings'?'Plus et réglages':label} aria-expanded={key==='todo'?orgTodosOpen:key==='settings'?settingsOpen:undefined}><span className="festapp-nav-icon" aria-hidden="true"><ModuleGlyph kind={key==='todo'?'tasks':key}/></span><small>{label}</small></button>)}
