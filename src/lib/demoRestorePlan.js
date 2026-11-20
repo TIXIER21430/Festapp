@@ -34,10 +34,14 @@ export function planDemoRestore(currentData, backupJson) {
   // A linked record must never be added with a reference to a missing event.
   // Check additions only: pre-existing legacy orphans are preserved untouched.
   const eventIds = new Set([...(current.events || []), ...(additions.events || [])].map(row => row.id));
+  const equipmentIds = new Set([...(current.equipment || []), ...(additions.equipment || [])].map(row => row.id));
   const danglingLinks = [];
   for (const [category, rows] of Object.entries(additions)) {
     if (category === "events") continue;
     for (const row of rows) {
+      if (category === 'equipmentLoans' && !equipmentIds.has(row.values[0])) {
+        danglingLinks.push({category, id:row.id, equipmentId:row.values[0]});
+      }
       if (row.eventId && !eventIds.has(row.eventId)) {
         danglingLinks.push({category, id:row.id, eventId:row.eventId});
       }
