@@ -39,10 +39,11 @@ const secondaryFeatures=[
  ['equipment','🧰','Matériel'],
  ['finance','📊','Bilan financier'],
  ['feedback','📝','Retours'],
+ ['report','📄','Compte rendu Word'],
  ['archives','📸','Photos et archives']
 ];
 
-export default function ManifestationHub({events=[],tasks=[],selectedId='',onSelect,onBack,onOpenModule,onOpenTill,tillOpen=false,onToggleTodo,onAddTodo,onChecklist,readOnly=false,photoRevision=0}){
+export default function ManifestationHub({events=[],tasks=[],selectedId='',onSelect,onBack,onOpenModule,onOpenTill,onOpenReport,tillOpen=false,onToggleTodo,onAddTodo,onChecklist,readOnly=false,photoRevision=0}){
  const [showTasks,setShowTasks]=useState(false);
  const [checklistMessage,setChecklistMessage]=useState('');
  const [eventCovers,setEventCovers]=useState(new Map());
@@ -68,6 +69,7 @@ export default function ManifestationHub({events=[],tasks=[],selectedId='',onSel
  function doFeature(key){
   if(key==='tasks'){setShowTasks(visible=>!visible);return;}
   if(key==='till'){onOpenTill(chosen);return;}
+  if(key==='report'){onOpenReport(chosen);return;}
   onOpenModule(key,chosen.id);
  }
  const grouped=chosen?collectEventTodos(tasks,chosen.id,chosen.values[0]):[];

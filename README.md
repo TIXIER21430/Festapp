@@ -24,6 +24,16 @@ Ces commandes ne doivent ni déployer l'application ni appliquer de migration à
 - Inventaire matériel, archives et mémoire d'événement en mode démonstration.
 - Persistance durable et partage entre membres, uniquement après validation sur un environnement TEST indépendant.
 
+## Compte rendu Word d'une manifestation
+
+Depuis une fête, ouvrir **Autres outils → Compte rendu Word**. Le bilan reprend seulement les écritures, ventes, achats et retours **rattachés à cette édition** : recettes, dépenses saisies, factures en attente incluses dans le solde provisoire, quantités vendues hors annulations, achats prévus, points forts, points faibles et matériel à acheter. Les quantités réellement utilisées peuvent être saisies séparément, sans les confondre avec celles vendues ou prévues.
+
+La rubrique **Choses à ajouter au compte rendu** permet aussi de noter la prochaine réunion, les prochaines manifestations et les observations libres. Chaque ajout est enregistré dans les fiches Retours déjà sauvegardées, sans migration ; les dépenses sans facture sont des écritures Finances provisoires à modifier lors de réception du justificatif (ne pas créer un doublon).
+
+**Télécharger Word** produit un vrai `.docx` modifiable et partageable. **Partager le Word** utilise le menu de partage natif si l'appareil accepte les fichiers Word ; sinon il le télécharge. **Préparer l'e-mail** télécharge le Word et ouvre un brouillon au destinataire choisi, mais **ne peut pas joindre automatiquement le fichier** : l'utilisateur doit l'ajouter avant d'envoyer. Aucun e-mail n'est envoyé en arrière-plan. Les coordonnées privées de l'annuaire ne sont pas incluses.
+
+Ces chiffres restent locaux et provisoires : ni les factures manquantes ni les transactions SumUp externes ne sont récupérées automatiquement. Comparer avec les justificatifs et les encaissements réels avant diffusion.
+
 ## État et garde-fous
 
 Le dépôt contient des tests automatisés (notamment sur les exports CSV et la protection des données). Leur présence ne prouve pas que l'ensemble du MVP soit prêt ni que la persistance multiutilisateur ait été validée. Vérifier les résultats GitHub Actions de chaque commit.
