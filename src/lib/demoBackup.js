@@ -1,7 +1,8 @@
 // Offline demo backup format. Never import automatically into shared production data.
+import {readEquipmentLoan} from './equipmentLoans.js';
 export const DEMO_BACKUP_FORMAT = "festapp-demo-backup";
 export const DEMO_BACKUP_VERSION = 1;
-const allowed = new Set(["events","tasks","shopping","stock","ecocups","contacts","shifts","feedback","recipes","finance","equipment","posts","archives"]);
+const allowed = new Set(["events","tasks","shopping","stock","ecocups","contacts","shifts","feedback","recipes","finance","equipment","equipmentLoans","posts","archives"]);
 const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
 export function validateDemoData(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) throw new TypeError("Invalid demo data");
@@ -16,6 +17,7 @@ export function validateDemoData(data) {
         throw new TypeError("Invalid demo record");
       }
       ids.add(row.id);
+      if (category === 'equipmentLoans') readEquipmentLoan(row);
       if (own(row,"eventId") && (typeof row.eventId !== "string" || row.eventId.length > 200)) throw new TypeError("Invalid event link");
       if (own(row,"done") && (category !== "tasks" || typeof row.done !== "boolean")) throw new TypeError("Invalid task completion");
       if (own(row,"phase") && (category !== "tasks" || typeof row.phase !== "string" || row.phase.length > 200)) throw new TypeError("Invalid task phase");
@@ -30,7 +32,6 @@ export function createDemoBackup(data, timestamp = new Date().toISOString()) {
   const validated = validateDemoData(data);
   if (typeof timestamp !== "string" || !Number.isFinite(Date.parse(timestamp))) throw new TypeError("Invalid timestamp");
   const json = JSON.stringify({format:DEMO_BACKUP_FORMAT,version:DEMO_BACKUP_VERSION,exportedAt:timestamp,data:validated},null,2);
-  // Match the importer limit: never offer a backup that this app cannot restore.
   if (new TextEncoder().encode(json).byteLength > 10_000_000) throw new RangeError("Backup too large to restore");
   return json;
 }
