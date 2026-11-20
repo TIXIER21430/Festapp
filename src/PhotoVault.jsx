@@ -40,7 +40,7 @@ export default function PhotoVault({scope,records=[],readOnly=false,photoRefresh
  }
  return <section className="photo-vault" aria-label="Photos originales locales">
   <h3>📸 Photos originales</h3>
-  <p>Ajoutez une photo de recette, de facture, de matériel, d’affiche ou de manifestation. Le fichier reste <strong>inchangé</strong> sur cet appareil et peut être téléchargé à tout moment.</p>
+  <p>Associez une photo à chaque fiche : bénévoles, achats, matériel, recettes, manifestations… Le fichier reste <strong>inchangé</strong> sur cet appareil et peut être téléchargé à tout moment.</p>
   <div className="photo-add-row">
    <label>Associer à une fiche<select value={recordId} onChange={e=>setRecordId(e.target.value)}><option value="">Sans fiche / général</option>{records.map(r=><option key={r.id} value={r.id}>{r.values[0]}</option>)}</select></label>
    <label className="photo-upload">📷 Ajouter des photos<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" multiple disabled={readOnly||busy} onChange={addPhotos}/></label>

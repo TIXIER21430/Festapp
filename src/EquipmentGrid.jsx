@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {listPhotoOriginals,savePhotoOriginal} from './lib/photoVault.js';
+import ModuleGlyph from './ModuleGlyph.jsx';
 
 // Equipment photos are local originals. They are never fetched from stock-image
 // services or synchronised by this grid.
@@ -12,6 +13,11 @@ export function equipmentPlaceholder(name){
  if(/sono|enceinte|micro|ampli/.test(value))return '🔊';
  if(/rallonge|câble|éclairage|guirlande/.test(value))return '💡';
  return '🧰';
+}
+
+function equipmentGlyphKind(name){
+ const marker=equipmentPlaceholder(name);
+ return {'⛺':'tent','🪑':'chair','🍳':'food','🥤':'ecocups','🔊':'sound','💡':'light'}[marker]||'equipment';
 }
 
 export default function EquipmentGrid({records=[],readOnly=false,onEdit,onDelete,photoRevision=0,onPhotoChange}){
@@ -59,7 +65,7 @@ export default function EquipmentGrid({records=[],readOnly=false,onEdit,onDelete
     const thumbnail=thumbnails.get(item.id);
     const quantity=String(item.values?.[1]||'').trim();
     return <button type="button" key={item.id} className="festapp-equipment-tile" aria-expanded={selectedId===item.id} aria-label={'Ouvrir '+item.values[0]} onClick={()=>{setSelectedId(id=>id===item.id?'':item.id);setStatus('');}}>
-     <span className="festapp-equipment-image">{thumbnail?<img src={thumbnail} alt={'Photo de '+item.values[0]} loading="lazy"/>:<span aria-hidden="true">{equipmentPlaceholder(item.values[0])}</span>}</span>
+     <span className="festapp-equipment-image">{thumbnail?<img src={thumbnail} alt={'Photo de '+item.values[0]} loading="lazy"/>:<span className="festapp-icon-frame" aria-hidden="true"><ModuleGlyph kind={equipmentGlyphKind(item.values[0])}/></span>}</span>
      <strong>{item.values[0]}</strong>
      <small>{quantity?'Quantité : '+quantity:'Quantité à préciser'}</small>
     </button>;
@@ -74,7 +80,7 @@ export default function EquipmentGrid({records=[],readOnly=false,onEdit,onDelete
    <p><strong>Emplacement / prêt :</strong> {selected.values[2]||'À préciser'}</p>
    <div className="festapp-equipment-detail-actions">
     <button type="button" onClick={()=>{onEdit(selected);setSelectedId('');}} disabled={readOnly}>✏️ Modifier</button>
-    <label className="festapp-equipment-photo-action">📷 Ajouter une photo<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" disabled={readOnly||busy} onChange={addPhoto}/></label>
+    <label className="festapp-equipment-photo-action"><ModuleGlyph kind="camera"/> Ajouter une photo à ce matériel<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" disabled={readOnly||busy} onChange={addPhoto}/></label>
     <button type="button" className="delete" onClick={()=>{onDelete(selected.id);setSelectedId('');}} disabled={readOnly}>Supprimer</button>
    </div>
    {status&&<p role="status">{status}</p>}

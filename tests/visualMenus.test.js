@@ -12,7 +12,9 @@ test('all ordinary menus use the same photo-or-icon tile grid and tap detail',()
  assert.match(app,/tab==="equipment"&&<EquipmentGrid records=\{records\}/);
  assert.match(cards,/className="festapp-record-grid"/);
  assert.match(cards,/role="dialog" aria-modal="true"/);
- assert.match(cards,/ICONS\[category\]/);
+ assert.match(cards,/ModuleGlyph kind=\{category\}/);
+ assert.match(cards,/className="festapp-icon-frame"/);
+ assert.match(equipment,/className="festapp-icon-frame"/);
  assert.match(styles,/\.festapp-record-grid\{display:grid;grid-template-columns:repeat\(2/);
  assert.match(styles,/\.festapp-equipment-grid\{display:grid;grid-template-columns:repeat\(2/);
 });

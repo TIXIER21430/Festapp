@@ -1,5 +1,6 @@
 import React,{useEffect,useRef} from 'react';
 import EventTodoList from './EventTodoList.jsx';
+import ModuleGlyph from './ModuleGlyph.jsx';
 
 export default function BottomNavigation({onHome,onOpenModule,onSettings,settingsOpen=false,orgTodosOpen,onToggleOrgTodos,tasks,onAddTodo,onToggleTodo,readOnly=false}){
  const closeRef=useRef(null);
@@ -18,7 +19,7 @@ export default function BottomNavigation({onHome,onOpenModule,onSettings,setting
     ['contacts','👥','Annuaire',()=>onOpenModule('contacts')],
     ['stock','📦','Stock',()=>onOpenModule('stock')],
     ['settings','⚙️','Plus',onSettings]
-   ].map(([key,icon,label,action])=><button type="button" key={key} onClick={action} className={(key==='todo'&&orgTodosOpen)||(key==='settings'&&settingsOpen)?'active':''} aria-label={key==='todo'?'À faire pour l’organisation générale':key==='settings'?'Plus et réglages':label} aria-expanded={key==='todo'?orgTodosOpen:key==='settings'?settingsOpen:undefined}><span aria-hidden="true">{icon}</span><small>{label}</small></button>)}
+   ].map(([key,icon,label,action])=><button type="button" key={key} onClick={action} className={(key==='todo'&&orgTodosOpen)||(key==='settings'&&settingsOpen)?'active':''} aria-label={key==='todo'?'À faire pour l’organisation générale':key==='settings'?'Plus et réglages':label} aria-expanded={key==='todo'?orgTodosOpen:key==='settings'?settingsOpen:undefined}><span className="festapp-nav-icon" aria-hidden="true"><ModuleGlyph kind={key==='todo'?'tasks':key}/></span><small>{label}</small></button>)}
   </nav>
  </>;
 }

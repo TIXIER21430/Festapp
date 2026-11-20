@@ -443,6 +443,29 @@ footer{display:none}
 .festapp-record-preview small{font-size:12px;color:#425a74;font-weight:750;line-height:1.3;overflow-wrap:anywhere}
 .festapp-record-check{display:flex;align-items:center;gap:8px;padding:6px 9px 10px;color:#28445a;font-size:13px;font-weight:750}
 .festapp-record-check input{display:inline-block;width:24px;height:24px;flex:none;margin:0;accent-color:#148b5a}
+
+/* Refined photo frames and lightweight consistent pictograms across all cards. */
+.festapp-line-glyph{display:block;width:100%;height:100%;flex:none}
+.festapp-record-tile,.festapp-equipment-tile{border:1px solid #ffffffa8;box-shadow:0 5px 16px #11223823,0 1px 3px #1122381a}
+.festapp-record-image,.festapp-equipment-image{position:relative;isolation:isolate;background:linear-gradient(145deg,#ffffffec,#eff5ffb8);border:2px solid #fff;box-shadow:inset 0 0 0 1px #738fac35,0 2px 8px #142e3a16;border-radius:15px}
+.festapp-record-image img,.festapp-equipment-image img{display:block;width:100%;height:100%;object-fit:cover}
+.festapp-icon-frame{display:grid;place-items:center;width:clamp(64px,16vw,82px);aspect-ratio:1;border-radius:22px;background:#fff;color:#315d86;border:1.5px solid #c1d4e6;box-shadow:0 3px 8px #20426021,inset 0 0 0 4px #f7fbff}
+.festapp-record-tile:nth-child(3n+2) .festapp-icon-frame,.festapp-equipment-tile:nth-child(3n+2) .festapp-icon-frame{color:#24715b;border-color:#b0dfd0}
+.festapp-record-tile:nth-child(3n) .festapp-icon-frame,.festapp-equipment-tile:nth-child(3n) .festapp-icon-frame{color:#79539c;border-color:#d6c8e6}
+.festapp-icon-frame .festapp-line-glyph{width:52%;height:52%}
+.festapp-record-preview strong,.festapp-equipment-tile strong{letter-spacing:-.012em}
+.festapp-equipment-detail-image{border:2px solid #fff;box-shadow:0 0 0 1px #bacde1,0 6px 16px #17324f24}
+.festapp-equipment-photo-action{display:flex;align-items:center;justify-content:center;gap:10px}
+.festapp-equipment-photo-action .festapp-line-glyph{width:23px;height:23px}
+.festapp-feature-tile .festapp-feature-icon{display:grid;place-items:center;width:60px;height:60px;border:1.5px solid #ffffffd9;border-radius:19px;background:#ffffffbc;color:#315a84;box-shadow:0 2px 8px #0c36531a,inset 0 0 0 3px #ffffff57}
+.festapp-feature-tile .festapp-feature-icon .festapp-line-glyph{width:32px;height:32px}
+.festapp-bottom-nav .festapp-nav-icon{display:grid;place-items:center;width:34px;height:34px;border:1px solid #c8d9ee;border-radius:11px;background:#f2f7ff;color:#275a91}
+.festapp-bottom-nav .festapp-nav-icon .festapp-line-glyph{width:20px;height:20px}
+.festapp-bottom-nav button.active .festapp-nav-icon{background:#d1e9ff;border-color:#7bb4eb}
+.festapp-manif-card .festapp-manif-icon{display:grid;place-items:center;width:76px;height:76px;overflow:hidden;border:2px solid #fff;border-radius:21px;background:#ffffffd9;box-shadow:0 3px 10px #1d426321;font-size:40px}
+.festapp-manif-card .festapp-manif-icon img,.festapp-event-cover img{width:100%;height:100%;object-fit:cover;display:block}
+.festapp-event-heading .festapp-event-cover{display:grid;place-items:center;flex:none;width:78px;height:78px;overflow:hidden;border:2px solid #ffffffc9;border-radius:20px;background:#ffffff30;box-shadow:0 3px 13px #0e204a26;font-size:45px}
+@media(max-width:420px){.festapp-feature-tile .festapp-feature-icon{width:54px;height:54px}.festapp-manif-card .festapp-manif-icon{width:66px;height:66px}.festapp-event-heading .festapp-event-cover{width:62px;height:62px;font-size:36px}}
 .festapp-equipment-detail a{color:#14548a;font-weight:800;overflow-wrap:anywhere}
 @media(min-width:650px){.festapp-record-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
 @media(min-width:1000px){.festapp-record-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}

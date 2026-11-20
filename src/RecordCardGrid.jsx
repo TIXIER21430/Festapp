@@ -1,9 +1,9 @@
 import React,{useEffect,useRef,useState} from 'react';
-import {listPhotoOriginals,savePhotoOriginal} from './lib/photoVault.js';
+import {PHOTO_CATEGORIES,listPhotoOriginals,savePhotoOriginal} from './lib/photoVault.js';
 import {isTillAccountingRecord} from './lib/tillSales.js';
+import ModuleGlyph from './ModuleGlyph.jsx';
 
-const PHOTO_SCOPES=new Set(['recipes','posts','archives','finance','events']);
-const ICONS={events:'🎉',tasks:'✅',shopping:'🛒',stock:'📦',ecocups:'🥤',contacts:'👤',shifts:'🕒',feedback:'💬',recipes:'🍲',finance:'💶',posts:'📣',archives:'🗂️'};
+const PHOTO_SCOPES=new Set(PHOTO_CATEGORIES.filter(scope=>scope!=='equipment'));
 
 export function cardSummary(category,record){
  const values=record?.values||[];
@@ -59,7 +59,7 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
    const image=photos.get(record.id);
    return <article key={record.id} className="festapp-record-tile">
     <button type="button" className="festapp-record-preview" aria-label={'Ouvrir '+record.values[0]} aria-expanded={selectedId===record.id} onClick={()=>{setSelectedId(record.id);setStatus('');}}>
-     <span className="festapp-record-image">{image?<img src={image} alt={'Photo associée à '+record.values[0]} loading="lazy"/>:<span aria-hidden="true">{ICONS[category]||'📋'}</span>}</span>
+     <span className="festapp-record-image">{image?<img src={image} alt={'Photo associée à '+record.values[0]} loading="lazy"/>:<span className="festapp-icon-frame" aria-hidden="true"><ModuleGlyph kind={category}/></span>}</span>
      <strong>{record.values[0]}</strong><small>{cardSummary(category,record)}</small>
     </button>
     {category==='tasks'&&<label className="festapp-record-check"><input type="checkbox" checked={record.done===true} disabled={readOnly} onChange={()=>onToggleDone(record.id)}/>{record.done?'Terminée':'À faire'}</label>}
@@ -75,7 +75,7 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
     {category==='archives'&&/^https:\/\/(?:drive|docs)\.google\.com\//.test(selected.values[2]||'')&&<p><a href={selected.values[2]} target="_blank" rel="noopener noreferrer">📄 Voir l’original dans Drive</a></p>}
     {lockedTillEntry&&<p className="note">🔒 Écriture de caisse conservée pour l’historique. Pour corriger une vente, ouvre sa manifestation puis la caisse et utilise « Annuler cette vente ».</p>}
     <div className="festapp-equipment-detail-actions">{!lockedTillEntry&&<button type="button" disabled={readOnly} onClick={()=>{onEdit(selected);setSelectedId('');}}>✏️ Modifier</button>}
-     {supportsPhotos&&<label className="festapp-equipment-photo-action">📷 Ajouter une photo<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" disabled={readOnly||busy} onChange={addPhoto}/></label>}
+     {supportsPhotos&&<label className="festapp-equipment-photo-action"><ModuleGlyph kind="camera"/> Ajouter une photo à cette fiche<input type="file" accept="image/jpeg,image/png,image/webp,image/gif,image/heic,image/heif" disabled={readOnly||busy} onChange={addPhoto}/></label>}
      {!lockedTillEntry&&<button type="button" className="delete" disabled={readOnly} onClick={()=>{onDelete(selected.id);setSelectedId('');}}>Supprimer</button>}
     </div>
     {status&&<p role="status">{status}</p>}

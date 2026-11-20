@@ -16,7 +16,7 @@ import EventTill from "./EventTill.jsx";
 import BottomNavigation from "./BottomNavigation.jsx";
 import {createTodo} from "./lib/eventTodo.js";
 import {recordsForManifestation,withRecordEventId} from "./lib/manifestationScope.js";
-import {listAllPhotoOriginals,saveRestoredPhotoOriginals,rollbackRestoredPhotoOriginals} from "./lib/photoVault.js";
+import {PHOTO_CATEGORIES,listAllPhotoOriginals,saveRestoredPhotoOriginals,rollbackRestoredPhotoOriginals} from "./lib/photoVault.js";
 import {makeCompleteBackupZip} from "./lib/photoZip.js";
 import {readCompleteBackupZip,planCompleteZipRestore} from "./lib/completeZipRestore.js";
 import {persistCompleteZipRestore} from "./lib/completeZipCommit.js";
@@ -555,7 +555,7 @@ function App(){
  {initialNeedsStorage.warning&&<p role="alert" className="note">⚠ {initialNeedsStorage.warning}</p>}
  {initialEcocupStorage.warning&&<p role="alert" className="note">⚠ {initialEcocupStorage.warning}</p>}
  {!settingsOpen&&<>
-  <ManifestationHub events={eventOptions} tasks={data.tasks||[]} selectedId={hubEventId} onSelect={selectManifestation} onBack={()=>selectManifestation('')} onOpenModule={openModule} onOpenTill={openTillForEvent} tillOpen={tillOpen} onToggleTodo={toggleTaskDone} onAddTodo={addQuickTodo} onChecklist={addChecklistToEvent} readOnly={demoReadOnly}/>
+  <ManifestationHub events={eventOptions} tasks={data.tasks||[]} selectedId={hubEventId} onSelect={selectManifestation} onBack={()=>selectManifestation('')} onOpenModule={openModule} onOpenTill={openTillForEvent} tillOpen={tillOpen} onToggleTodo={toggleTaskDone} onAddTodo={addQuickTodo} onChecklist={addChecklistToEvent} readOnly={demoReadOnly} photoRevision={photoRefreshRevision}/>
   {activeManifestation&&tillOpen&&<EventTill eventName={activeManifestation.values[0]} onClose={()=>openTillForEvent(activeManifestation)} products={tillProducts} cart={tillCart} setCart={updateTillCart} onRecordSale={recordTillSale} onCancelSale={cancelTillSale} saleStatus={tillSaleStatus} saleSummary={tillSaleSummary} saleHistory={tillSaleHistory} readOnly={demoReadOnly} editing={tillEdit} onToggleEdit={()=>tillEdit?setTillEdit(false):openTillEditor()} draft={tillDraft} setDraft={setTillDraft} onSave={saveTillEditor} configWarning={tillConfigWarning} configReadOnly={!!initialTillConfig.warning} onImport={()=>tillImportRef.current?.click()} importRef={tillImportRef} onImportFile={importMenus}/>}
  </>}
  {settingsOpen&&<>
@@ -661,7 +661,7 @@ function App(){
  {tab==="tasks"&&<p role="status" className="note">✅ {recordsForManifestation(data.tasks||[],tab,moduleScopeEventId).filter(r=>r.done===true).length} tâche(s) terminée(s) sur {recordsForManifestation(data.tasks||[],tab,moduleScopeEventId).length}. Cochez une tâche pour la marquer comme faite ; responsable et échéance sont conservés.</p>}
  {tab==="equipment"&&<EquipmentGrid records={records} readOnly={demoReadOnly} onEdit={beginEdit} onDelete={remove} photoRevision={photoRefreshRevision} onPhotoChange={()=>setPhotoRefreshRevision(v=>v+1)}/>}
  {tab!=="equipment"&&<RecordCardGrid category={tab} fields={current.fields} records={records} readOnly={demoReadOnly} onEdit={beginEdit} onDelete={remove} onToggleDone={toggleTaskDone} onCalculateRecipe={openRecipeCalculator} photoRevision={photoRefreshRevision} onPhotoChange={()=>setPhotoRefreshRevision(v=>v+1)}/>}
- {["recipes","posts","archives","finance","events"].includes(tab)&&<details className="festapp-equipment-photo-manage"><summary>📸 Gérer les photos de cette rubrique</summary><PhotoVault scope={tab} records={recordsForManifestation(data[tab]||[],tab,moduleScopeEventId)} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision} onChange={()=>setPhotoRefreshRevision(v=>v+1)}/></details>}
+ {PHOTO_CATEGORIES.includes(tab)&&tab!=="equipment"&&<details className="festapp-equipment-photo-manage"><summary>📸 Gérer les photos de cette rubrique</summary><PhotoVault scope={tab} records={recordsForManifestation(data[tab]||[],tab,moduleScopeEventId)} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision} onChange={()=>setPhotoRefreshRevision(v=>v+1)}/></details>}
  {tab==="equipment"&&<details className="festapp-equipment-photo-manage"><summary>📸 Voir toutes les photos du matériel</summary><PhotoVault scope="equipment" records={recordsForManifestation(data.equipment||[],"equipment",moduleScopeEventId)} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision} onChange={()=>setPhotoRefreshRevision(v=>v+1)}/></details>}
  </section>
  </details>

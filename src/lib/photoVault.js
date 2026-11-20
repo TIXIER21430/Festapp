@@ -1,8 +1,15 @@
 // Offline originals. Images are never sent to Supabase, Facebook, or an AI provider.
 export const MAX_PHOTO_BYTES=12_000_000;
+export const MAX_PHOTOS_PER_SCOPE=100;
+export const MAX_PHOTOS_TOTAL=500;
 const DB_NAME="festapp-original-photos-v1";
 const STORE="originals";
-const SCOPES=new Set(["recipes","posts","archives","finance","equipment","events"]);
+// Shared list used by image cards and ZIP restore. Photos stay local.
+export const PHOTO_CATEGORIES=Object.freeze([
+ "events","tasks","shopping","stock","ecocups","contacts","shifts",
+ "feedback","recipes","finance","equipment","posts","archives"
+]);
+const SCOPES=new Set(PHOTO_CATEGORIES);
 const IMAGE_TYPES=new Set(["image/jpeg","image/png","image/webp","image/gif","image/heic","image/heif"]);
 
 export function validatePhotoInput(file,scope,recordId=""){
@@ -52,8 +59,25 @@ export async function listAllPhotoOriginals(){
 export async function savePhotoOriginal(file,scope,recordId=""){
  const meta=validatePhotoInput(file,scope,recordId);
  const row={...meta,id:crypto.randomUUID(),addedAt:new Date().toISOString(),blob:file};
- await transact("readwrite",store=>store.add(row));
- return row;
+ // Check capacity in the same transaction as the insert. An icon upload must
+ // never make the complete backup impossible to restore (100/section, 500 total).
+ const db=await openDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE,"readwrite");
+  const store=tx.objectStore(STORE);
+  let quotaError="";
+  const request=store.getAll();
+  request.onsuccess=()=>{
+   const existing=request.result;
+   if(existing.length>=MAX_PHOTOS_TOTAL)quotaError="Limite de 500 photos locales atteinte : téléchargez un ZIP complet avant de libérer de la place.";
+   else if(existing.filter(photo=>photo.scope===scope).length>=MAX_PHOTOS_PER_SCOPE)quotaError="Limite de 100 photos locales par rubrique atteinte : téléchargez un ZIP complet avant de libérer de la place.";
+   if(quotaError){tx.abort();return;}
+   store.add(row);
+  };
+  tx.oncomplete=()=>{db.close();resolve(row);};
+  const fail=()=>{db.close();reject(new Error(quotaError||"Impossible de conserver la photo sur cet appareil (espace plein ou accès refusé)."));};
+  tx.onerror=fail;tx.onabort=fail;
+ });
 }
 
 // One IndexedDB transaction for an explicitly confirmed ZIP restoration.
