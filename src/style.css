@@ -578,3 +578,28 @@ footer{display:none}
 .festapp-balance-documents p{margin:0;font-size:14px;color:#4e607d}
 .festapp-settings-menu .festapp-balance-caption{font-size:13px;color:#61758e}
 @media(max-width:590px){.festapp-festival-edit{grid-template-columns:1fr}.festapp-festival-add-fields{grid-template-columns:1fr 95px}.festapp-balance-figures{grid-template-columns:repeat(2,minmax(0,1fr))}.festapp-balance-figures>div:nth-child(3){grid-column:1/-1}}
+
+/* Matériel : 6 raccourcis accessibles dans le menu mobile. */
+.festapp-bottom-nav{grid-template-columns:repeat(6,minmax(0,1fr))}
+.festapp-equipment-submenu{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin:14px 0}
+.festapp-equipment-submenu button{border:1px solid #c9dfec;border-radius:13px;padding:12px 8px;background:#eff8ff;color:#254963;font-weight:800;cursor:pointer}
+.festapp-equipment-submenu button.selected{border-color:#17658e;background:#d5edfb;box-shadow:inset 0 0 0 1px #17658e}
+.festapp-loans{margin-top:14px}
+.festapp-loans h3,.festapp-loans h4{margin:16px 0 10px}
+.festapp-loan-form{background:#f4f9fd;border:1px solid #d6e7f3;border-radius:16px;padding:15px;margin:13px 0 21px}
+.festapp-loan-form fieldset{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;border:0;margin:0 0 14px;padding:0}
+.festapp-loan-form label,.festapp-loan-return label{display:flex;flex-direction:column;gap:5px;font-weight:700;font-size:14px;color:#24475f}
+.festapp-loan-form input,.festapp-loan-form select,.festapp-loan-return input{box-sizing:border-box;width:100%;min-width:0;border:1px solid #c9dae4;border-radius:9px;background:white;padding:10px;font:inherit;color:#203743}
+.festapp-loan-form button,.festapp-loan-return button{border:0;border-radius:11px;background:#17658e;color:#fff;font-weight:800;padding:11px 15px;cursor:pointer}
+.festapp-loan-form button:disabled,.festapp-loan-return button:disabled{opacity:.5;cursor:not-allowed}
+.festapp-loan-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:12px}
+.festapp-loan-card{border-radius:15px;border:1px solid #d3e2ea;background:#fff;padding:15px;box-shadow:0 3px 12px #1a4a6812}
+.festapp-loan-card p{margin:8px 0;overflow-wrap:anywhere}
+.festapp-loan-overdue{color:#ad3c20;font-weight:800}
+.festapp-loan-return{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.festapp-loan-return button{grid-column:1/-1}
+.festapp-loan-history{border:1px solid #d6e7f3;border-radius:14px;padding:13px;margin-top:20px}
+.festapp-loan-history article{padding:11px 0;border-top:1px solid #e2edf3}
+.festapp-loan-history summary{cursor:pointer;font-weight:800}
+@media(max-width:600px){.festapp-loan-form fieldset{grid-template-columns:1fr}}
+@media(max-width:420px){.festapp-bottom-nav{gap:2px;padding-left:4px;padding-right:4px}.festapp-bottom-nav button small{font-size:10px}.festapp-equipment-submenu button{font-size:12px}}
