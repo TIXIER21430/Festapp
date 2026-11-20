@@ -39,3 +39,12 @@ test('a malformed, modified or unrelated cancellation cannot alter another event
  assert.deepEqual(summarizeTillSales([original,bad],'noel-2026'),{count:1,totalCents:850});
  assert.throws(()=>createTillCorrectionRecord({id:'c',eventId:'fanfare',saleId:original.id,finance:[original],at:'2026-11-19T11:31:00Z'}),/introuvable/);
 });
+
+test('a forged correction with the right amount but wrong accounting type cannot cancel a sale',()=>{
+ const sale=createTillFinanceRecord(params);
+ const forged={id:'fake-correction',eventId:'noel-2026',values:['Annulation caisse · vente-1 · 19/11/2026','-8.50','Dépense']};
+ assert.deepEqual(summarizeTillSales([sale,forged],'noel-2026'),{count:1,totalCents:850});
+ assert.equal(listTillSales([sale,forged],'noel-2026')[0].cancelled,false);
+ const valid=createTillCorrectionRecord({id:'real-correction',eventId:'noel-2026',saleId:sale.id,finance:[sale,forged],at:'2026-11-19T11:30:00Z'});
+ assert.deepEqual(summarizeTillSales([sale,forged,valid],'noel-2026'),{count:0,totalCents:0});
+});
