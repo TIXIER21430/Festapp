@@ -1,5 +1,6 @@
 import React,{useEffect,useRef,useState} from 'react';
 import {listPhotoOriginals,savePhotoOriginal} from './lib/photoVault.js';
+import {availableEquipment} from './lib/equipmentLoans.js';
 import ModuleGlyph from './ModuleGlyph.jsx';
 
 // Equipment photos are local originals. They are never fetched from stock-image
@@ -20,7 +21,7 @@ function equipmentGlyphKind(name){
  return {'⛺':'tent','🪑':'chair','🍳':'food','🥤':'ecocups','🔊':'sound','💡':'light'}[marker]||'equipment';
 }
 
-export default function EquipmentGrid({records=[],readOnly=false,onEdit,onDelete,photoRevision=0,onPhotoChange}){
+export default function EquipmentGrid({records=[],loans=[],readOnly=false,onEdit,onDelete,photoRevision=0,onPhotoChange}){
  const [thumbnails,setThumbnails]=useState(new Map());
  const [selectedId,setSelectedId]=useState('');
  const [status,setStatus]=useState('');
@@ -63,11 +64,12 @@ export default function EquipmentGrid({records=[],readOnly=false,onEdit,onDelete
   {records.length>0&&<div className="festapp-equipment-grid">
    {records.map(item=>{
     const thumbnail=thumbnails.get(item.id);
-    const quantity=String(item.values?.[1]||'').trim();
+    let availability;
+    try{availability=availableEquipment(item,loans);}catch{availability=null;}
     return <button type="button" key={item.id} className="festapp-equipment-tile" aria-expanded={selectedId===item.id} aria-label={'Ouvrir '+item.values[0]} onClick={()=>{setSelectedId(id=>id===item.id?'':item.id);setStatus('');}}>
      <span className="festapp-equipment-image">{thumbnail?<img src={thumbnail} alt={'Photo de '+item.values[0]} loading="lazy"/>:<span className="festapp-icon-frame" aria-hidden="true"><ModuleGlyph kind={equipmentGlyphKind(item.values[0])}/></span>}</span>
      <strong>{item.values[0]}</strong>
-     <small>{quantity?'Quantité : '+quantity:'Quantité à préciser'}</small>
+     <small>{availability?`Disponibles : ${availability.available} / ${availability.total}`:'Quantité à vérifier'}</small>
     </button>;
    })}
   </div>}
