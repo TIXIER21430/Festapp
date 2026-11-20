@@ -15,8 +15,10 @@ import FreeAiHelper from "./FreeAiHelper.jsx";
 import ManifestationHub from "./ManifestationHub.jsx";
 import FestivalSettings from "./FestivalSettings.jsx";
 import EventTill from "./EventTill.jsx";
+import EventReport from "./EventReport.jsx";
 import BottomNavigation from "./BottomNavigation.jsx";
 import {createTodo} from "./lib/eventTodo.js";
+import {createReportNote,createPendingReportExpense} from "./lib/eventReport.js";
 import {recordsForManifestation,withRecordEventId} from "./lib/manifestationScope.js";
 import {PHOTO_CATEGORIES,listAllPhotoOriginals,savePhotoOriginal,validatePhotoInput,saveRestoredPhotoOriginals,rollbackRestoredPhotoOriginals} from "./lib/photoVault.js";
 import {makeCompleteBackupZip} from "./lib/photoZip.js";
@@ -101,6 +103,8 @@ function App(){
  const initialRender=useRef(true);
  const [tab,setTab]=useState("events");
  const [hubEventId,setHubEventId]=useState("");
+ const [reportOpen,setReportOpen]=useState(false);
+ const [reportDraftDirty,setReportDraftDirty]=useState(false);
  const [settingsOpen,setSettingsOpen]=useState(false);
  const [tillOpen,setTillOpen]=useState(false);
  const [moduleScopeEventId,setModuleScopeEventId]=useState("");
@@ -230,7 +234,7 @@ function App(){
   open:tab==="contacts"?contactFormOpen:tab==="equipment"?equipmentFormOpen:moduleFormOpen,
   form,editingId,records:data[tab]||[],eventId:recordEventId,
   email:tab==="contacts"?contactEmail:"",phone:tab==="contacts"?contactPhone:""
- })||!!contactPhotoFile;
+ })||!!contactPhotoFile||reportDraftDirty;
  function allowDiscardDraft(){
   if(contactPhotoSavingRef.current)return false;
   return !draftIsDirty||window.confirm("Cette fiche n'est pas enregistrée. Quitter sans conserver les modifications ?");
@@ -288,6 +292,7 @@ function App(){
  function cancelEdit(skipConfirmation=false){if(!skipConfirmation&&!allowDiscardDraft())return;setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setContactPhotoFile(null);setReturnToVolunteerEventId("");setRecordEventId(moduleScopeEventId);setFormError("");if(tab==="contacts")setContactFormOpen(false);if(tab==="equipment")setEquipmentFormOpen(false);if(tab!=="contacts"&&tab!=="equipment")setModuleFormOpen(false);}
  function openModule(key,eventId=""){
   if(!allowDiscardDraft())return false;
+  setReportOpen(false);setReportDraftDirty(false);
   setOrgTodosOpen(false);
   setSettingsOpen(false);
   if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=true;
@@ -378,11 +383,12 @@ function App(){
   if(!allowDiscardDraft())return false;
   const event=eventOptions.find(row=>row.id===id);
   setHubEventId(id);setTillOpen(false);setTillCart({});setTillEdit(false);setTillSaleStatus("");
+  setReportOpen(false);setReportDraftDirty(false);
   if(event)setTillEvent(event.values[0].replace(/\s+20\d{2}$/,''));
   return true;
  }
  function goToHome(){if(!selectManifestation(''))return;setOrgTodosOpen(false);setSettingsOpen(false);setModuleScopeEventId('');if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>document.querySelector('[aria-label="Accueil des manifestations"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
- function openSettings(){if(!allowDiscardDraft())return;setOrgTodosOpen(false);setTillOpen(false);setSettingsOpen(true);if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'smooth'}));}
+ function openSettings(){if(!allowDiscardDraft())return;setOrgTodosOpen(false);setTillOpen(false);setReportOpen(false);setReportDraftDirty(false);setSettingsOpen(true);if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'smooth'}));}
  function applyCloudSnapshot(snapshot){
   if(!allowDiscardDraft())throw new Error('Saisie non enregistrée : restauration annulée.');
   if(demoReadOnly||initialTillConfig.warning)throw new Error('Données locales illisibles : restauration cloud interdite.');
@@ -394,10 +400,26 @@ function App(){
  function openTillForEvent(event){
   if(!event||event.id!==hubEventId||!allowDiscardDraft())return;
   const nextOpen=!tillOpen;
+  setReportOpen(false);setReportDraftDirty(false);
   setTillEvent(event.values[0].replace(/\s+20\d{2}$/,''));
   setTillOpen(nextOpen);setOrgTodosOpen(false);
   if(nextOpen)window.requestAnimationFrame(()=>document.querySelector('[aria-label="Caisse tactile"]')?.scrollIntoView({behavior:'smooth',block:'start'}));
  }
+ function openReportForEvent(event){
+  if(!event||event.id!==hubEventId||!allowDiscardDraft())return;
+  setTillOpen(false);setOrgTodosOpen(false);setReportOpen(true);
+  window.requestAnimationFrame(()=>document.getElementById('festapp-event-report')?.scrollIntoView({behavior:'smooth',block:'start'}));
+ }
+ function appendReportRecord(category,row){
+  if(demoReadOnly)throw new Error('Les données locales sont protégées en lecture seule.');
+  if(!eventOptions.some(event=>event.id===row.eventId))throw new Error('Manifestation introuvable.');
+  const next={...data,[category]:[...(data[category]||[]),row]};
+  const result=writeDemoStorage(localStorage,next);
+  if(!result.saved)throw new Error('Enregistrement impossible sur cet appareil. Rien n’a été ajouté ; vérifie l’espace disponible.');
+  setData(next);
+ }
+ function addReportNote(values){appendReportRecord('feedback',createReportNote({id:crypto.randomUUID(),eventId:hubEventId,...values}));}
+ function addReportExpense(values){appendReportRecord('finance',createPendingReportExpense({id:crypto.randomUUID(),eventId:hubEventId,...values}));}
  function updateTillCart(updater){setTillSaleStatus("");setTillCart(updater);recordingTillSaleRef.current=false;}
  function recordTillSale(method){
   if(recordingTillSaleRef.current)return;
@@ -603,7 +625,8 @@ function App(){
  {initialNeedsStorage.warning&&<p role="alert" className="note">⚠ {initialNeedsStorage.warning}</p>}
  {initialEcocupStorage.warning&&<p role="alert" className="note">⚠ {initialEcocupStorage.warning}</p>}
  {!settingsOpen&&<>
-  <ManifestationHub events={eventOptions} tasks={data.tasks||[]} selectedId={hubEventId} onSelect={selectManifestation} onBack={()=>selectManifestation('')} onOpenModule={openModule} onOpenTill={openTillForEvent} tillOpen={tillOpen} onToggleTodo={toggleTaskDone} onAddTodo={addQuickTodo} onChecklist={addChecklistToEvent} readOnly={demoReadOnly} photoRevision={photoRefreshRevision}/>
+  <ManifestationHub events={eventOptions} tasks={data.tasks||[]} selectedId={hubEventId} onSelect={selectManifestation} onBack={()=>selectManifestation('')} onOpenModule={openModule} onOpenTill={openTillForEvent} onOpenReport={openReportForEvent} tillOpen={tillOpen||reportOpen} onToggleTodo={toggleTaskDone} onAddTodo={addQuickTodo} onChecklist={addChecklistToEvent} readOnly={demoReadOnly} photoRevision={photoRefreshRevision}/>
+  {activeManifestation&&reportOpen&&<EventReport key={activeManifestation.id} eventId={activeManifestation.id} data={data} readOnly={demoReadOnly} onAddNote={addReportNote} onAddExpense={addReportExpense} onDraftChange={setReportDraftDirty} onClose={()=>{if(!allowDiscardDraft())return;setReportOpen(false);setReportDraftDirty(false);}}/>}
   {activeManifestation&&tillOpen&&<EventTill eventName={activeManifestation.values[0]} onClose={()=>openTillForEvent(activeManifestation)} products={tillProducts} cart={tillCart} setCart={updateTillCart} onRecordSale={recordTillSale} onCancelSale={cancelTillSale} saleStatus={tillSaleStatus} saleSummary={tillSaleSummary} saleHistory={tillSaleHistory} readOnly={demoReadOnly} editing={tillEdit} onToggleEdit={()=>tillEdit?setTillEdit(false):openTillEditor()} draft={tillDraft} setDraft={setTillDraft} onSave={saveTillEditor} configWarning={tillConfigWarning} configReadOnly={!!initialTillConfig.warning} onImport={()=>tillImportRef.current?.click()} importRef={tillImportRef} onImportFile={importMenus}/>}
  </>}
  {settingsOpen&&<>

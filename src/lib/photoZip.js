@@ -58,7 +58,7 @@ function collectPhotos(photos,{scope=null,limit=MAX_FILES}={}){
  return {files,manifest};
 }
 
-async function zipFiles(files){
+export async function zipFiles(files){
  if(files.length>65535)throw new RangeError('Trop de fichiers pour ce ZIP.');
  const chunks=[],central=[];
  let offset=0;

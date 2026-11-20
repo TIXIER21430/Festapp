@@ -13,6 +13,7 @@ const drawings={
  feedback:<><path d="M20 11a8 8 0 0 1-8 8c-1.5 0-3-.4-4.2-1.1L3 20l1.4-4.8A8 8 0 1 1 20 11Z"/><path d="M8 11h8m-8 3h5"/></>,
  recipes:<><path d="M4 3v7a3 3 0 0 0 6 0V3M7 3v18M18 21V3c-4 3-5 7-5 11h5"/></>,
  finance:<><rect x="3" y="6" width="18" height="14" rx="2"/><path d="M3 10h18M7 16h4M17 3v3"/></>,
+ report:<><path d="M6 2h9l5 5v15H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2ZM15 2v6h5M8 12h8M8 16h8M8 20h5"/></>,
  posts:<><path d="m3 10 12-5v14L3 14v-4Zm12-2 4-2v12l-4-2M6 15l2 6h3"/></>,
  archives:<><path d="M3 7h7l2 2h9v11H3V7ZM3 7V4h7l2 3M9 14h6"/></>,
  camera:<><rect x="2" y="6" width="20" height="15" rx="3"/><path d="m7 6 1.5-3h7L17 6"/><circle cx="12" cy="13" r="3.5"/></>,
