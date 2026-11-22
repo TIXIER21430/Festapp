@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { saveTestSnapshot, sameTestSnapshotData } from "../src/lib/supabaseTestSync.js";
+import { FESTAPP_TEST_URL } from "../src/lib/supabaseClient.js";
 
 const testSpace = "d4dbe793-56bb-4dad-a76c-5ac322b1e5b1";
 
@@ -8,6 +9,7 @@ function guardedClient() {
   const calls = [];
   return {
     calls,
+    supabaseUrl: FESTAPP_TEST_URL,
     auth: { getUser: async () => ({ data: { user: { id: "test-user" } } }) },
     from(table) { calls.push(table); throw new Error("Unexpected network operation"); }
   };
