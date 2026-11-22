@@ -1,11 +1,24 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import {saveTestSnapshot,sameTestSnapshotData} from "../src/lib/supabaseTestSync.js";
+import {FESTAPP_TEST_URL} from "../src/lib/supabaseClient.js";
 const spaceId="d4dbe793-56bb-4dad-a76c-5ac322b1e5b1";
 function mock({user=true,conflict=false,error=null}={}){
  const calls=[];const q={update(v){calls.push(["update",v]);return this},eq(k,v){calls.push(["eq",k,v]);return this},select(v){calls.push(["select",v]);return this},async maybeSingle(){return {data:conflict?null:{revision:2,updated_at:"2026-11-18T12:00:00Z"},error}}};
- return {calls,auth:{getUser:async()=>({data:{user:user?{id:"u1"}:null}})},from(table){calls.push(["from",table]);return q}};
+ return {calls,supabaseUrl:FESTAPP_TEST_URL,auth:{getUser:async()=>({data:{user:user?{id:"u1"}:null}})},from(table){calls.push(["from",table]);return q}};
 }
+test("never writes to a production or unknown backend even when TEST flag is true",async()=>{
+ for(const url of ["https://pomssbugayytzmmgvflg.supabase.co",undefined,"https://ddpaxzdwxqwypcumjvvn.supabase.co.evil.test"]){
+  const c=mock();c.supabaseUrl=url;
+  await assert.rejects(saveTestSnapshot(c,{spaceId,expectedRevision:1,payload:{},testMode:true}),/projet ou espace/);
+  assert.deepEqual(c.calls,[]);
+ }
+});
+test("rejects even a valid UUID if it points to a different TEST space",async()=>{
+ const c=mock();
+ await assert.rejects(saveTestSnapshot(c,{spaceId:"83d56d91-ecee-4d07-8d1f-ca8fd686f0eb",expectedRevision:1,payload:{},testMode:true}),/projet ou espace/);
+ assert.deepEqual(c.calls,[]);
+});
 test("refuses any write outside explicitly enabled TEST mode",async()=>{
  const c=mock();await assert.rejects(saveTestSnapshot(c,{spaceId,expectedRevision:1,payload:{},testMode:false}),/interdite/);
  assert.deepEqual(c.calls,[]);
