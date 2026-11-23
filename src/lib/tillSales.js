@@ -23,7 +23,7 @@ export function listTillSales(finance,eventId){
    const originalId=String(record.values[0]).slice(CORRECTION_PREFIX.length).split(' · ')[0];
    const original=rows.find(row=>row?.eventId===eventId&&row?.id===originalId&&row?.values?.[0]?.startsWith(SALE_PREFIX));
    const cents=saleCents(original);
-   return cents!==null&&record.values[1]===(-cents/100).toFixed(2);
+   return cents!==null&&record.values[1]===(-cents/100).toFixed(2)&&record.values[2]===`Correction · ${original.values[2]}`;
   }).map(record=>String(record.values[0]).slice(CORRECTION_PREFIX.length).split(' · ')[0]));
  return rows.filter(record=>record?.eventId===eventId&&record?.values?.[0]?.startsWith(SALE_PREFIX)&&saleCents(record)!==null)
   .map(record=>({id:record.id,title:record.values[0].slice(SALE_PREFIX.length),amountCents:saleCents(record),method:record.values[2],cancelled:cancelled.has(record.id)}))
