@@ -455,17 +455,21 @@ function App(){
  function openTillEditor(){setTillDraft(TILL_PRODUCTS.map(p=>({id:p.id,enabled:tillProducts.some(x=>x.id===p.id),price:String((tillProducts.find(x=>x.id===p.id)||p).priceCents/100).replace(".",",")})));setTillEdit(true)}
  function saveTillEditor(){try{if(initialTillConfig.warning)throw new Error("Réglages locaux illisibles");const chosen=tillDraft.filter(p=>p.enabled).map(p=>{const price=p.price.trim();if(!/^(0|[1-9]\\d*)(?:[,.]\\d{1,2})?$/.test(price))throw new Error("Prix invalide : "+p.id);const cents=Math.round(Number(price.replace(",","."))*100);if(!Number.isSafeInteger(cents)||cents>100000)throw new Error("Prix hors limite");return {id:p.id,priceCents:cents}});const next={...tillConfig,[tillEvent]:chosen};saveTillConfig(localStorage,next);setTillConfig(next);setTillCart({});setTillEdit(false);setTillConfigWarning("Menu enregistré uniquement sur cet appareil.")}catch(e){setTillConfigWarning("⚠ "+e.message)}}
  function exportBackup(){if(demoReadOnly){setBackupPreview("⚠ Sauvegarde bloquée : une partie des données locales est illisible. Ne supprimez pas les données de cet appareil.");return;}try{const json=createCombinedDemoBackup(data,volunteerNeeds,undefined,ecocupSettings);const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="festapp-demo-sauvegarde-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch{setBackupPreview("⚠ Téléchargement impossible : la sauvegarde est trop volumineuse ou contient des données invalides. Aucune fiche n’a été effacée.")}}
- async function exportFullBackup(){
+ async function prepareCompleteBackup(){
   if(demoReadOnly)throw new Error('Données locales illisibles : ne quittez pas cet appareil et ne supprimez rien.');
   const backupJSON=createCombinedDemoBackup(data,volunteerNeeds,undefined,ecocupSettings);
   const menuJSON=exportTillConfig(tillConfig);
   const reviewJSON=JSON.stringify({format:'festapp-owner-review',version:1,reviews:parseOwnerReviews(localStorage.getItem(OWNER_REVIEW_KEY))},null,2);
   const photos=await listAllPhotoOriginals();
   const zip=await makeCompleteBackupZip({backupJSON,menuJSON,reviewJSON,photos});
+  return {zip,photos:photos.length,records:Object.values(data).reduce((n,rows)=>n+(Array.isArray(rows)?rows.length:0),0)};
+ }
+ async function exportFullBackup(){
+  const {zip,photos,records}=await prepareCompleteBackup();
   const url=URL.createObjectURL(zip);
   const a=document.createElement('a');a.href=url;a.download='festapp-sauvegarde-complete-'+new Date().toISOString().slice(0,10)+'.zip';a.click();
   setTimeout(()=>URL.revokeObjectURL(url),60000);
-  return `✅ ZIP préparé : ${Object.values(data).reduce((n,rows)=>n+(Array.isArray(rows)?rows.length:0),0)} fiche(s), ${photos.length} photo(s), menus et vérifications. Conservez-le hors du navigateur.`;
+  return `✅ ZIP préparé : ${records} fiche(s), ${photos} photo(s), menus et vérifications. Vérifie qu’il apparaît dans les Téléchargements de ton appareil.`;
  }
  async function inspectFullZip(e){
   const file=e.target.files?.[0];e.target.value='';
@@ -648,7 +652,7 @@ function App(){
  </section>
  <details className="festapp-sync-settings"><summary>☁️ Sauvegarde et synchronisation <span>Facultatif</span></summary>
   <p className="note">Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée.</p>
-  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
+  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
  </details>
  <details className="festapp-advanced" ref={advancedRef}><summary>🔧 Préparation privée, archives du Drive et sauvegardes</summary>
  <section className="quick-access" aria-label="Accès rapide aux modules">
