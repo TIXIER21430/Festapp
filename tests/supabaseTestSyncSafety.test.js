@@ -52,3 +52,35 @@ test("snapshot comparison detects array reordering, additions and deletions", ()
     tasks: [{ id: "a" }], volunteers: []
   }), false);
 });
+
+test("TEST snapshot refuses JSON values that would be silently lost before writing", async () => {
+  const badPayloads = [
+    { sales: [{ amount: Number.NaN }] },
+    { sales: [{ amount: Infinity }] },
+    { sales: [{ amount: undefined }] },
+    { sales: [undefined] },
+    { sales: [1n] },
+    { sales: new Date() },
+    { sales: Array(1) }
+  ];
+  const circular = { sales: [] };
+  circular.sales.push(circular);
+  badPayloads.push(circular);
+  for (const payload of badPayloads) {
+    const client = guardedClient();
+    await assert.rejects(saveTestSnapshot(client, {
+      spaceId: testSpace, expectedRevision: 1, payload, testMode: true
+    }), /JSON/);
+    assert.deepEqual(client.calls, []);
+  }
+});
+
+test("TEST snapshot accepts valid JSON and reaches the guarded write", async () => {
+  const client = guardedClient();
+  await assert.rejects(saveTestSnapshot(client, {
+    spaceId: testSpace, expectedRevision: 1,
+    payload: { sales: [{ amount: 12.5, label: "Crêpes" }], archived: null },
+    testMode: true
+  }), /Unexpected network operation/);
+  assert.deepEqual(client.calls, ["festapp_snapshots"]);
+});
