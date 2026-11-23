@@ -15,6 +15,9 @@ export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,t
  const [email,setEmail]=useState("");
  const [password,setPassword]=useState("");
  const [signedIn,setSignedIn]=useState(false);
+ // An Auth SIGNED_IN event may fire while the password request still holds
+ // the write lock. Retry access after that request has actually released it.
+ const [authSettled,setAuthSettled]=useState(0);
  const [busy,setBusy]=useState(false);
  const [syncOn,setSyncOn]=useState(false);
  const [status,setStatus]=useState("");
@@ -54,7 +57,7 @@ export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,t
   if(!signedIn){setSyncOn(false);setRemote(null);base.current=null;onDriveCatalog?.(null);return;}
   void checkAccess(epoch);
   return ()=>{accessEpoch.current++;};
- },[signedIn]);
+ },[signedIn,authSettled]);
 
  async function login(e){
   e.preventDefault();if(!client||lock.current)return;
@@ -64,7 +67,7 @@ export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,t
    if(error)throw new Error("Connexion refusée. Vérifie l’e-mail et le mot de passe TEST.");
    setPassword("");setSignedIn(true);
   }catch(error){setStatus("⚠ "+(error.message||"Connexion impossible."));}
-  finally{lock.current=false;setBusy(false);}
+  finally{lock.current=false;setBusy(false);setAuthSettled(n=>n+1);}
  }
 
  async function checkAccess(epoch=accessEpoch.current){

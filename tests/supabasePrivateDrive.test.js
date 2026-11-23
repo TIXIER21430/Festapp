@@ -69,3 +69,9 @@ test('UI never loads private Drive metadata publicly or auto-imports it into edi
  assert.match(access,/onDriveCatalog\?\.\(null\)/);
  assert.match(drive,/catalog\.seed&&<div className="drive-source"/);
 });
+test('auth completion rechecks membership after sign-in releases its lock',()=>{
+ const access=readFileSync(new URL('../src/SharedAccess.jsx',import.meta.url),'utf8');
+ assert.match(access,/const \[authSettled,setAuthSettled\]=useState\(0\)/);
+ assert.match(access,/\},\[signedIn,authSettled\]\)/);
+ assert.match(access,/finally\{lock\.current=false;setBusy\(false\);setAuthSettled\(n=>n\+1\);\}/);
+});
