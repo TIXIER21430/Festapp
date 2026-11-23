@@ -634,10 +634,17 @@ function App(){
   <details className="festapp-export-extras"><summary>Autres exports</summary><div className="festapp-export-extra-actions"><button type="button" className="secondary" onClick={downloadVolunteerNeeds}>Besoins bénévoles (JSON)</button><button type="button" className="secondary" onClick={exportMenus}>Menus de caisse (JSON)</button></div></details>
   <p className="festapp-export-privacy">Ces fichiers proviennent de cet appareil uniquement. Vérifie leurs destinataires avant de partager les coordonnées des contacts.</p>
  </section>
+ </>}
+ {/* Keep the cloud controller mounted while navigating manifestations and till.
+     Unmounting it when leaving Settings previously stopped auto-save, remote
+     polling and private ZIP archives until Settings was opened again. */}
+ <div className="festapp-cloud-host" style={{display:settingsOpen?"":"none"}}>
  <details className="festapp-sync-settings"><summary>☁️ Sauvegarde et synchronisation <span>Facultatif</span></summary>
   <p className="note">Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée.</p>
   <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
  </details>
+ </div>
+ {settingsOpen&&<>
  <details className="festapp-advanced" ref={advancedRef}><summary>🔧 Préparation privée, archives du Drive et sauvegardes</summary>
  <section className="quick-access" aria-label="Accès rapide aux modules">
   <div className="quick-access-title"><h2>⚡ Accès rapide</h2><span>Choisissez votre activité</span></div>

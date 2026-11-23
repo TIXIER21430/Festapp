@@ -75,3 +75,12 @@ test('auth completion rechecks membership after sign-in releases its lock',()=>{
  assert.match(access,/\},\[signedIn,authSettled\]\)/);
  assert.match(access,/finally\{lock\.current=false;setBusy\(false\);setAuthSettled\(n=>n\+1\);\}/);
 });
+test('background sync stays mounted when leaving Settings or opening the event till',()=>{
+ const app=readFileSync(new URL('../src/main.jsx',import.meta.url),'utf8');
+ const cloud=app.indexOf('<div className="festapp-cloud-host"');
+ const controller=app.indexOf('<SharedAccess data={data}',cloud);
+ const nextSettings=app.indexOf('{settingsOpen&&<>',cloud);
+ assert.ok(cloud>0&&controller>cloud&&nextSettings>controller);
+ assert.match(app.slice(cloud,controller),/style=\{\{display:settingsOpen\?"":"none"\}\}/);
+ assert.match(app.slice(controller,nextSettings),/<\/details>\s*<\/div>/);
+});
