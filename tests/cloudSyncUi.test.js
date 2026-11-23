@@ -20,3 +20,17 @@ test('cloud autosave debounces, checks revisions and resolves remote edits only 
  assert.match(sync,/onApplyRemote\(snapshot\)/);
  assert.match(sync,/setSyncOn\(false\)/);
 });
+test('production is never presented as synchronized when only read permissions exist',()=>{
+ assert.match(sync,/if\(!connection\?\.testMode\)\{/);
+ assert.match(sync,/Projet réel : consultation uniquement/);
+ assert.match(sync,/base\.current=null;setSyncOn\(false\)/);
+ assert.match(sync,/else if\(readOnly\)/);
+ assert.match(sync,/localPending\?"⏳ Modifications en attente":"✅ Fiches synchronisées"/);
+});
+test('complete archives require explicit consent and verified encrypted-channel TEST storage',()=>{
+ assert.match(sync,/window\.confirm\('Activer les archives ZIP automatiques/);
+ assert.match(sync,/saveTestFullBackup\(client,\{spaceId:connection\.spaceId,backup:zip,testMode:true\}\)/);
+ assert.match(sync,/downloadLatestTestFullBackup\(client,\{spaceId:connection\.spaceId,testMode:true\}\)/);
+ assert.match(sync,/archiveLock\.current/);
+ assert.match(sync,/ARCHIVE_INTERVAL_MS=15\*60\*1000/);
+});

@@ -62,7 +62,6 @@ import {mergeDriveSeed} from "./lib/mergeDriveSeed.js";
 import {DRIVE_FOLDERS} from "./lib/driveFolders.js";
 import {BULK_ENTRY_CATEGORIES,appendBulkEntry} from "./lib/bulkEntry.js";
 
-const DRIVE_IMPORT_KEY="festapp-drive-snapshot-20261118-v1";
 
 const categories=[
 {key:"events",title:"Manifestations",icon:"🎉",fields:["Nom","Date","Lieu"]},
@@ -95,7 +94,7 @@ function App(){
  const [initialEcocupStorage]=useState(()=>readDemoEcocupSettings(localStorage));
  const [data,setData]=useState(initialStorage.data);
  const [driveCatalog,setDriveCatalog]=useState(null);
- const [driveLoading,setDriveLoading]=useState(true);
+ const [driveLoading]=useState(false);
  const [driveError,setDriveError]=useState("");
  const [driveImportStatus,setDriveImportStatus]=useState("");
  const [storageWarning,setStorageWarning]=useState(initialStorage.warning);
@@ -193,25 +192,10 @@ function App(){
   setContactPhotoPreview(url);
   return ()=>URL.revokeObjectURL(url);
  },[contactPhotoFile]);
- useEffect(()=>{
-  let cancelled=false;
-  fetch(`${import.meta.env.BASE_URL}drive-data.json`,{cache:"no-store"}).then(async response=>{
-   if(!response.ok)throw new Error("Le catalogue privé n'est pas disponible sur cette installation.");
-   const payload=await response.json();
-   if(!payload||payload.version!==1||!Array.isArray(payload.files)||!payload.seed||!payload.stats||payload.files.length>10000)throw new Error("Format du catalogue Drive invalide.");
-   if(cancelled)return;
-   setDriveCatalog(payload);
-   if(payload.seed.events?.some(r=>r.values?.[0]==="Marché de Noël 2026"))setOverviewEvent(current=>current==="Marché de Noël"?"Marché de Noël 2026":current);
-   if(!demoReadOnly&&localStorage.getItem(DRIVE_IMPORT_KEY)!==payload.asOf){
-    setData(old=>mergeDriveSeed(old,payload.seed).data);
-    try{localStorage.setItem(DRIVE_IMPORT_KEY,payload.asOf);}catch{/* The normal local save warning covers blocked storage. */}
-    setDriveImportStatus("✅ Fiches du Drive ajoutées au premier chargement, sans remplacement des saisies locales.");
-   }
-  }).catch(error=>{if(!cancelled)setDriveError(error.message||"Catalogue indisponible.");}).finally(()=>{if(!cancelled)setDriveLoading(false);});
-  return ()=>{cancelled=true;};
- },[]);
+ // Never fetch or auto-import a public Drive JSON before Supabase authorization.
+ // Authenticated committee members receive a private metadata catalog instead.
  function importDriveAgain(){
-  if(!driveCatalog||demoReadOnly)return;
+  if(!driveCatalog?.seed||demoReadOnly)return;
   try{const result=mergeDriveSeed(data,driveCatalog.seed);if(result.added)setData(result.data);setDriveImportStatus(result.added?`✅ ${result.added} fiche(s) manquante(s) ajoutée(s), sans écrasement.`:"✅ Tout est déjà présent. Aucune fiche modifiée.");}
   catch(e){setDriveImportStatus("⚠ Import non effectué : "+e.message);}
  }
@@ -455,17 +439,21 @@ function App(){
  function openTillEditor(){setTillDraft(TILL_PRODUCTS.map(p=>({id:p.id,enabled:tillProducts.some(x=>x.id===p.id),price:String((tillProducts.find(x=>x.id===p.id)||p).priceCents/100).replace(".",",")})));setTillEdit(true)}
  function saveTillEditor(){try{if(initialTillConfig.warning)throw new Error("Réglages locaux illisibles");const chosen=tillDraft.filter(p=>p.enabled).map(p=>{const price=p.price.trim();if(!/^(0|[1-9]\\d*)(?:[,.]\\d{1,2})?$/.test(price))throw new Error("Prix invalide : "+p.id);const cents=Math.round(Number(price.replace(",","."))*100);if(!Number.isSafeInteger(cents)||cents>100000)throw new Error("Prix hors limite");return {id:p.id,priceCents:cents}});const next={...tillConfig,[tillEvent]:chosen};saveTillConfig(localStorage,next);setTillConfig(next);setTillCart({});setTillEdit(false);setTillConfigWarning("Menu enregistré uniquement sur cet appareil.")}catch(e){setTillConfigWarning("⚠ "+e.message)}}
  function exportBackup(){if(demoReadOnly){setBackupPreview("⚠ Sauvegarde bloquée : une partie des données locales est illisible. Ne supprimez pas les données de cet appareil.");return;}try{const json=createCombinedDemoBackup(data,volunteerNeeds,undefined,ecocupSettings);const url=URL.createObjectURL(new Blob([json],{type:"application/json"}));const a=document.createElement("a");a.href=url;a.download="festapp-demo-sauvegarde-"+new Date().toISOString().slice(0,10)+".json";a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}catch{setBackupPreview("⚠ Téléchargement impossible : la sauvegarde est trop volumineuse ou contient des données invalides. Aucune fiche n’a été effacée.")}}
- async function exportFullBackup(){
+ async function prepareCompleteBackup(){
   if(demoReadOnly)throw new Error('Données locales illisibles : ne quittez pas cet appareil et ne supprimez rien.');
   const backupJSON=createCombinedDemoBackup(data,volunteerNeeds,undefined,ecocupSettings);
   const menuJSON=exportTillConfig(tillConfig);
   const reviewJSON=JSON.stringify({format:'festapp-owner-review',version:1,reviews:parseOwnerReviews(localStorage.getItem(OWNER_REVIEW_KEY))},null,2);
   const photos=await listAllPhotoOriginals();
   const zip=await makeCompleteBackupZip({backupJSON,menuJSON,reviewJSON,photos});
+  return {zip,photos:photos.length,records:Object.values(data).reduce((n,rows)=>n+(Array.isArray(rows)?rows.length:0),0)};
+ }
+ async function exportFullBackup(){
+  const {zip,photos,records}=await prepareCompleteBackup();
   const url=URL.createObjectURL(zip);
   const a=document.createElement('a');a.href=url;a.download='festapp-sauvegarde-complete-'+new Date().toISOString().slice(0,10)+'.zip';a.click();
   setTimeout(()=>URL.revokeObjectURL(url),60000);
-  return `✅ ZIP préparé : ${Object.values(data).reduce((n,rows)=>n+(Array.isArray(rows)?rows.length:0),0)} fiche(s), ${photos.length} photo(s), menus et vérifications. Conservez-le hors du navigateur.`;
+  return `✅ ZIP préparé : ${records} fiche(s), ${photos} photo(s), menus et vérifications. Vérifie qu’il apparaît dans les Téléchargements de ton appareil.`;
  }
  async function inspectFullZip(e){
   const file=e.target.files?.[0];e.target.value='';
@@ -646,10 +634,17 @@ function App(){
   <details className="festapp-export-extras"><summary>Autres exports</summary><div className="festapp-export-extra-actions"><button type="button" className="secondary" onClick={downloadVolunteerNeeds}>Besoins bénévoles (JSON)</button><button type="button" className="secondary" onClick={exportMenus}>Menus de caisse (JSON)</button></div></details>
   <p className="festapp-export-privacy">Ces fichiers proviennent de cet appareil uniquement. Vérifie leurs destinataires avant de partager les coordonnées des contacts.</p>
  </section>
+ </>}
+ {/* Keep the cloud controller mounted while navigating manifestations and till.
+     Unmounting it when leaving Settings previously stopped auto-save, remote
+     polling and private ZIP archives until Settings was opened again. */}
+ <div className="festapp-cloud-host" style={{display:settingsOpen?"":"none"}}>
  <details className="festapp-sync-settings"><summary>☁️ Sauvegarde et synchronisation <span>Facultatif</span></summary>
   <p className="note">Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée.</p>
-  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
+  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
  </details>
+ </div>
+ {settingsOpen&&<>
  <details className="festapp-advanced" ref={advancedRef}><summary>🔧 Préparation privée, archives du Drive et sauvegardes</summary>
  <section className="quick-access" aria-label="Accès rapide aux modules">
   <div className="quick-access-title"><h2>⚡ Accès rapide</h2><span>Choisissez votre activité</span></div>
