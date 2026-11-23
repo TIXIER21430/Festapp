@@ -62,7 +62,6 @@ import {mergeDriveSeed} from "./lib/mergeDriveSeed.js";
 import {DRIVE_FOLDERS} from "./lib/driveFolders.js";
 import {BULK_ENTRY_CATEGORIES,appendBulkEntry} from "./lib/bulkEntry.js";
 
-const DRIVE_IMPORT_KEY="festapp-drive-snapshot-20261118-v1";
 
 const categories=[
 {key:"events",title:"Manifestations",icon:"🎉",fields:["Nom","Date","Lieu"]},
@@ -95,7 +94,7 @@ function App(){
  const [initialEcocupStorage]=useState(()=>readDemoEcocupSettings(localStorage));
  const [data,setData]=useState(initialStorage.data);
  const [driveCatalog,setDriveCatalog]=useState(null);
- const [driveLoading,setDriveLoading]=useState(true);
+ const [driveLoading]=useState(false);
  const [driveError,setDriveError]=useState("");
  const [driveImportStatus,setDriveImportStatus]=useState("");
  const [storageWarning,setStorageWarning]=useState(initialStorage.warning);
@@ -193,25 +192,10 @@ function App(){
   setContactPhotoPreview(url);
   return ()=>URL.revokeObjectURL(url);
  },[contactPhotoFile]);
- useEffect(()=>{
-  let cancelled=false;
-  fetch(`${import.meta.env.BASE_URL}drive-data.json`,{cache:"no-store"}).then(async response=>{
-   if(!response.ok)throw new Error("Le catalogue privé n'est pas disponible sur cette installation.");
-   const payload=await response.json();
-   if(!payload||payload.version!==1||!Array.isArray(payload.files)||!payload.seed||!payload.stats||payload.files.length>10000)throw new Error("Format du catalogue Drive invalide.");
-   if(cancelled)return;
-   setDriveCatalog(payload);
-   if(payload.seed.events?.some(r=>r.values?.[0]==="Marché de Noël 2026"))setOverviewEvent(current=>current==="Marché de Noël"?"Marché de Noël 2026":current);
-   if(!demoReadOnly&&localStorage.getItem(DRIVE_IMPORT_KEY)!==payload.asOf){
-    setData(old=>mergeDriveSeed(old,payload.seed).data);
-    try{localStorage.setItem(DRIVE_IMPORT_KEY,payload.asOf);}catch{/* The normal local save warning covers blocked storage. */}
-    setDriveImportStatus("✅ Fiches du Drive ajoutées au premier chargement, sans remplacement des saisies locales.");
-   }
-  }).catch(error=>{if(!cancelled)setDriveError(error.message||"Catalogue indisponible.");}).finally(()=>{if(!cancelled)setDriveLoading(false);});
-  return ()=>{cancelled=true;};
- },[]);
+ // Never fetch or auto-import a public Drive JSON before Supabase authorization.
+ // Authenticated committee members receive a private metadata catalog instead.
  function importDriveAgain(){
-  if(!driveCatalog||demoReadOnly)return;
+  if(!driveCatalog?.seed||demoReadOnly)return;
   try{const result=mergeDriveSeed(data,driveCatalog.seed);if(result.added)setData(result.data);setDriveImportStatus(result.added?`✅ ${result.added} fiche(s) manquante(s) ajoutée(s), sans écrasement.`:"✅ Tout est déjà présent. Aucune fiche modifiée.");}
   catch(e){setDriveImportStatus("⚠ Import non effectué : "+e.message);}
  }
@@ -652,7 +636,7 @@ function App(){
  </section>
  <details className="festapp-sync-settings"><summary>☁️ Sauvegarde et synchronisation <span>Facultatif</span></summary>
   <p className="note">Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée.</p>
-  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
+  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
  </details>
  <details className="festapp-advanced" ref={advancedRef}><summary>🔧 Préparation privée, archives du Drive et sauvegardes</summary>
  <section className="quick-access" aria-label="Accès rapide aux modules">

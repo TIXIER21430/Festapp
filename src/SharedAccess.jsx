@@ -3,6 +3,7 @@ import {createFestappClient,getFestappConnection} from "./lib/supabaseClient.js"
 import {readSharedSpace} from "./lib/supabaseSharedRead.js";
 import {saveTestSnapshot} from "./lib/supabaseTestSync.js";
 import {saveTestFullBackup,downloadLatestTestFullBackup} from "./lib/supabaseTestBackup.js";
+import {readTestPrivateDriveCatalog} from "./lib/supabasePrivateDrive.js";
 import {makeTestSyncPayload,sameTestPayload,testSyncText,testSyncRecordCount} from "./lib/testSyncPayload.js";
 
 const connection=getFestappConnection();
@@ -10,7 +11,7 @@ const client=createFestappClient();
 const BACKUP_OPT_IN_KEY='festapp-test-full-backup-opt-in-v1';
 const ARCHIVE_INTERVAL_MS=15*60*1000;
 
-export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,tillConfig={},onApplyRemote,prepareCompleteBackup,photoRevision=0,readOnly=false}){
+export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,tillConfig={},onApplyRemote,onDriveCatalog,prepareCompleteBackup,photoRevision=0,readOnly=false}){
  const [email,setEmail]=useState("");
  const [password,setPassword]=useState("");
  const [signedIn,setSignedIn]=useState(false);
@@ -28,6 +29,7 @@ export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,t
  const archiveLock=useRef(false);
  const lastArchive=useRef({signature:'',time:0});
  const failedArchive=useRef('');
+ const accessEpoch=useRef(0);
  const live=useMemo(()=>{
   try{const payload=makeTestSyncPayload({data,volunteerNeeds,ecocupSettings,tillConfig});return {payload,text:testSyncText(payload)};}
   catch{return null;}
@@ -48,8 +50,10 @@ export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,t
   return ()=>{active=false;subscription?.subscription?.unsubscribe();};
  },[]);
  useEffect(()=>{
-  if(!signedIn){setSyncOn(false);setRemote(null);base.current=null;return;}
-  void checkAccess();
+  const epoch=++accessEpoch.current;
+  if(!signedIn){setSyncOn(false);setRemote(null);base.current=null;onDriveCatalog?.(null);return;}
+  void checkAccess(epoch);
+  return ()=>{accessEpoch.current++;};
  },[signedIn]);
 
  async function login(e){
@@ -63,12 +67,22 @@ export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,t
   finally{lock.current=false;setBusy(false);}
  }
 
- async function checkAccess(){
+ async function checkAccess(epoch=accessEpoch.current){
   if(!client||!signedIn||lock.current)return;
   lock.current=true;setBusy(true);
   try{
    const snapshot=await readSharedSpace(client,connection.spaceId);
+   if(epoch!==accessEpoch.current)return;
    setRemote(snapshot);
+   // The inventory is private and is only requested after Auth + membership.
+   // An index failure must never block normal snapshot recovery.
+   try{
+    const catalog=await readTestPrivateDriveCatalog(client,{spaceId:connection.spaceId,testMode:connection.testMode});
+    if(epoch===accessEpoch.current)onDriveCatalog?.(catalog);
+   }catch{
+    if(epoch===accessEpoch.current)onDriveCatalog?.(null);
+   }
+   if(epoch!==accessEpoch.current)return;
    if(!connection?.testMode){
     base.current=null;setSyncOn(false);
     setStatus('🔒 Projet réel : consultation uniquement. La sauvegarde automatique n’est pas activée en production.');
@@ -84,7 +98,9 @@ export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,t
     setStatus("🟠 Deux versions différentes. Choisis laquelle conserver avant d’activer la synchro. Rien n’a été remplacé.");
    }
   }catch(error){
+   if(epoch!==accessEpoch.current)return;
    base.current=null;setSyncOn(false);setRemote(null);
+   onDriveCatalog?.(null);
    setStatus("⚠ "+(error.message||"Accès cloud indisponible.")+" Les saisies locales restent intactes.");
   }finally{lock.current=false;setBusy(false);}
  }
@@ -180,7 +196,7 @@ export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,t
  async function logout(){
   if(!client||lock.current)return;
   lock.current=true;setBusy(true);
-  try{await client.auth.signOut();setSignedIn(false);setSyncOn(false);setRemote(null);base.current=null;setPassword("");setStatus("Déconnecté de Supabase TEST. Tu peux continuer en local.");}
+  try{await client.auth.signOut();accessEpoch.current++;onDriveCatalog?.(null);setSignedIn(false);setSyncOn(false);setRemote(null);base.current=null;setPassword("");setStatus("Déconnecté de Supabase TEST. Tu peux continuer en local.");}
   catch{setStatus("⚠ Déconnexion impossible.");}
   finally{lock.current=false;setBusy(false);}
  }
