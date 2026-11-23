@@ -1,6 +1,26 @@
 // TEST-only optimistic persistence. Never call from the live application.
 // RLS and the database revision trigger are the final authorization guards.
 import {FESTAPP_TEST_URL,FESTAPP_TEST_SPACE_ID} from './supabaseClient.js';
+// Refuse values JSON would silently drop or rewrite before a shared backup.
+function assertJsonSafe(value, ancestors=new Set()){
+ if(value===null||typeof value==="string"||typeof value==="boolean")return;
+ if(typeof value==="number"&&Number.isFinite(value))return;
+ if(typeof value!=="object")throw new TypeError("Données non compatibles JSON.");
+ if(ancestors.has(value))throw new TypeError("Données JSON circulaires.");
+ const proto=Object.getPrototypeOf(value);
+ if(!Array.isArray(value)&&proto!==Object.prototype&&proto!==null)
+  throw new TypeError("Données non compatibles JSON.");
+ if(Object.getOwnPropertySymbols(value).length)throw new TypeError("Données non compatibles JSON.");
+ ancestors.add(value);
+ try{
+  if(Array.isArray(value)){
+   for(let i=0;i<value.length;i++){
+    if(!Object.hasOwn(value,i))throw new TypeError("Données JSON incomplètes.");
+    assertJsonSafe(value[i],ancestors);
+   }
+  }else for(const key of Object.keys(value))assertJsonSafe(value[key],ancestors);
+ }finally{ancestors.delete(value);}
+}
 function sortedJSON(value){
  if(Array.isArray(value))return value.map(sortedJSON);
  if(value&&typeof value==="object")return Object.fromEntries(Object.keys(value).sort().map(key=>[key,sortedJSON(value[key])]));
@@ -21,6 +41,7 @@ export async function saveTestSnapshot(client,{spaceId,expectedRevision,payload,
  const expected=String(expectedRevision);
  if(!/^[1-9][0-9]*$/.test(expected)||BigInt(expected)>=BigInt(Number.MAX_SAFE_INTEGER))throw new TypeError("Révision invalide.");
  if(!payload||typeof payload!=="object"||Array.isArray(payload))throw new TypeError("Données invalides.");
+ assertJsonSafe(payload);
  const {data,error}=await client.from("festapp_snapshots")
   .update({payload,revision:String(BigInt(expected)+1n)})
   .eq("space_id",spaceId).eq("revision",expected)
