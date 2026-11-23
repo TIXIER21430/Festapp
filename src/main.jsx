@@ -366,6 +366,11 @@ function App(){
  function selectManifestation(id){
   if(!allowDiscardDraft())return false;
   const event=eventOptions.find(row=>row.id===id);
+  // Changing or leaving a fête must also close the previous fête's workbench.
+  // Otherwise a module and its volunteer planning can remain attached to the old event.
+  setModuleScopeEventId('');
+  setRecordEventId('');
+  if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;
   setHubEventId(id);setTillOpen(false);setTillCart({});setTillEdit(false);setTillSaleStatus("");
   setReportOpen(false);setReportDraftDirty(false);
   if(event)setTillEvent(event.values[0].replace(/\s+20\d{2}$/,''));
