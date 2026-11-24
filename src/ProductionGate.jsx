@@ -7,12 +7,19 @@ import {loadPrivateDriveChecklists,setDriveChecklistTemplates} from './lib/event
 const landingType=typeof window==='undefined'?'':new URLSearchParams(window.location.hash.replace(/^#/,'')).get('type');
 const needsInitialPassword=landingType==='invite'||landingType==='recovery';
 
+// A stalled SDK initialization must never leave the user on an endless spinner.
+function withDeadline(promise,ms=12000){
+ let timer;
+ return Promise.race([promise,new Promise((_,reject)=>{timer=setTimeout(()=>reject(new Error('Délai de connexion dépassé. Réessaie.')),ms);})]).finally(()=>clearTimeout(timer));
+}
+
 export default function ProductionGate({children}){
  const production=import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==='true';
  const config=useMemo(()=>getFestappConnection(),[]);
  const client=useMemo(()=>getSharedFestappClient(),[]);
  const [session,setSession]=useState(undefined);
- const [stage,setStage]=useState('checking');
+ const [stage,setStage]=useState(needsInitialPassword?'checking':'login');
+ const [verifiedUserId,setVerifiedUserId]=useState(null);
  const [email,setEmail]=useState('');
  const [password,setPassword]=useState('');
  const [newPassword,setNewPassword]=useState('');
@@ -24,24 +31,34 @@ export default function ProductionGate({children}){
   if(!production)return;
   if(!client||!config?.productionMode){setStage('configuration');return;}
   let alive=true;
+  let receivedSession=false;
+  // The SDK emits INITIAL_SESSION itself. Do not launch a second simultaneous
+  // session initialization. Defer React state updates outside the auth callback.
+  const timeout=setTimeout(()=>{
+   if(alive&&!receivedSession){
+    setSession(null);setStage('login');
+    setMessage('La vérification de session a pris trop de temps. Tu peux essayer de te connecter ou actualiser la page.');
+   }
+  },12000);
   const {data:listener}=client.auth.onAuthStateChange((event,next)=>{
-   if(!alive)return;
-   if(event==='PASSWORD_RECOVERY')setRequiresPassword(true);
-   setSession(next);
+   receivedSession=true;clearTimeout(timeout);
+   setTimeout(()=>{
+    if(!alive)return;
+    if(event==='PASSWORD_RECOVERY')setRequiresPassword(true);
+    if(event==='SIGNED_OUT'){setVerifiedUserId(null);setRequiresPassword(false);}
+    setSession(next||null);
+   },0);
   });
-  client.auth.getSession().then(({data,error})=>{
-   if(alive){if(error)setMessage('La session ne peut pas être vérifiée.');setSession(data?.session||null);}
-  }).catch(()=>{if(alive){setSession(null);setMessage('Connexion momentanément indisponible.');}});
-  return ()=>{alive=false;listener?.subscription?.unsubscribe();};
+  return ()=>{alive=false;clearTimeout(timeout);listener?.subscription?.unsubscribe();};
  },[production,client,config?.productionMode]);
 
  useEffect(()=>{
   if(!production||!client||!config?.productionMode||session===undefined)return;
-  if(!session?.user?.id){setDriveChecklistTemplates();setStage('login');return;}
+  if(!session?.user?.id){setVerifiedUserId(null);setDriveChecklistTemplates();setStage('login');return;}
   let active=true;
-  setStage('checking');
-  readSharedSpace(client,config.spaceId).then(()=>loadPrivateDriveChecklists(client,config.spaceId)).then(()=>{
-   if(active){setStage('ready');setMessage('');}
+  setVerifiedUserId(null);setStage('checking');
+  withDeadline(readSharedSpace(client,config.spaceId).then(()=>loadPrivateDriveChecklists(client,config.spaceId))).then(()=>{
+   if(active){setVerifiedUserId(session.user.id);setStage('ready');setMessage('');}
   }).catch(error=>{
    if(active){setStage('forbidden');setMessage(error?.message||'Accès au comité non autorisé.');}
   });
@@ -52,17 +69,17 @@ export default function ProductionGate({children}){
   event.preventDefault();if(busy||!client)return;
   setBusy(true);setMessage('');
   try{
-   const {error}=await client.auth.signInWithPassword({email:email.trim(),password});
+   const {data,error}=await withDeadline(client.auth.signInWithPassword({email:email.trim(),password}));
    if(error)throw error;
-   setPassword('');
-  }catch{setMessage('Connexion refusée. Vérifie ton adresse et ton mot de passe.');}
+   setSession(data?.session||null);setPassword('');
+  }catch(error){setMessage(error?.message?.includes('Délai de connexion')?'Le serveur ne répond pas assez vite. Actualise la page et réessaie.':'Connexion refusée. Vérifie ton adresse et ton mot de passe.');}
   finally{setBusy(false);}
  }
  async function requestReset(){
   if(busy||!client||!email.trim()){setMessage('Indique ton adresse e-mail avant de demander le lien.');return;}
   setBusy(true);setMessage('');
   try{
-   const {error}=await client.auth.resetPasswordForEmail(email.trim(),{redirectTo:window.location.origin+window.location.pathname});
+   const {error}=await withDeadline(client.auth.resetPasswordForEmail(email.trim(),{redirectTo:window.location.origin+window.location.pathname}));
    if(error)throw error;
    setMessage('Si ce compte existe, un lien de création ou de réinitialisation du mot de passe vient d’être demandé. Consulte aussi les indésirables.');
   }catch{setMessage('Impossible d’envoyer le lien pour le moment. Réessaie plus tard.');}
@@ -88,13 +105,13 @@ export default function ProductionGate({children}){
  }
 
  if(!production)return children;
- if(stage==='ready'&&session?.user?.id&&!requiresPassword)return <><div className="festapp-auth-strip"><span>🔒 Espace privé du Comité des fêtes de Liernais</span><button type="button" onClick={logout} disabled={busy}>Déconnexion</button></div>{children}</>;
+ if(stage==='ready'&&session?.user?.id&&!requiresPassword&&verifiedUserId===session.user.id)return <><div className="festapp-auth-strip"><span>🔒 Espace privé du Comité des fêtes de Liernais</span><button type="button" onClick={logout} disabled={busy}>Déconnexion</button></div>{children}</>;
  return <main className="festapp-auth-page"><section className="festapp-auth-card">
   <h1>🎆 FEST’APP</h1><p>Comité des fêtes de Liernais · accès réservé aux membres autorisés.</p>
   {stage==='configuration'&&<p role="alert">Configuration Supabase de production absente. L’application reste fermée pour protéger les données.</p>}
   {stage==='checking'&&<p role="status">Vérification de ton compte et des autorisations…</p>}
-  {stage==='forbidden'&&<><p role="alert">Ce compte n’est pas autorisé à consulter l’espace du comité.</p><button type="button" onClick={logout}>Utiliser un autre compte</button></>}
-  {stage==='ready'&&requiresPassword&&<form onSubmit={setAccountPassword}>
+  {stage==='forbidden'&&<><p role="alert">L’accès au comité n’a pas pu être vérifié.</p><button type="button" onClick={()=>window.location.reload()}>Réessayer la vérification</button><button type="button" onClick={logout}>Utiliser un autre compte</button></>}
+  {stage==='ready'&&requiresPassword&&verifiedUserId===session?.user?.id&&<form onSubmit={setAccountPassword}>
    <h2>Choisir mon mot de passe FEST’APP</h2>
    <label>Nouveau mot de passe (12 caractères minimum)<input type="password" autoComplete="new-password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} minLength={12} required/></label>
    <button type="submit" disabled={busy}>Enregistrer mon mot de passe</button>
