@@ -3,8 +3,6 @@ import {createRoot} from "react-dom/client";
 import "./style.css";
 import SharedAccess from "./SharedAccess.jsx";
 import ProductionGate from "./ProductionGate.jsx";
-import ProductionCloud from "./ProductionCloud.jsx";
-const CloudPanel=import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==="true"?ProductionCloud:SharedAccess;
 import {persistCloudSnapshot} from "./lib/supabaseCloudImport.js";
 import PhotoVault from "./PhotoVault.jsx";
 import EquipmentGrid from "./EquipmentGrid.jsx";
@@ -649,7 +647,7 @@ function App(){
  <div className="festapp-cloud-host" style={{display:settingsOpen?"":"none"}}>
  <details className="festapp-sync-settings"><summary>☁️ Sauvegarde et synchronisation <span>Facultatif</span></summary>
   <p className="note">Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée.</p>
-  <CloudPanel data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
+  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
  </details>
  </div>
  {settingsOpen&&<>
