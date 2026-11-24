@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {collectCommitteeTodos,collectEventTodos,createTodo,displayTodoDate,isValidTodoDate,todoStage} from '../src/lib/eventTodo.js';
+import {collectCommitteeTodos,collectEventTodos,collectTodoScopes,createTodo,displayTodoDate,isValidTodoDate,todoStage} from '../src/lib/eventTodo.js';
 
 test('general committee tasks are separate from every manifestation',()=>{
  const tasks=[{id:'g',values:['AG','','2026-11-20'],done:false},{id:'e',eventId:'noel',phase:'Avant',values:['Affiches','',''],done:true}];
@@ -35,4 +35,11 @@ test('new todo keeps an optional date, its phase and an unchecked state',()=>{
  assert.equal(isValidTodoDate('2026-02-29'),false);
  assert.throws(()=>createTodo({id:'x',title:'',dueDate:'2026-01-01'}),/Indique/);
  assert.throws(()=>createTodo({id:'x',title:'OK',dueDate:'2026-13-01'}),/Date/);
+});
+
+test('global to-do index counts the same event tasks without mixing scopes or duplicating events',()=>{
+ const tasks=[{id:'g',values:['AG','',''],done:false},{id:'a',eventId:'noel',phase:'Avant',values:['Affiches','',''],done:true},{id:'b',eventId:'noel',phase:'Veille',values:['Pain','',''],done:false}];
+ const events=[{id:'noel',values:['Marché de Noël']},{id:'noel',values:['Marché de Noël']},{id:'fanfare',values:['Fanfare']}];
+ assert.deepEqual(collectTodoScopes(tasks,events),[{id:'',name:'Organisation générale',total:1,done:0,remaining:1},{id:'noel',name:'Marché de Noël',total:2,done:1,remaining:1},{id:'fanfare',name:'Fanfare',total:0,done:0,remaining:0}]);
+ assert.equal(collectTodoScopes(tasks,events)[1].remaining,collectEventTodos(tasks,'noel','Marché de Noël').reduce((n,g)=>n+g.remaining,0));
 });

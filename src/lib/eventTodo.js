@@ -77,3 +77,18 @@ export function displayTodoDate(value){
 }
 import {DRIVE_CHECKLISTS} from './eventChecklist.js';
 
+
+// The permanent navigation is an index of independent lists, not a second task store.
+export function collectTodoScopes(tasks=[],events=[]){
+ const general=collectCommitteeTodos(tasks);
+ const result=[{id:'',name:'Organisation générale',total:general.total,done:general.done,remaining:general.remaining}];
+ const seen=new Set();
+ for(const event of events){
+  if(!event?.id||!event.values?.[0]||seen.has(event.id))continue;
+  seen.add(event.id);
+  const rows=tasks.filter(task=>task?.eventId===event.id);
+  const done=rows.filter(task=>task.done===true).length;
+  result.push({id:event.id,name:event.values[0],total:rows.length,done,remaining:rows.length-done});
+ }
+ return result;
+}

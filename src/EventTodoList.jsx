@@ -4,7 +4,7 @@ import {collectCommitteeTodos,collectEventTodos,displayTodoDate,isValidTodoDate}
 function TaskRows({rows,onToggle,readOnly}){
  return <div className="festapp-todo-rows">{rows.map(task=><label className={'festapp-todo-row'+(task.done===true?' complete':'')} key={task.id}>
   <input type="checkbox" disabled={readOnly} checked={task.done===true} onChange={()=>onToggle(task.id)} aria-label={'Terminée : '+task.values[0]}/>
-  <span className="festapp-todo-content"><strong>{task.values[0]}</strong>{task.values[2]&&<small>{isValidTodoDate(task.values[2])?'📅 À faire pour le ':'🗂️ Repère : '}{displayTodoDate(task.values[2])}</small>}{task.values[1]&&<small>👤 {task.values[1]}</small>}</span>
+  <span className="festapp-todo-content"><strong>{task.values[0]}</strong>{task.phase&&!['Avant','Pendant','Après'].includes(task.phase)&&<small>🗂️ {task.phase}</small>}{task.values[2]&&<small>{isValidTodoDate(task.values[2])?'📅 À faire pour le ':'🗂️ Repère : '}{displayTodoDate(task.values[2])}</small>}{task.values[1]&&<small>👤 {task.values[1]}</small>}</span>
  </label>)}{!rows.length&&<p className="festapp-todo-empty">Rien à faire ici pour le moment. Appuie sur + pour ajouter une tâche.</p>}</div>;
 }
 
@@ -36,6 +36,6 @@ export default function EventTodoList({tasks=[],eventId='',eventName='',onAdd,on
    </form>:<button type="button" className="festapp-todo-plus" onClick={()=>showForm(group.key)} disabled={readOnly}>➕ Ajouter une tâche {general?'':`« ${group.key} »`}</button>}
   </details>)}
   {message&&<p role="status" className="festapp-todo-status">{message}</p>}
-  <p className="festapp-todo-caption">Les cases et les dates sont enregistrées sur cet appareil. Elles ne sont pas encore synchronisées avec les autres membres.</p>
+  <p className="festapp-todo-caption">Les cases et les dates sont enregistrées dans la même liste, quel que soit le chemin d’accès. Vérifie l’état de synchronisation de l’application.</p>
  </section>;
 }

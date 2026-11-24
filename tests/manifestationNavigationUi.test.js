@@ -21,9 +21,11 @@ test('each manifestation has a dedicated to-do entry with avant pendant après',
  assert.match(app,/createTodo\(\{\.\.\.values,id:crypto\.randomUUID\(\)\}\)/);
 });
 
-test('fixed bottom to-do is general to the committee and other destinations stay accessible',()=>{
- assert.match(bottom,/collectCommitteeTodos|<EventTodoList tasks=\{tasks\}/);
- assert.match(bottom,/À faire pour l’organisation générale/);
+test('fixed bottom to-do indexes the committee and every manifestation',()=>{
+ assert.match(bottom,/collectTodoScopes\(tasks,events\)/);
+ assert.match(bottom,/eventId=\{selected\.id\}/);
+ assert.match(app,/events=\{eventOptions\} onAddTodo/);
+ assert.match(bottom,/À faire — comité et manifestations/);
  for(const name of ['Fêtes','À faire','Annuaire','Stock','Plus'])assert.ok(bottom.includes(name),name);
  assert.match(css,/\.festapp-bottom-nav\{position:fixed/);
  assert.match(app,/ref=\{moduleWorkbenchRef\}/);
