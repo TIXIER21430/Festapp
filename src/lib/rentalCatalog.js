@@ -3,19 +3,23 @@ export const rentalCatalog=[
  ['table','Table (8 places)',600,10000,/^tables?\b/],
  ['banc','Banc (4 places)',200,5000,/^bancs?\b/],
  ['mange-debout','Mange-debout',600,5000,/^manges?[ -]?debouts?\b/],
- ['bar','Bar',2000,50000,/^bars?$/],
- ['barnum-3x3','Barnum (3 × 3 m)',2000,35000,/^(barnums?|tentes?)\b.*3\s*[x×*]\s*3\b/],
- ['barnum-4x6','Barnum (4 × 6 m)',3000,80000,/^(barnums?|tentes?)\b.*4\s*[x×*]\s*6\b/],
+ ['bar','Bar',2000,50000,/^bars?\b/],
+ ['barnum-3x3','Barnum (3 × 3 m)',2000,35000,/^(barnums?|tentes?)\b.*3(?:[.,]0+)?\s*m?\s*[x×*]\s*3\b/],
+ ['barnum-4x6','Barnum (4 × 6 m)',3000,80000,/^(barnums?|tentes?)\b.*4(?:[.,]0+)?\s*m?\s*[x×*]\s*6\b/],
  ['crepiere','Crêpière',3000,40000,/^crepieres?\b/],
  ['guirlande','Guirlande lumineuse',2000,35000,/^guirlandes?\b/],
  ['sono','Sono (2 enceintes + 2 batteries)',5000,200000,/^(sono|sonorisation)\b/]
 ].map(([id,name,priceCents,depositCents,pattern])=>({id,name,priceCents,depositCents,pattern}));
 const normalize=s=>String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
-export function rentalEquipment(records){
+export function rentalEquipment(records,links=[]){
  return rentalCatalog.map(t=>{
-  const matches=records.filter(r=>t.pattern.test(normalize(r.values?.[0])));
-  const r=matches.length===1?matches[0]:null;
-  return {...t,id:r?.id||'catalog-'+t.id,values:[t.name,r?.values?.[1]||'',r?.values?.[2]||''],linked:!!r};
+  const explicit=links.find(l=>l.id===t.id);
+  const assigned=new Set(links.filter(l=>l.id!==t.id).map(l=>l.values[1]));
+  const candidates=records.filter(r=>!assigned.has(r.id)&&t.pattern.test(normalize(r.values?.[0])));
+  const exact=candidates.filter(r=>normalize(r.values[0])===normalize(t.name));
+  const matches=exact.length===1?exact:candidates;
+  const r=explicit?records.find(r=>r.id===explicit.values[1]&&!assigned.has(r.id)):matches.length===1?matches[0]:null;
+  return {...t,id:'catalog-'+t.id,inventoryId:r?.id||'',aliases:r?[r.id]:[],values:[t.name,r?.values?.[1]??'',r?.values?.[2]??''],linked:!!r,ambiguous:!explicit&&matches.length>1};
  });
 }
 export const rentalTerms=[
