@@ -1,0 +1,54 @@
+name: FESTAPP production - GitHub Pages
+
+on:
+  push:
+    branches:
+      - feat/production-auth-backups-20261124
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: festapp-production-pages
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    if: github.ref == 'refs/heads/feat/production-auth-backups-20261124'
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - name: Install exact dependencies
+        run: npm ci --no-audit --no-fund
+      - name: Run all tests
+        run: npm test
+      - name: Build production-only gated app
+        env:
+          GITHUB_PAGES: 'true'
+        run: npm run build
+      - name: Verify production auth gate in bundle
+        run: |
+          test -f dist/index.html
+          grep -R -q 'Connexion au comité' dist/assets/
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+        with:
+          enablement: true
+      - name: Upload static production site
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./dist
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
