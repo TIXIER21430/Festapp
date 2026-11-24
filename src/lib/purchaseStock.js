@@ -15,14 +15,18 @@ export function quantity(value){
 export const quantityText=n=>String(Math.round(n*1000)/1000);
 export function purchaseCatalog(data,scope=''){
  const active=(data.shopping||[]).filter(r=>inPurchaseScope(r,scope)&&!isTransferred(r));
- const keys=new Set(active.map(r=>productKey(r.values[0])));
- const products=active.map(row=>({key:row.id,name:row.values[0],row}));
+ const used=new Set(),keys=new Set(),products=[];
+ // Stable catalog keys and order keep focus when the first digit creates a row.
  for(const stock of data.stock||[]){
   if(stock.eventId)continue;
   const key=productKey(stock.values[0]);
   if(!key||keys.has(key))continue;
-  keys.add(key);products.push({key:'catalog:'+stock.id,name:stock.values[0],row:null});
+  keys.add(key);
+  const row=active.find(r=>!used.has(r.id)&&productKey(r.values[0])===key)||null;
+  if(row)used.add(row.id);
+  products.push({key:'catalog:'+stock.id,name:row?.values[0]||stock.values[0],row});
  }
+ for(const row of active)if(!used.has(row.id))products.push({key:row.id,name:row.values[0],row});
  return products;
 }
 export function setPurchaseQuantity(data,{scope='',rowId,name,value,newId}){

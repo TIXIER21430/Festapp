@@ -43,3 +43,10 @@ test('changing checked quantity requires checking again',()=>{
  assert.equal(next.shopping[0].values[2],'À acheter');
  assert.equal(setPurchaseChecked(next,{scope:'event',rowId:'a',checked:true}).shopping[0].values[2],'Acheté');
 });
+
+test('catalog keeps input key and position when a first quantity is entered',()=>{
+ const d={stock:[row('s1','Coca'),row('s2','Eau petite')],shopping:[]};
+ const before=purchaseCatalog(d).map(p=>p.key);
+ const next=setPurchaseQuantity(d,{name:'Eau petite',value:'1',newId});
+ assert.deepEqual(purchaseCatalog(next).map(p=>p.key),before);
+});

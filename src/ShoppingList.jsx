@@ -1,4 +1,4 @@
-import React,{useState} from 'react';
+import React,{useState,useEffect,useRef} from 'react';
 import StockIllustration from './StockIllustration.jsx';
 import {purchaseCatalog,inPurchaseScope,isPurchased,isTransferred,setPurchaseQuantity,setPurchaseChecked,removePurchase,preparePurchaseTransfer,purchaseFingerprint,transferPurchases,quantity,productKey} from './lib/purchaseStock.js';
 
@@ -6,6 +6,9 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
  const [status,setStatus]=useState('');
  const [review,setReview]=useState(null);
  const [onlyList,setOnlyList]=useState(false);
+ const reviewRef=useRef(null);
+ const reviewing=!!review;
+ useEffect(()=>{if(reviewing)reviewRef.current?.scrollIntoView({behavior:'smooth',block:'start'});},[reviewing]);
  const products=purchaseCatalog(data,scope);
  const active=products.filter(p=>p.row);
  const checked=active.filter(p=>isPurchased(p.row));
@@ -42,8 +45,8 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
    </article>;
   })}</div>
   {!visible.length&&<p>Aucun article à afficher.</p>}
-  <div className="shopping-transfer-bar"><button type="button" disabled={readOnly||!checked.length||!!review} onClick={startReview}>Transférer au stock ({checked.length})</button></div>
-  {review&&<section className="shopping-review" aria-label="Vérifier le transfert">
+  {!review&&<div className="shopping-transfer-bar"><button type="button" disabled={readOnly||!checked.length||!!review} onClick={startReview}>Transférer au stock ({checked.length})</button></div>}
+  {review&&<section ref={reviewRef} className="shopping-review" aria-label="Vérifier le transfert">
    <h3>Vérifier les quantités réellement achetées</h3><p>Corrige les quantités avant de confirmer. Le stock existant sera augmenté, jamais remplacé.</p>
    {review.lines.map((line,i)=><div className="shopping-review-row" key={line.id}>
     <strong>{line.name}</strong><label>Quantité réellement achetée<input inputMode="decimal" value={review.actual[line.id]} onChange={e=>setReview(r=>({...r,actual:{...r.actual,[line.id]:e.target.value}}))}/></label>
