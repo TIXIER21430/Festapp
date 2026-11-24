@@ -2,6 +2,7 @@ import React,{useEffect,useRef,useState} from "react";
 import {createRoot} from "react-dom/client";
 import "./style.css";
 import SharedAccess from "./SharedAccess.jsx";
+import ProductionGate from "./ProductionGate.jsx";
 import {persistCloudSnapshot} from "./lib/supabaseCloudImport.js";
 import PhotoVault from "./PhotoVault.jsx";
 import EquipmentGrid from "./EquipmentGrid.jsx";
@@ -742,4 +743,4 @@ function App(){
  <BottomNavigation onHome={goToHome} onOpenModule={openModule} onSettings={()=>settingsOpen?setSettingsOpen(false):openSettings()} settingsOpen={settingsOpen} orgTodosOpen={orgTodosOpen} onToggleOrgTodos={()=>setOrgTodosOpen(open=>!open)} tasks={data.tasks||[]} onAddTodo={addQuickTodo} onToggleTodo={toggleTaskDone} readOnly={demoReadOnly}/>
  </main>
 }
-createRoot(document.getElementById("root")).render(<App/>);
+createRoot(document.getElementById("root")).render(<ProductionGate><App/></ProductionGate>);
