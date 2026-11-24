@@ -92,7 +92,22 @@ export async function makeEventReportDocx(report){
  if(!report?.event?.id||!report?.finance||!report?.sections)throw new TypeError('Compte rendu invalide.');
  const count=report.finance.entries.length+report.finance.unclassified.length+report.shopping.length+Object.values(report.sections).reduce((sum,rows)=>sum+rows.length,0);
  if(count>3000)throw new RangeError('Trop de lignes pour un document Word. Exportez les données en CSV avant de réessayer.');
- const documentXml=xmlHeader+`<w:document xmlns:w="${NS}"><w:body>${reportBody(report)}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1080" w:right="1000" w:bottom="1080" w:left="1000" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>`;
+ return makeDocxBody(reportBody(report));
+}
+
+export async function makeMeetingDocx({date,eventName,previousName,nextDate,sections,draft}){
+ if(!date||!Array.isArray(sections))throw new TypeError('Réunion invalide.');
+ let body=para('Compte rendu de réunion','Title')+para('Comité des fêtes de Liernais · '+date,'Subtitle');
+ if(draft)body+=para('Brouillon non validé.');
+ if(eventName)body+=para('Manifestation à préparer : '+eventName);
+ if(previousName)body+=para('Bilan : '+previousName);
+ for(const section of sections)if(section.text?.trim())body+=para(section.label,'Heading1')+para(section.text);
+ if(nextDate)body+=para('Prochaine réunion','Heading1')+para(nextDate);
+ return makeDocxBody(body);
+}
+
+async function makeDocxBody(body){
+ const documentXml=xmlHeader+`<w:document xmlns:w="${NS}"><w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1080" w:right="1000" w:bottom="1080" w:left="1000" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>`;
  const files=[
   {name:'[Content_Types].xml',blob:new Blob([xmlHeader+'<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'])},
   {name:'_rels/.rels',blob:new Blob([xmlHeader+'<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'])},

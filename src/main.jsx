@@ -19,6 +19,8 @@ import FestivalSettings from "./FestivalSettings.jsx";
 import EventTill from "./EventTill.jsx";
 import EventReport from "./EventReport.jsx";
 import BottomNavigation from "./BottomNavigation.jsx";
+import Meetings from "./Meetings.jsx";
+import {isMeetingRecord} from "./lib/meetings.js";
 import {createTodo} from "./lib/eventTodo.js";
 import {createReportNote,createPendingReportExpense} from "./lib/eventReport.js";
 import {recordsForManifestation,withRecordEventId} from "./lib/manifestationScope.js";
@@ -109,6 +111,7 @@ function App(){
  const [reportOpen,setReportOpen]=useState(false);
  const [reportDraftDirty,setReportDraftDirty]=useState(false);
  const [settingsOpen,setSettingsOpen]=useState(false);
+ const [meetingsOpen,setMeetingsOpen]=useState(false);
  const [tillOpen,setTillOpen]=useState(false);
  const [moduleScopeEventId,setModuleScopeEventId]=useState("");
  const [orgTodosOpen,setOrgTodosOpen]=useState(false);
@@ -215,7 +218,7 @@ function App(){
  const current=categories.find(c=>c.key===tab);
  const normalizeContact=value=>String(value??"").trim().normalize("NFC").toLocaleLowerCase("fr");
  const scopeEvent=eventOptions.find(r=>r.id===moduleScopeEventId);
- const filteredRecords=recordsForManifestation(data[tab]||[],tab,moduleScopeEventId).filter(r=>tab==="contacts"
+ const filteredRecords=recordsForManifestation(data[tab]||[],tab,moduleScopeEventId).filter(r=>tab!=="archives"||!isMeetingRecord(r)).filter(r=>tab==="contacts"
   ?(contactType==="tous"||normalizeContact(r.values[1])===normalizeContact(contactType))&&[...r.values,r.email||"",r.phone||""].some(value=>normalizeContact(value).includes(normalizeContact(filter)))
   :r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
  const records=tab==="contacts"?sortContactsByName(filteredRecords):filteredRecords;
@@ -281,6 +284,7 @@ function App(){
  function cancelEdit(skipConfirmation=false){if(!skipConfirmation&&!allowDiscardDraft())return;setEditingId(null);setForm(["","",""]);setContactEmail("");setContactPhone("");setContactPhotoFile(null);setReturnToVolunteerEventId("");setRecordEventId(moduleScopeEventId);setFormError("");if(tab==="contacts")setContactFormOpen(false);if(tab==="equipment")setEquipmentFormOpen(false);if(tab!=="contacts"&&tab!=="equipment")setModuleFormOpen(false);}
  function openModule(key,eventId=""){
   if(!allowDiscardDraft())return false;
+  setMeetingsOpen(false);
   setReportOpen(false);setReportDraftDirty(false);
   setOrgTodosOpen(false);
   setSettingsOpen(false);
@@ -381,8 +385,21 @@ function App(){
   if(event)setTillEvent(event.values[0].replace(/\s+20\d{2}$/,''));
   return true;
  }
- function goToHome(){if(!selectManifestation(''))return;setOrgTodosOpen(false);setSettingsOpen(false);setModuleScopeEventId('');if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>document.querySelector('[aria-label="Accueil des manifestations"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
- function openSettings(){if(!allowDiscardDraft())return;setOrgTodosOpen(false);setTillOpen(false);setReportOpen(false);setReportDraftDirty(false);setSettingsOpen(true);if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'smooth'}));}
+ function goToHome(){if(!selectManifestation(''))return;setMeetingsOpen(false);setOrgTodosOpen(false);setSettingsOpen(false);setModuleScopeEventId('');if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>document.querySelector('[aria-label="Accueil des manifestations"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
+ function openSettings(){if(!allowDiscardDraft())return;setMeetingsOpen(false);setOrgTodosOpen(false);setTillOpen(false);setReportOpen(false);setReportDraftDirty(false);setSettingsOpen(true);if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'smooth'}));}
+ function openMeetings(){
+  if(!allowDiscardDraft())return;
+  if(recordingTillSaleRef.current||Object.values(tillCart).some(Boolean)){window.alert('Termine la vente en cours avant de quitter la caisse.');return;}
+  cancelEdit(true);setReportOpen(false);setReportDraftDirty(false);setTillOpen(false);setTillEdit(false);setOrgTodosOpen(false);setSettingsOpen(false);setMeetingsOpen(true);
+  if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;
+  window.scrollTo({top:0,behavior:'smooth'});
+ }
+ function saveMeetingData(next){
+  if(demoReadOnly)throw new Error('Lecture seule.');
+  makeTestSyncPayload({data:next,volunteerNeeds,ecocupSettings,tillConfig});
+  if(!writeDemoStorage(localStorage,next).saved)throw new Error('Enregistrement local impossible. Les données précédentes sont conservées.');
+  setData(next);
+ }
  const canAutoApplyCloud=!draftIsDirty&&!contactPhotoSavingRef.current&&!recordingTillSaleRef.current&&!tillEdit&&!Object.values(tillCart).some(Boolean)&&!fullZipBusy;
  // The exact default seed is also safe on a device that has already reopened the app.
  const pristineCloudText=testSyncText(makeTestSyncPayload({data:{...seed,recipes:addMissingRecipeDrafts([]).recipes}}));
@@ -627,7 +644,8 @@ function App(){
  {storageWarning&&<p role="alert" className="note">⚠ {storageWarning}</p>}
  {initialNeedsStorage.warning&&<p role="alert" className="note">⚠ {initialNeedsStorage.warning}</p>}
  {initialEcocupStorage.warning&&<p role="alert" className="note">⚠ {initialEcocupStorage.warning}</p>}
- {!settingsOpen&&<>
+ {meetingsOpen&&<Meetings data={data} onSave={saveMeetingData} readOnly={demoReadOnly} onClose={goToHome}/>}
+  {!settingsOpen&&!meetingsOpen&&<>
   <ManifestationHub events={eventOptions} tasks={data.tasks||[]} selectedId={hubEventId} onSelect={selectManifestation} onBack={()=>selectManifestation('')} onOpenModule={openModule} onOpenTill={openTillForEvent} onOpenReport={openReportForEvent} tillOpen={tillOpen||reportOpen} onToggleTodo={toggleTaskDone} onAddTodo={addQuickTodo} onChecklist={addChecklistToEvent} readOnly={demoReadOnly} photoRevision={photoRefreshRevision}/>
   {activeManifestation&&reportOpen&&<EventReport key={activeManifestation.id} eventId={activeManifestation.id} data={data} readOnly={demoReadOnly} onAddNote={addReportNote} onAddExpense={addReportExpense} onDraftChange={setReportDraftDirty} onClose={()=>{if(!allowDiscardDraft())return;setReportOpen(false);setReportDraftDirty(false);}}/>}
   {activeManifestation&&tillOpen&&<EventTill eventName={activeManifestation.values[0]} onClose={()=>openTillForEvent(activeManifestation)} products={tillProducts} cart={tillCart} setCart={updateTillCart} onRecordSale={recordTillSale} onCancelSale={cancelTillSale} saleStatus={tillSaleStatus} saleSummary={tillSaleSummary} saleHistory={tillSaleHistory} readOnly={demoReadOnly} editing={tillEdit} onToggleEdit={()=>tillEdit?setTillEdit(false):openTillEditor()} draft={tillDraft} setDraft={setTillDraft} onSave={saveTillEditor} configWarning={tillConfigWarning} configReadOnly={!!initialTillConfig.warning} onImport={()=>tillImportRef.current?.click()} importRef={tillImportRef} onImportFile={importMenus}/>}
@@ -749,7 +767,7 @@ function App(){
  </section>
  </details>
  <section className="print-sheet" aria-label="Planning imprimable des bénévoles"><h1>FEST’APP — Planning bénévoles</h1><h2>{printEvent?.values[0]||"Manifestation non sélectionnée"}</h2><p>{printEvent?.values[1]?"Date : "+printEvent.values[1]:"Date non renseignée"} · {printEvent?.values[2]||"Lieu non renseigné"}</p><table><thead><tr><th>Horaires</th><th>Bénévole</th><th>Poste</th></tr></thead><tbody>{(printSchedule?.scheduled||[]).map(r=><tr key={r.id}><td>{r.time}</td><td>{r.name}</td><td>{r.post||"À préciser"}</td></tr>)}</tbody></table>{printSchedule?.unscheduled.length>0&&<><h3>Horaires à préciser</h3><table><thead><tr><th>Bénévole</th><th>Poste</th><th>Créneau saisi</th></tr></thead><tbody>{printSchedule.unscheduled.map(r=><tr key={r.id}><td>{r.name}</td><td>{r.post||"À préciser"}</td><td>{r.time||"Non renseigné"}</td></tr>)}</tbody></table></>}<p className="print-footer">Document issu de la démonstration locale FEST’APP — vérifier les affectations avant affichage.</p></section>
- <BottomNavigation onHome={goToHome} onOpenModule={openModule} onSettings={()=>settingsOpen?setSettingsOpen(false):openSettings()} settingsOpen={settingsOpen} orgTodosOpen={orgTodosOpen} onToggleOrgTodos={()=>setOrgTodosOpen(open=>!open)} tasks={data.tasks||[]} onAddTodo={addQuickTodo} onToggleTodo={toggleTaskDone} readOnly={demoReadOnly}/>
+ <BottomNavigation onMeetings={openMeetings} meetingsOpen={meetingsOpen} onHome={goToHome} onOpenModule={openModule} onSettings={()=>settingsOpen?setSettingsOpen(false):openSettings()} settingsOpen={settingsOpen} orgTodosOpen={orgTodosOpen} onToggleOrgTodos={()=>setOrgTodosOpen(open=>!open)} tasks={data.tasks||[]} onAddTodo={addQuickTodo} onToggleTodo={toggleTaskDone} readOnly={demoReadOnly}/>
  </main>
 }
 createRoot(document.getElementById("root")).render(<ProductionGate><App/></ProductionGate>);
