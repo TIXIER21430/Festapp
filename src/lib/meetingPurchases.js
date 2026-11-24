@@ -24,7 +24,7 @@ const unitKey=u=>{
 function resolveName(raw,stock){
  const n=key(raw),alias=aliases[n];
  const variants=[n,alias&&key(alias)].filter(Boolean);
- const cubi=n.match(/^(?:cubi\s+(?:de\s+)?(?:vin\s+)?(blanc|rouge|rose)|vin\s+(blanc|rouge|rose)\s+(?:en\s+)?cubi)\s+([35])\s*l$/);
+ const cubi=n.match(/^(?:cubis?\s+(?:de\s+)?(?:vin\s+)?(blanc|rouge|rose)|vin\s+(blanc|rouge|rose)\s+(?:en\s+)?cubi)\s+([35])\s*l$/);
  if(cubi)variants.push('vin '+(cubi[1]||cubi[2])+' cubi '+cubi[3]+' l');
  const exact=stock.filter(r=>variants.includes(key(r.values[0])));
  if(exact.length>1)throw Error('Plusieurs fiches correspondent : précise le produit.');
@@ -47,7 +47,10 @@ export function parseMeetingNeed(line,stock=[]){
   if(!m)throw Error('Indique une quantité numérique.');value=m[1];unit=m[2]||'';
  }else{
   const first=raw.match(prefix),simple=raw.match(new RegExp('^('+number+')\\s+(.+)$')),last=raw.match(new RegExp('^(.+?)\\s+('+number+')(?:\\s*('+unitPattern+'))?$','i'));
-  if(first){value=first[1];unit=first[2];name=first[3];}
+  let fullProduct=null;
+  if(first&&simple){try{fullProduct=resolveName(simple[2],stock);}catch(e){throw e;}}
+  if(fullProduct){value=simple[1];name=fullProduct.values[0];}
+  else if(first){value=first[1];unit=first[2];name=first[3];}
   else if(simple){value=simple[1];name=simple[2];}
   else if(last&&!stock.some(r=>key(r.values[0])===key(raw))){name=last[1];value=last[2];unit=last[3]||'';}
   else throw Error('Indique la quantité, par exemple « 48 Coca » ou « Frites ; 25 ».');
@@ -67,7 +70,7 @@ export function parseMeetingNeed(line,stock=[]){
   else if(u==='count'&&!['kg','l'].includes(e)){}
   else if(!e||u!==e)throw Error('Unité à vérifier pour '+canonical+(expected?' (stock en '+expected+')':' : utilise la même unité que le stock, sans la préciser')+'.');
  }
- if(needed<=0||needed>1e9||quantity(quantityText(needed))!==needed&&Math.abs(Number(quantityText(needed))-needed)>1e-9)throw Error('Quantité trop précise (3 décimales maximum).');
+ if(needed<=0||needed>1e9||Math.abs(Number(quantityText(needed))-needed)>1e-9)throw Error('Quantité trop précise (3 décimales maximum).');
  return {name:canonical,key:key(canonical),needed:Number(quantityText(needed)),target,unit:expected};
 }
 export function planMeetingPurchases(data,eventId,lines){

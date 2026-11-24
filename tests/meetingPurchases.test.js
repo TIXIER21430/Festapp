@@ -5,7 +5,7 @@ import {newMeeting,saveMeetingDraft,finalizeMeeting} from '../src/lib/meetings.j
 const row=(id,name,qty,status='',eventId)=>({id,values:[name,qty,status],...(eventId?{eventId}:{})});
 const stock=[row('s1','Coca','12'),row('s2','Frites','5'),row('s3','Andouillettes','0'),row('s4','Vin rouge cubi 3 L','1'),row('s5','Vin rouge cubi 5 L','2'),row('s6','Oignons',''),row('s7','Lait','1')];
 test('natural meeting notes resolve stock names, aliases and units',()=>{
- for(const [line,name,needed] of [['48 Coca','Coca',48],['Il faut 25 kg de frites','Frites',25],['60 andouillette','Andouillettes',60],['Coca ; 48','Coca',48],['Coca 48','Coca',48],['2 cubi rouge 5l','Vin rouge cubi 5 L',2],['500 g de frites','Frites',.5],['Lait ; 150 cl','Lait',1.5],['48 bouteilles de Coca','Coca',48]]){
+ for(const [line,name,needed] of [['48 Coca','Coca',48],['Il faut 25 kg de frites','Frites',25],['60 andouillette','Andouillettes',60],['Coca ; 48','Coca',48],['Coca 48','Coca',48],['2 cubi rouge 5l','Vin rouge cubi 5 L',2],['2 cubis de vin rouge 5 L','Vin rouge cubi 5 L',2],['500 g de frites','Frites',.5],['Lait ; 150 cl','Lait',1.5],['48 bouteilles de Coca','Coca',48]]){
   const p=parseMeetingNeed(line,stock);assert.equal(p.name,name,line);assert.equal(p.needed,needed,line);
  }
  assert.throws(()=>parseMeetingNeed('2 vin rouge',stock),/Précise/);
