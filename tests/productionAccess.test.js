@@ -19,7 +19,7 @@ function mockSync({url=FESTAPP_SUPABASE_URL,user=true,conflict=false,error=null}
 }
 
 test('production updates require exact project, space and explicit mode',async()=>{
- for(const url of [undefined,'https://ddpaxzdwxqwypcumjvvn.supabase.co','https://pomssbugayytzmmgvflg.supabase.co.attacker.test']){
+ for(const url of [null,'https://ddpaxzdwxqwypcumjvvn.supabase.co','https://pomssbugayytzmmgvflg.supabase.co.attacker.test']){
   const c=mockSync({url});
   await assert.rejects(saveProductionSnapshot(c,{spaceId:FESTAPP_SPACE_ID,expectedRevision:1,payload:{data:{}},productionMode:true}));
   assert.deepEqual(c.calls,[]);
