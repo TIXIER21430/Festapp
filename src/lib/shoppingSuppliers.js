@@ -1,3 +1,4 @@
+import {formatStockQuantity} from './stockCatalog.js';
 // Shared supplier suggestions, not exclusive purchasing restrictions.
 export const SUPPLIERS=['Leclerc','DS Restauration','Cave du Ternin','Adagri','Centrakor','Autre'];
 const norm=name=>String(name??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/œ/g,'oe').trim();
@@ -37,7 +38,7 @@ export function shoppingExportGroups(rows,{supplierFilter='all',includePurchased
  return [...groups].sort(([a],[b])=>SUPPLIERS.indexOf(supplierCategory(a))-SUPPLIERS.indexOf(supplierCategory(b))||a.localeCompare(b,'fr')).map(([supplier,items])=>({supplier,items}));
 }
 export function shoppingExportText(groups,eventName){
- return ['COMITÉ DES FÊTES DE LIERNAIS','Liste de courses — '+String(eventName).replace(/[\r\n]+/g,' '),'',...groups.flatMap(g=>[g.supplier.toUpperCase(),...g.items.map(i=> (i.status==='Acheté'?'[x] ':'[ ] ')+i.quantity+' × '+i.name),''])].join('\n').trim();
+ return ['COMITÉ DES FÊTES DE LIERNAIS','Liste de courses — '+String(eventName).replace(/[\r\n]+/g,' '),'',...groups.flatMap(g=>[g.supplier.toUpperCase(),...g.items.map(i=> (i.status==='Acheté'?'[x] ':'[ ] ')+formatStockQuantity(i.name,i.quantity)+' · '+i.name),''])].join('\n').trim();
 }
 export function shoppingMailto({recipient='',subject,body}){
  const address=recipient.trim();

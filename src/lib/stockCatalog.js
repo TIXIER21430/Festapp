@@ -23,7 +23,19 @@ export function stockUnit(name){
  if(n==='lait'||n==='creme liquide'||n==='huile de friture')return 'L';
  if(/^(frites|oignons|farine|chocolat en poudre|fromage rape)$/.test(n))return 'kg';
  if(n==='beurre 250 g')return 'plaquettes';
- return '';
+ if(/^(anis etoile|clous? de girofle|cannelle en poudre|muscade|gingembre)$/.test(n))return 'g';
+ if(/^(sel|cafe|jambon en tranches|chamallows|bonbons|papillotes)$/.test(n))return 'kg';
+ if(/\bcanettes?\b/.test(n))return 'canettes';
+ return 'u';
+}
+// The storage unit is shared by stock, meetings, purchases and exports.
+export function displayStockUnit(name){
+ const unit=stockUnit(name);
+ return ['kg','g','L'].includes(unit)?unit:'u';
+}
+export function formatStockQuantity(name,value){
+ const raw=String(value??'').trim();
+ return /^\d+(?:[.,]\d+)?$/.test(raw)?raw+' '+displayStockUnit(name):raw;
 }
 export function kegName(brand,capacity){
  const label=String(brand??'').trim().replace(/\s+/g,' ');

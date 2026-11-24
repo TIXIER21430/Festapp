@@ -29,7 +29,7 @@ test('export groups only remaining purchases by supplier, excluding empty and tr
  assert.equal(shoppingExportGroups(rows,{supplierFilter:'Adagri'})[0].items[0].name,'Vin');
  assert.equal(shoppingExportGroups(rows,{supplierFilter:'Autre'})[0].supplier,'Autre : Local');
  const text=shoppingExportText(groups,'Marché de Noël');
- assert.match(text,/24 × Coca/);assert.doesNotMatch(text,/Frites|Pain/);
+ assert.match(text,/24 u · Coca/);assert.doesNotMatch(text,/Frites|Pain/);
  const url=shoppingMailto({recipient:'test@example.com',subject:'Courses',body:text});
  assert.ok(url.startsWith('mailto:'));assert.match(decodeURIComponent(url),/Marché de Noël/);
  assert.throws(()=>shoppingMailto({recipient:'test@example.com?bcc=x',subject:'Courses',body:text}),/invalide/);

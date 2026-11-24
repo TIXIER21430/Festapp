@@ -45,3 +45,11 @@ test('ordinary dictation supports multiple explicit quantities and preserves dec
  assert.equal(p.summary.find(r=>r.name==='Frites').additional,20.5);
  assert.ok(planMeetingPurchases({stock},'event',['48 Coca et Orangina']).errors.length);
 });
+
+test('compact quantities, grams and unit counts use the same catalog units',()=>{
+ const extra=[...stock,row('s8','Cannelle en poudre','50')];
+ for(const [line,name,needed,unit] of [['25kg de frite','Frites',25,'kg'],['2,5L de lait','Lait',2.5,'L'],['200g de cannelle en poudre','Cannelle en poudre',200,'g'],['0,5 kg de cannelle en poudre','Cannelle en poudre',500,'g'],['60 u andouillettes','Andouillettes',60,'u'],['2 cubis de vin rouge 5 L','Vin rouge cubi 5 L',2,'u']]){
+  const p=parseMeetingNeed(line,extra);assert.equal(p.name,name,line);assert.equal(p.needed,needed,line);assert.equal(p.unit,unit,line);
+ }
+ assert.throws(()=>parseMeetingNeed('60 u frites',extra),/Unité/);
+});

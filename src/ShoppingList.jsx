@@ -1,7 +1,7 @@
 import React,{useState,useEffect,useRef} from 'react';
 import StockIllustration from './StockIllustration.jsx';
 import KegCreator from './KegCreator.jsx';
-import {STOCK_GROUPS,stockGroup,stockUnit} from './lib/stockCatalog.js';
+import {STOCK_GROUPS,stockGroup,displayStockUnit,formatStockQuantity} from './lib/stockCatalog.js';
 import {SUPPLIERS,supplierFor,supplierCategory,assignPurchaseSupplier,shoppingExportGroups,shoppingExportText,shoppingMailto} from './lib/shoppingSuppliers.js';
 import {makeShoppingDocx} from './lib/reportDocx.js';
 import {purchaseCatalog,inPurchaseScope,isPurchased,isTransferred,setPurchaseQuantity,setPurchaseChecked,removePurchase,preparePurchaseTransfer,purchaseFingerprint,transferPurchases,quantity,productKey} from './lib/purchaseStock.js';
@@ -72,7 +72,7 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
  }
  return <section className="festapp-shopping" aria-label="Liste de courses">
   <label>Liste de courses<select value={scope} onChange={e=>{setReview(null);setStatus('');onScope(e.target.value);}}><option value="">Courses générales du comité</option>{events.map(e=><option key={e.id} value={e.id}>{e.values[0]}</option>)}</select></label>
-  <p className="note">Indique librement les quantités (décimales possibles). Coche les produits achetés. Utilise toujours la même unité que le stock ; les unités affichées sont des repères. Pour les fûts et les cubis, indique le nombre de contenants, pas les litres.</p>
+  <p className="note">Indique librement les quantités (décimales possibles). Coche les produits achetés. Utilise toujours la même unité que le stock ; les unités affichées sont celles du stock. Pour les fûts et les cubis, indique le nombre de contenants, pas les litres.</p>
   <div className="shopping-toolbar"><button type="button" className="secondary" onClick={()=>onScope('',true)}>← Stock général</button><strong>{active.length} article(s) · {checked.length} acheté(s)</strong><button type="button" className="secondary" onClick={()=>setOnlyList(v=>!v)}>{onlyList?'Voir tout le catalogue':'Voir ma liste uniquement'}</button></div>
   <div className="shopping-supplier-tools"><label>Afficher les fournisseurs<select value={supplierFilter} onChange={e=>{setSupplierFilter(e.target.value);setExportDraft(null);}}><option value="all">Tous les fournisseurs</option>{SUPPLIERS.map(s=><option key={s}>{s}</option>)}</select></label><button type="button" className="secondary" disabled={!exportGroups.length||!!review} onClick={openExport}>📄 Éditer / envoyer la liste</button></div>
   {exportDraft&&<section ref={exportRef} className="shopping-review" aria-label="Éditer la liste de courses">
@@ -88,7 +88,7 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
    const row=p.row,supplier=supplierOf(p);
    return <React.Fragment key={p.key}>{(i===0||stockGroup(visible[i-1].name)!==stockGroup(p.name))&&<h3 className="stock-group-heading">{stockGroup(p.name)}</h3>}<article className={'shopping-product'+(row&&isPurchased(row)?' purchased':'')} key={p.key}>
     <StockIllustration name={p.name}/>
-    <div className="shopping-product-copy"><strong>{p.name}</strong><label>Quantité{stockUnit(p.name)?' ('+stockUnit(p.name)+')':''}<input aria-label={'Quantité à acheter : '+p.name} inputMode="decimal" value={row?.values[1]||''} placeholder="—" disabled={readOnly||!!review} onChange={e=>change(()=>setPurchaseQuantity(data,{scope,rowId:row?.id,name:p.name,value:e.target.value,newId:id,supplier}))}/></label>
+    <div className="shopping-product-copy"><strong>{p.name}</strong><label>Quantité ({displayStockUnit(p.name)})<input aria-label={'Quantité à acheter : '+p.name+' ('+displayStockUnit(p.name)+')'} inputMode="decimal" value={row?.values[1]||''} placeholder="—" disabled={readOnly||!!review} onChange={e=>change(()=>setPurchaseQuantity(data,{scope,rowId:row?.id,name:p.name,value:e.target.value,newId:id,supplier}))}/></label>
      <label className="shopping-supplier-label">Fournisseur<select aria-label={'Fournisseur : '+p.name} value={supplierCategory(supplier)} disabled={readOnly||!!review} onChange={e=>editSupplier(p,e.target.value)}>{SUPPLIERS.map(s=><option key={s}>{s}</option>)}</select></label>
      {supplierCategory(supplier)==='Autre'&&<input aria-label={'Autre fournisseur : '+p.name} placeholder="Préciser (facultatif)" maxLength={110} disabled={readOnly||!!review} key={p.key+':other'} defaultValue={supplier.startsWith('Autre : ')?supplier.slice(8):''} onBlur={e=>{const value=e.target.value.trim();editSupplier(p,value?'Autre : '+value:'Autre');}}/>}
      {row&&<div className="shopping-row-actions"><label><input type="checkbox" checked={isPurchased(row)} disabled={readOnly||!!review||!(quantity(row.values[1])>0)} onChange={e=>change(()=>setPurchaseChecked(data,{scope,rowId:row.id,checked:e.target.checked}))}/> Acheté</label><button type="button" className="secondary" disabled={readOnly||!!review} aria-label={'Retirer '+p.name} onClick={()=>{if(window.confirm('Retirer '+p.name+' de cette liste ?'))change(()=>removePurchase(data,{scope,rowId:row.id}));}}>✕</button></div>}
@@ -100,13 +100,13 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
   {review&&<section ref={reviewRef} className="shopping-review" aria-label="Vérifier le transfert">
    <h3>Vérifier les quantités réellement achetées</h3><p>Corrige les quantités avant de confirmer. Le stock existant sera augmenté, jamais remplacé.</p>
    {review.lines.map((line,i)=><div className="shopping-review-row" key={line.id}>
-    <strong>{line.name}</strong><label>Quantité réellement achetée<input inputMode="decimal" value={review.actual[line.id]} onChange={e=>setReview(r=>({...r,actual:{...r.actual,[line.id]:e.target.value}}))}/></label>
-    {line.current===null&&review.lines.findIndex(l=>l.key===line.key)===i&&<label>Stock actuel (à vérifier, 0 si aucun)<input inputMode="decimal" value={review.opening[line.key]??''} onChange={e=>setReview(r=>({...r,opening:{...r.opening,[line.key]:e.target.value}}))}/></label>}
-    {line.current!==null&&<small>Stock avant achat : {line.current}</small>}
+    <strong>{line.name}</strong><label>Quantité réellement achetée ({displayStockUnit(line.name)})<input inputMode="decimal" value={review.actual[line.id]} onChange={e=>setReview(r=>({...r,actual:{...r.actual,[line.id]:e.target.value}}))}/></label>
+    {line.current===null&&review.lines.findIndex(l=>l.key===line.key)===i&&<label>Stock actuel ({displayStockUnit(line.name)}, 0 si aucun)<input inputMode="decimal" value={review.opening[line.key]??''} onChange={e=>setReview(r=>({...r,opening:{...r.opening,[line.key]:e.target.value}}))}/></label>}
+    {line.current!==null&&<small>Stock avant achat : {formatStockQuantity(line.name,line.current)}</small>}
    </div>)}
    <button type="button" disabled={readOnly} onClick={confirmTransfer}>Confirmer l’entrée en stock</button> <button type="button" className="secondary" onClick={()=>{setReview(null);setStatus('');}}>Annuler / modifier la liste</button>
   </section>}
   {status&&<p role="status" className="note">{status}</p>}
-  {history.length>0&&<details className="festapp-optional-tool"><summary>Historique des achats transférés ({history.length})</summary>{history.map(r=><p key={r.id}><strong>{r.values[0]}</strong> · {r.values[1]} · {supplierFor(r)} · {r.values[2]}</p>)}</details>}
+  {history.length>0&&<details className="festapp-optional-tool"><summary>Historique des achats transférés ({history.length})</summary>{history.map(r=><p key={r.id}><strong>{r.values[0]}</strong> · {formatStockQuantity(r.values[0],r.values[1])} · {supplierFor(r)} · {r.values[2]}</p>)}</details>}
  </section>;
 }

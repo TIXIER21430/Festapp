@@ -22,7 +22,7 @@ import BottomNavigation from "./BottomNavigation.jsx";
 import Meetings from "./Meetings.jsx";
 import ShoppingList from "./ShoppingList.jsx";
 import KegCreator from "./KegCreator.jsx";
-import {compareStockNames} from "./lib/stockCatalog.js";
+import {compareStockNames,displayStockUnit} from "./lib/stockCatalog.js";
 import {isMeetingRecord} from "./lib/meetings.js";
 import {createTodo} from "./lib/eventTodo.js";
 import {createReportNote,createPendingReportExpense} from "./lib/eventReport.js";
@@ -742,14 +742,14 @@ function App(){
   {formError&&<p role="alert">{formError}</p>}
   <div className="fields">
    {tab==="shifts"&&<label>Choisir dans l’annuaire<select value={volunteers.some(v=>v.name===form[0])?form[0]:""} onChange={e=>setForm(f=>f.map((v,i)=>i===0?e.target.value:v))}><option value="">Saisie manuelle / autre bénévole</option>{volunteers.map(v=><option key={v.id} value={v.name}>{v.name}</option>)}</select></label>}
-   {current.fields.map((label,i)=><label key={label}>{label}
+   {current.fields.map((label,i)=><label key={label}>{label}{(tab==="stock"&&i>0||tab==="shopping"&&i===1)&&form[0]?" ("+displayStockUnit(form[0])+")":""}
     {tab==="contacts"&&i===1?
      <select required value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))}>
       <option value="">Choisir une catégorie</option>
       {["bénévole","exposant","groupe","fournisseur","intervenant"].map(kind=><option key={kind} value={kind}>{kind}</option>)}
       {form[i]&&!["bénévole","exposant","groupe","fournisseur","intervenant"].includes(form[i])&&<option value={form[i]}>{form[i]} (ancienne catégorie)</option>}
      </select>:
-     <>{tab==="shifts"&&i===2&&<div className="post-choices">{volunteerPosts.map(post=><button key={post} type="button" className={form[2]===post?"post-choice selected":"post-choice"} aria-pressed={form[2]===post} onClick={()=>setForm(f=>f.map((v,j)=>j===2?post:v))}>{post}</button>)}</div>}{(tab==="posts"&&i===1)||(tab==="recipes"&&i>0)||(tab==="archives"&&i===2)?<textarea rows={tab==="posts"?6:4} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/>:<input required={i===0} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/>}</>}
+     <>{tab==="shifts"&&i===2&&<div className="post-choices">{volunteerPosts.map(post=><button key={post} type="button" className={form[2]===post?"post-choice selected":"post-choice"} aria-pressed={form[2]===post} onClick={()=>setForm(f=>f.map((v,j)=>j===2?post:v))}>{post}</button>)}</div>}{(tab==="posts"&&i===1)||(tab==="recipes"&&i>0)||(tab==="archives"&&i===2)?<textarea rows={tab==="posts"?6:4} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/>:<input inputMode={(tab==="stock"&&i>0||tab==="shopping"&&i===1)?"decimal":undefined} required={i===0} value={form[i]} onChange={e=>setForm(f=>f.map((v,j)=>i===j?e.target.value:v))} placeholder={label}/>}</>}
    </label>)}
    {tab==="contacts"&&<>
     <label>E-mail<input type="email" autoComplete="off" maxLength={320} value={contactEmail} onChange={e=>setContactEmail(e.target.value)} placeholder="adresse@exemple.fr"/></label>

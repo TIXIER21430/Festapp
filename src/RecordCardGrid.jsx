@@ -3,13 +3,13 @@ import {PHOTO_CATEGORIES,listPhotoOriginals,savePhotoOriginal} from './lib/photo
 import {isTillAccountingRecord} from './lib/tillSales.js';
 import ModuleGlyph from './ModuleGlyph.jsx';
 import StockIllustration from './StockIllustration.jsx';
-import {STOCK_GROUPS,stockGroup,stockUnit} from './lib/stockCatalog.js';
+import {STOCK_GROUPS,stockGroup,displayStockUnit,formatStockQuantity} from './lib/stockCatalog.js';
 
 const PHOTO_SCOPES=new Set(PHOTO_CATEGORIES.filter(scope=>scope!=='equipment'));
 
 export function cardSummary(category,record){
  const values=record?.values||[];
- if(category==='stock')return values[1]?'Quantité : '+values[1]+(stockUnit(values[0])&&/^\d+(?:[.,]\d+)?$/.test(values[1])?' '+stockUnit(values[0]):''):'Quantité à préciser';
+ if(category==='stock')return values[1]?'Quantité : '+formatStockQuantity(values[0],values[1]):'Quantité à préciser ('+displayStockUnit(values[0])+')';
  if(category==='recipes')return 'Recette du comité';
  if(category==='contacts')return values[1]||'Contact';
  if(category==='tasks')return record.done?'Terminée':'À faire';
@@ -76,7 +76,7 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
     <div className="festapp-equipment-detail-heading"><h3>{selected.values[0]}</h3><button type="button" className="secondary" ref={closeRef} aria-label="Fermer la fiche" onClick={()=>setSelectedId('')}>✕</button></div>
     {photos.get(selected.id)?<img className="festapp-equipment-detail-image" src={photos.get(selected.id)} alt={'Photo de '+selected.values[0]}/>:category==='stock'?<div className="festapp-stock-detail-art"><StockIllustration name={selected.values[0]}/><small>Illustration indicative · ajoute une photo réelle si nécessaire.</small></div>:null}
     {category==='recipes'&&<button type="button" className="festapp-recipe-calculate-action" onClick={()=>{onCalculateRecipe?.(selected);setSelectedId('');}}>🧮 Adapter les quantités</button>}
-    {fields.slice(1).map((field,i)=><p key={field}><strong>{field} :</strong> {selected.values[i+1]||'À préciser'}</p>)}
+    {fields.slice(1).map((field,i)=><p key={field}><strong>{field} :</strong> {category==='stock'?(selected.values[i+1]?formatStockQuantity(selected.values[0],selected.values[i+1]):'À préciser ('+displayStockUnit(selected.values[0])+')'):(selected.values[i+1]||'À préciser')}</p>)}
     {category==='contacts'&&<>{selected.phone&&<p><a href={'tel:'+selected.phone}>📞 {selected.phone}</a></p>}{selected.email&&<p><a href={'mailto:'+selected.email}>✉️ {selected.email}</a></p>}</>}
     {category==='archives'&&/^https:\/\/(?:drive|docs)\.google\.com\//.test(selected.values[2]||'')&&<p><a href={selected.values[2]} target="_blank" rel="noopener noreferrer">📄 Voir l’original dans Drive</a></p>}
     {lockedTillEntry&&<p className="note">🔒 Écriture de caisse conservée pour l’historique. Pour corriger une vente, ouvre sa manifestation puis la caisse et utilise « Annuler cette vente ».</p>}

@@ -1,15 +1,15 @@
-import {catalogKey,stockUnit,compareStockNames} from './stockCatalog.js';
+import {catalogKey,stockUnit,displayStockUnit,compareStockNames} from './stockCatalog.js';
 import {quantity,quantityText,isTransferred,isPurchased,inPurchaseScope} from './purchaseStock.js';
 import {supplierFor} from './shoppingSuppliers.js';
 
 const aliases={
- 'gaz':'Bouteilles de gaz','oignon':'Oignons','andouillette':'Andouillettes','orange':'Oranges','citron':'Citrons','mandarine':'Mandarines','oeuf':'Œufs','serviettes':'Serviettes en papier','serviette':'Serviettes en papier','coca cola':'Coca','coca-cola':'Coca','chocolat poudre':'Chocolat en poudre','cafe senseo':'Café Senseo','creme':'Crème liquide','jambon tranche':'Jambon en tranches','jambon entier':'Jambon entier à braiser','pain panini':'Pains panini','saucisse hot dog':'Saucisses hot dog','huile':'Huile de friture','biere en bouteille':'Bière bouteille','biere en canette':'Bière canette','get27':'Get 27'
+ 'frite':'Frites','gaz':'Bouteilles de gaz','oignon':'Oignons','andouillette':'Andouillettes','orange':'Oranges','citron':'Citrons','mandarine':'Mandarines','oeuf':'Œufs','serviettes':'Serviettes en papier','serviette':'Serviettes en papier','coca cola':'Coca','coca-cola':'Coca','chocolat poudre':'Chocolat en poudre','cafe senseo':'Café Senseo','creme':'Crème liquide','jambon tranche':'Jambon en tranches','jambon entier':'Jambon entier à braiser','pain panini':'Pains panini','saucisse hot dog':'Saucisses hot dog','huile':'Huile de friture','biere en bouteille':'Bière bouteille','biere en canette':'Bière canette','get27':'Get 27'
 };
 const key=name=>catalogKey(name).replace(/(\d)\s*l\b/g,'$1 l').replace(/[–—]/g,'-');
 const singular=name=>key(name).split(' ').map(w=>w.length>3&&w.endsWith('s')?w.slice(0,-1):w).join(' ');
-const unitPattern='kg|kilos?|kilogrammes?|g|grammes?|l|litres?|cl|centilitres?|ml|millilitres?|bouteilles?|canettes?|cubis?|f[uû]ts?|plaquettes?|pi[eè]ces?|unit[eé]s?|packs?|paquets?|cartons?';
+const unitPattern='u|kg|kilos?|kilogrammes?|g|grammes?|l|litres?|cl|centilitres?|ml|millilitres?|bouteilles?|canettes?|cubis?|f[uû]ts?|plaquettes?|pi[eè]ces?|unit[eé]s?|packs?|paquets?|cartons?';
 const number='\\d+(?:[.,]\\d{1,3})?';
-const prefix=new RegExp('^('+number+')\\s+('+unitPattern+')(?:\\s+d[eu]\\s+|\\s+d[’\\x27]|\\s+)(.+)$','i');
+const prefix=new RegExp('^('+number+')\\s*('+unitPattern+')(?:\\s+d[eu]\\s+|\\s+d[’\\x27]|\\s+)(.+)$','i');
 const suffix=new RegExp('^('+number+')(?:\\s*('+unitPattern+'))?$','i');
 const unitKey=u=>{
  const n=key(u);
@@ -18,7 +18,7 @@ const unitKey=u=>{
  if(/^(l|litres?)$/.test(n))return 'l';
  if(/^(cl|centilitres?)$/.test(n))return 'cl';
  if(/^(ml|millilitres?)$/.test(n))return 'ml';
- if(/^(pieces?|unites?)$/.test(n))return 'count';
+ if(/^(u|pieces?|unites?)$/.test(n))return 'count';
  return n.replace(/s$/,'');
 };
 function resolveName(raw,stock){
@@ -66,13 +66,14 @@ export function parseMeetingNeed(line,stock=[]){
  if(unit){
   const u=unitKey(unit),e=unitKey(expected);
   if(u==='g'&&e==='kg')needed=n/1000;
+  else if(u==='kg'&&e==='g')needed=n*1000;
   else if(u==='cl'&&e==='l')needed=n/100;
   else if(u==='ml'&&e==='l')needed=n/1000;
-  else if(u==='count'&&!['kg','l'].includes(e)){}
+  else if(u==='count'&&!['kg','g','l'].includes(e)){}
   else if(!e||u!==e)throw Error('Unité à vérifier pour '+canonical+(expected?' (stock en '+expected+')':' : utilise la même unité que le stock, sans la préciser')+'.');
  }
  if(needed<=0||needed>1e9||Math.abs(Number(quantityText(needed))-needed)>1e-9)throw Error('Quantité trop précise (3 décimales maximum).');
- return {name:canonical,key:key(canonical),needed:Number(quantityText(needed)),target,unit:expected};
+ return {name:canonical,key:key(canonical),needed:Number(quantityText(needed)),target,unit:displayStockUnit(canonical)};
 }
 export function planMeetingPurchases(data,eventId,lines){
  const stock=(data.stock||[]).filter(r=>!r.eventId),shopping=(data.shopping||[]).filter(r=>inPurchaseScope(r,eventId)&&!isTransferred(r));

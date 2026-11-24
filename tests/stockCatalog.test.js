@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {stockGroup,compareStockNames,stockUnit,kegName,addKegStock} from '../src/lib/stockCatalog.js';
+import {stockGroup,compareStockNames,stockUnit,displayStockUnit,formatStockQuantity,kegName,addKegStock} from '../src/lib/stockCatalog.js';
 import {purchaseCatalog,setPurchaseQuantity,setPurchaseChecked,transferPurchases,purchaseFingerprint} from '../src/lib/purchaseStock.js';
 import {suggestedSupplier} from '../src/lib/shoppingSuppliers.js';
 import {stockIllustrationKind} from '../src/lib/stockIllustration.js';
@@ -26,4 +26,11 @@ test('kegs have separate stock identities by brand and volume and transfer indep
  const next=transferPurchases(d,{actual:Object.fromEntries(d.shopping.map(r=>[r.id,'2'])),opening:Object.fromEntries(names.map(name=>[name.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(),'0'])),fingerprint:purchaseFingerprint(d),newId,date:'2026-11-24'});
  assert.equal(next.stock.length,3);assert.ok(next.stock.every(r=>r.values[1]==='2'));
  assert.equal(purchaseCatalog(next).length,3);
+});
+
+test('all catalog tiles have a display unit, including zero stock and packages',()=>{
+ for(const [name,unit] of Object.entries({'Frites':'kg','Lait':'L','Cannelle en poudre':'g','Andouillettes':'u','Coca':'u','Vin rouge cubi 5 L':'u','Fût de bière 30 L – IPA':'u','Beurre 250 g':'u','Serviettes en papier':'u','Produit inconnu':'u'})){
+  assert.equal(displayStockUnit(name),unit,name);assert.equal(formatStockQuantity(name,'0'),'0 '+unit);
+ }
+ assert.equal(formatStockQuantity('Frites','25 kg'),'25 kg');
 });
