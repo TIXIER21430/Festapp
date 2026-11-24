@@ -656,6 +656,27 @@ function App(){
  </>}
  {settingsOpen&&<>
  <section className="festapp-settings-head"><button type="button" className="festapp-back-action" onClick={()=>setSettingsOpen(false)}>← Retour aux fêtes</button><h1>⚙ Plus et réglages</h1><p>Sauvegardes, documents et outils de gestion.</p><button type="button" onClick={openOwnerSetup}>✍️ Vérifier les fiches avant de les partager</button></section>
+ <section className="quick-access" aria-label="Accès rapide aux modules">
+  <div className="quick-access-title"><h2>⚡ Accès rapide</h2><span>Choisissez votre activité</span></div>
+  <div className="quick-access-grid">
+   {[
+    ["events","🎉","Manifestations",(data.events||[]).length+" fiches"],
+    ["tasks","✅","Tâches",(data.tasks||[]).filter(r=>r.done!==true).length+" à faire"],
+    ["contacts","👥","Annuaire",(data.contacts||[]).length+" contacts"],
+    ["ecocups","🥤","Écocups",ecocupSummary?(ecocupSummary.alert?"⚠ Seuil atteint · ":"Stock · ")+ecocupSummary.balance:"Stock à vérifier"],
+    ["shifts","🕒","Bénévoles",(data.shifts||[]).length+" affectations"],
+    ["recipes","🍲","Recettes",(data.recipes||[]).length+" recettes"],
+    ["shopping","🛒","Achats",(data.shopping||[]).length+" articles"],
+    ["stock","📦","Stock",(data.stock||[]).length+" fiches"],
+    ["feedback","📝","Retours",(data.feedback||[]).length+" retours"],
+    ["finance","📊","Finances",(data.finance||[]).length+" écritures"],
+    ["equipment","🧰","Matériel",(data.equipment||[]).length+" fiches"],
+    ["posts","📣","Communication",(data.posts||[]).length+" publications"],
+    ["archives","🗂️","Archives",(data.archives||[]).length+" souvenirs"]
+   ].map(([key,icon,title,details])=><button type="button" key={key} className="quick-access-tile" aria-label={title+" : "+details} onClick={()=>openModule(key)}><span className="quick-icon" aria-hidden="true">{icon}</span><strong>{title}</strong><small>{details}</small></button>)}
+  </div>
+  {import.meta.env.VITE_FESTAPP_PRODUCTION_MODE!=='true'&&<p className="quick-access-note">Chiffres de démonstration de cet appareil uniquement · aucun stock partagé.</p>}
+ </section>
  <FestivalSettings events={eventOptions} finance={data.finance||[]} archives={data.archives||[]} driveCatalog={driveCatalog} readOnly={demoReadOnly} onUpdate={updateFestival} onCreateEdition={createHistoricalEdition} onOpenFinance={eventId=>openModule('finance',eventId)} onOpenDrive={openDriveLibrary}/>
  <section className="festapp-export-center" aria-label="Exports de FEST'APP">
   <h2>📤 Exports</h2>
@@ -683,27 +704,7 @@ function App(){
  </div>
  {settingsOpen&&<>
  <details className="festapp-advanced" ref={advancedRef}><summary>🔧 Préparation privée, archives du Drive et sauvegardes</summary>
- <section className="quick-access" aria-label="Accès rapide aux modules">
-  <div className="quick-access-title"><h2>⚡ Accès rapide</h2><span>Choisissez votre activité</span></div>
-  <div className="quick-access-grid">
-   {[
-    ["events","🎉","Manifestations",(data.events||[]).length+" fiches"],
-    ["tasks","✅","Tâches",(data.tasks||[]).filter(r=>r.done!==true).length+" à faire"],
-    ["contacts","👥","Annuaire",(data.contacts||[]).length+" contacts"],
-    ["ecocups","🥤","Écocups",ecocupSummary?(ecocupSummary.alert?"⚠ Seuil atteint · ":"Stock · ")+ecocupSummary.balance:"Stock à vérifier"],
-    ["shifts","🕒","Bénévoles",(data.shifts||[]).length+" affectations"],
-    ["recipes","🍲","Recettes",(data.recipes||[]).length+" recettes"],
-    ["shopping","🛒","Achats",(data.shopping||[]).length+" articles"],
-    ["stock","📦","Stock",(data.stock||[]).length+" fiches"],
-    ["feedback","📝","Retours",(data.feedback||[]).length+" retours"],
-    ["finance","📊","Finances",(data.finance||[]).length+" écritures"],
-    ["equipment","🧰","Matériel",(data.equipment||[]).length+" fiches"],
-    ["posts","📣","Communication",(data.posts||[]).length+" publications"],
-    ["archives","🗂️","Archives",(data.archives||[]).length+" souvenirs"]
-   ].map(([key,icon,title,details])=><button type="button" key={key} className="quick-access-tile" aria-label={title+" : "+details} onClick={()=>openModule(key)}><span className="quick-icon" aria-hidden="true">{icon}</span><strong>{title}</strong><small>{details}</small></button>)}
-  </div>
-  <p className="quick-access-note">Chiffres de démonstration de cet appareil uniquement · aucun stock partagé.</p>
- </section>
+ 
  <div ref={ownerSetupRef}><OwnerSetup data={data} onOpen={openModule} onBackup={exportBackup} onFullBackup={exportFullBackup} onInspectZip={inspectFullZip} onRestoreZip={confirmFullZip} zipPreview={fullZipPreview} zipCanRestore={!!fullZipCandidate} zipBusy={fullZipBusy} reviewRestoreRevision={reviewRestoreRevision} ecocupSettings={{opening:ecocupOpening,threshold:ecocupThreshold}} readOnly={demoReadOnly}/></div>
  <FreeAiHelper events={eventOptions} recipes={data.recipes||[]}/>
  <DriveBoard catalog={driveCatalog} loading={driveLoading} error={driveError} importStatus={driveImportStatus} onImport={importDriveAgain} readOnly={demoReadOnly}/>

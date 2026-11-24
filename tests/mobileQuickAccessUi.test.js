@@ -5,12 +5,16 @@ import {readFileSync} from "node:fs";
 const app=readFileSync(new URL("../src/main.jsx",import.meta.url),"utf8");
 const css=readFileSync(new URL("../src/style.css",import.meta.url),"utf8");
 
-test("the home screen has six large direct module shortcuts above long sections",()=>{
+test("Plus displays all direct module shortcuts before settings and exports",()=>{
  const shortcuts=app.indexOf('aria-label="Accès rapide aux modules"');
  assert.ok(shortcuts>app.indexOf('className="hero"'));
- assert.ok(shortcuts<app.indexOf('<OwnerSetup '));
- for(const name of ['"events"','"tasks"','"contacts"','"ecocups"','"shifts"','"recipes"']){
-  assert.ok(app.slice(shortcuts,app.indexOf('<OwnerSetup ')).includes(name),name);
+ assert.ok(shortcuts>app.indexOf('<section className="festapp-settings-head">'));
+ assert.ok(shortcuts<app.indexOf('<FestivalSettings '));
+ assert.ok(shortcuts<app.indexOf('<section className="festapp-export-center"'));
+ assert.ok(shortcuts<app.indexOf('<details className="festapp-advanced"'));
+ assert.equal((app.match(/aria-label="Accès rapide aux modules"/g)||[]).length,1);
+ for(const name of ['"events"','"tasks"','"contacts"','"ecocups"','"shifts"','"recipes"','"shopping"','"stock"','"feedback"','"finance"','"equipment"','"posts"','"archives"']){
+  assert.ok(app.slice(shortcuts,app.indexOf('<FestivalSettings ')).includes(name),name);
  }
  assert.match(app,/onClick=\{\(\)=>openModule\(key\)\}/);
  assert.match(css,/\.quick-access-grid\{display:grid;grid-template-columns:repeat\(3,minmax\(0,1fr\)\)/);
@@ -37,11 +41,11 @@ test("dashboard ecocup badge checks the local ledger and handles invalid setting
  assert.match(app,/Chiffres de démonstration de cet appareil uniquement/);
 });
 
-test("all ten modules remain one tap away in the colorful mobile dashboard",()=>{
+test("all thirteen modules remain one tap away in the colorful Plus dashboard",()=>{
  const begin=app.indexOf('aria-label="Accès rapide aux modules"');
- const end=app.indexOf('className="event-cockpit"');
+ const end=app.indexOf('<FestivalSettings ');
  const dashboard=app.slice(begin,end);
- for(const name of ['events','tasks','contacts','ecocups','shifts','recipes','shopping','stock','feedback','finance']){
+ for(const name of ['events','tasks','contacts','ecocups','shifts','recipes','shopping','stock','feedback','finance','equipment','posts','archives']){
   assert.ok(dashboard.includes('"'+name+'"'),name);
  }
  assert.match(css,/\.quick-access-tile:nth-child\(6n\+4\)/);
