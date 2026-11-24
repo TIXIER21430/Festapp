@@ -1,4 +1,5 @@
 import React,{useState} from 'react';
+import {rentalEquipment} from './lib/rentalCatalog.js';
 import {availableForPeriod,checkLoanAvailability,currentEquipment,loanDocument,loanRecord,loanTotals,localDay,readLoan} from './lib/equipmentLoans.js';
 
 const euro=cents=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(cents/100);
@@ -15,15 +16,16 @@ function downloadDocument(loan){
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 export default function EquipmentLoans({data,onSave,readOnly=false}){
- const equipment=data.equipment||[],rows=data.equipmentLoans||[],today=localDay();
+ const equipment=rentalEquipment(data.equipment||[]),rows=data.equipmentLoans||[],today=localDay();
  const [mode,setMode]=useState('');
  const [customer,setCustomer]=useState(blankCustomer);
  const [contactId,setContactId]=useState('');
  const [start,setStart]=useState(today);
  const [end,setEnd]=useState(today);
  const [lines,setLines]=useState([blankLine()]);
- const [rateMode,setRateMode]=useState('flat');
- const [deposit,setDeposit]=useState('0');
+ const [startTime,setStartTime]=useState('');
+ const [endTime,setEndTime]=useState('');
+ const [deposit,setDeposit]=useState('');
  const [notes,setNotes]=useState('');
  const [error,setError]=useState('');
  const [message,setMessage]=useState('');
@@ -39,7 +41,7 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
  const kind=mode==='rental'?'rental':'loan';
  const selectedLines=lines.map(line=>({line,record:equipment.find(r=>r.id===line.equipmentId)}));
  function begin(next){
-  setMode(next);setCustomer(blankCustomer());setContactId('');setStart(today);setEnd(today);setLines([blankLine()]);setRateMode('flat');setDeposit('0');setNotes('');setError('');setMessage('');
+  setMode(next);setCustomer(blankCustomer());setContactId('');setStart(today);setEnd(today);setLines([blankLine()]);setStartTime('');setEndTime('');setDeposit(next==='rental'?'':'0');setNotes('');setError('');setMessage('');
  }
  function pickContact(id){
   setContactId(id);const c=(data.contacts||[]).find(c=>c.id===id);
@@ -47,9 +49,9 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
  }
  function updateLine(index,key,value){setLines(old=>old.map((line,i)=>i===index?{...line,[key]:value}:line));}
  function value(){
-  return {version:1,kind,start:mode==='immediate'?today:start,end,created:today,customer:Object.fromEntries(Object.entries(customer).map(([k,v])=>[k,v.trim()])),rateMode,
+  return {version:1,kind,start:mode==='immediate'?today:start,end,created:today,customer:Object.fromEntries(Object.entries(customer).map(([k,v])=>[k,v.trim()])),rateMode:'flat',startTime,endTime,
   depositCents:money(deposit),notes:notes.trim(),
-  items:selectedLines.map(({line,record})=>({equipmentId:line.equipmentId,name:record?.values[0]||'',quantity:Number(line.quantity),priceCents:kind==='loan'?0:money(line.price)}))};
+  items:selectedLines.map(({line,record})=>({equipmentId:line.equipmentId,name:record?.values[0]||'',quantity:Number(line.quantity),priceCents:kind==='loan'?0:record?.priceCents,depositRateCents:record?.depositCents}))};
  }
  let estimate=null;
  try{const x=value();if(x.start<=x.end&&x.items.every(i=>Number.isInteger(i.quantity)&&i.quantity>0))estimate=loanTotals(x);}catch{}
@@ -59,8 +61,9 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
   try{
    const x=value();
    if(x.start<today)throw new Error('La date de sortie ne peut pas être antérieure à aujourd’hui.');
+   if(kind==='rental'&&(!startTime||!endTime||(x.start===x.end&&startTime>=endTime)))throw new Error('Vérifie les heures de location.');
    const row=loanRecord(crypto.randomUUID(),status,x);
-   if(status!=='draft')checkLoanAvailability(x,equipment,rows,today);
+   checkLoanAvailability(x,equipment,rows,today);
    onSave({...data,equipmentLoans:[...rows,row]});
    setMode('');setExpanded(row.id);setMessage(status==='draft'?'Devis enregistré, matériel non réservé.':status==='out'?'Sortie enregistrée.':'Réservation enregistrée.');
   }catch(err){setError(err.message||'Enregistrement impossible.');}
@@ -82,7 +85,7 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
  }
  function emailDraft(loan){
   if(!loan.customer.email){setError('Renseigne une adresse e-mail.');return;}
-  const subject=(loan.kind==='rental'?'Devis de location':'Bon de prêt')+' — Comité des fêtes de Liernais';
+  const subject=(loan.kind==='rental'?'Contrat de location':'Bon de prêt')+' — Comité des fêtes de Liernais';
   const body='Bonjour '+loan.customer.name+',\n\nVoici notre proposition. Merci de nous retourner votre accord signé avant la remise du matériel.\n\n'+loanDocument(loan);
   window.location.href='mailto:'+encodeURIComponent(loan.customer.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
  }
@@ -99,14 +102,14 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
    <label>Contact dans l’annuaire<select value={contactId} onChange={e=>pickContact(e.target.value)}><option value="">Saisie manuelle</option>{(data.contacts||[]).map(c=><option value={c.id} key={c.id}>{c.values[0]}</option>)}</select></label>
    <div className="fields">{[['name','Nom et prénom','text'],['address','Adresse complète','text'],['phone','Téléphone','tel'],['email','E-mail','email']].map(([k,label,type])=><label key={k}>{label}<input type={type} required={k==='name'||k==='phone'||kind==='rental'} value={customer[k]} onChange={e=>setCustomer(c=>({...c,[k]:e.target.value}))}/></label>)}</div>
    <div className="fields"><label>Date de sortie<input type="date" min={today} required disabled={mode==='immediate'} value={mode==='immediate'?today:start} onChange={e=>setStart(e.target.value)}/></label><label>Retour prévu<input type="date" required min={mode==='immediate'?today:start} value={end} onChange={e=>setEnd(e.target.value)}/></label></div>
-   {kind==='rental'&&<label>Tarification<select value={rateMode} onChange={e=>setRateMode(e.target.value)}><option value="flat">Par unité pour toute la durée</option><option value="day">Par unité et par jour</option></select></label>}
+   <div className="fields"><label>Heure de sortie<input type="time" required={kind==='rental'} value={startTime} onChange={e=>setStartTime(e.target.value)}/></label><label>Heure de retour<input type="time" required={kind==='rental'} value={endTime} onChange={e=>setEndTime(e.target.value)}/></label></div>
    {selectedLines.map(({line,record},i)=>{
     const avail=record?availableForPeriod(record,rows,mode==='immediate'?today:start,end,today):null;
     const exceeded=avail!==null&&Number(line.quantity)>avail;
-    return <div className="festapp-loan-line" key={i}><label>Matériel<select value={line.equipmentId} required onChange={e=>updateLine(i,'equipmentId',e.target.value)}><option value="">Sélectionner</option>{equipment.filter(r=>r.id===line.equipmentId||!lines.some((l,j)=>i!==j&&l.equipmentId===r.id)).map(r=><option value={r.id} key={r.id}>{r.values[0]}</option>)}</select></label><label>Quantité<input type="number" required min="1" max="100000" step="1" value={line.quantity} onChange={e=>updateLine(i,'quantity',e.target.value)}/></label>{kind==='rental'&&<label>Prix unitaire (€)<input required inputMode="decimal" placeholder="0,00" value={line.price} onChange={e=>updateLine(i,'price',e.target.value)}/></label>}{record&&<small role={exceeded?'alert':'status'}>{avail===null?'Quantité ou dates à vérifier':Math.max(0,avail)+' disponible(s) sur la période'}{exceeded?' — quantité insuffisante':''}</small>}{lines.length>1&&<button type="button" className="secondary" onClick={()=>setLines(old=>old.filter((_,j)=>j!==i))}>Retirer la ligne</button>}</div>;
+    return <div className="festapp-loan-line" key={i}><label>Matériel<select value={line.equipmentId} required onChange={e=>updateLine(i,'equipmentId',e.target.value)}><option value="">Sélectionner</option>{equipment.filter(r=>r.id===line.equipmentId||!lines.some((l,j)=>i!==j&&l.equipmentId===r.id)).map(r=><option value={r.id} key={r.id}>{r.values[0]}</option>)}</select></label><label>Quantité<input type="number" required min="1" max="100000" step="1" value={line.quantity} onChange={e=>updateLine(i,'quantity',e.target.value)}/></label>{kind==='rental'&&record&&<p>Tarif : {euro(record.priceCents)} / unité · Caution indiquée : {euro(record.depositCents)}</p>}{record&&<small role={exceeded?'alert':'status'}>{avail===null?'Quantité ou dates à vérifier':Math.max(0,avail)+' disponible(s) sur la période'}{exceeded?' — quantité insuffisante':''}</small>}{lines.length>1&&<button type="button" className="secondary" onClick={()=>setLines(old=>old.filter((_,j)=>j!==i))}>Retirer la ligne</button>}</div>;
    })}
    <button type="button" className="secondary" disabled={lines.length>=equipment.length} onClick={()=>setLines(old=>[...old,blankLine()])}>＋ Ajouter un matériel</button>
-   <label>Caution (€)<input inputMode="decimal" value={deposit} onChange={e=>setDeposit(e.target.value)}/></label>
+   <label>Caution totale convenue (€)<input required inputMode="decimal" value={deposit} onChange={e=>setDeposit(e.target.value)}/></label>{kind==='rental'&&<p className="note">Le modèle ne précise pas si les cautions sont unitaires ou forfaitaires. Montant total à confirmer manuellement.</p>}
    <label>Conditions / observations<textarea rows={3} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Transport, restitution, conditions convenues…"/></label>
    {estimate&&<p className="festapp-loan-total"><strong>Total : {euro(estimate.totalCents)}</strong> · Caution : {euro(estimate.depositCents)} · {estimate.days} jour(s)</p>}
    <button type="submit" disabled={readOnly}>{mode==='immediate'?'Enregistrer la sortie':mode==='reservation'?'Réserver le matériel':'Enregistrer le devis'}</button>
