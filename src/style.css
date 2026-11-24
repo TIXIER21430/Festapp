@@ -613,3 +613,18 @@ footer{display:none}
 .festapp-workbench[data-event-scoped="true"] .volunteer-agenda > label {
   display: none;
 }
+
+/* Production sign-in: never render the app underneath this screen. */
+.festapp-auth-page{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#101625;padding:24px;color:#23334c}
+.festapp-auth-card{width:min(100%,440px);background:#fff;border-radius:22px;padding:30px;box-shadow:0 18px 70px #0004}
+.festapp-auth-card h1{font-size:28px;margin:0 0 6px;color:#16243a}
+.festapp-auth-card h2{font-size:20px;margin:22px 0 14px}
+.festapp-auth-card p{font-size:15px;line-height:1.5}
+.festapp-auth-card form{display:grid;gap:12px}
+.festapp-auth-card label{display:grid;gap:6px;font-size:14px;font-weight:650}
+.festapp-auth-card input{width:100%;padding:13px;border:1px solid #bac5d8;border-radius:11px;background:#fff;color:#17233b}
+.festapp-auth-card button{padding:12px;border-radius:11px;background:#ec8c2e;color:#171c29;border:0;font-weight:750}
+.festapp-auth-card button.secondary{background:#e8edf4;color:#263c57}
+.festapp-auth-card small{display:block;margin-top:22px;line-height:1.4;color:#667387}
+.festapp-auth-strip{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 16px;background:#152036;color:#fff;font-size:12px}
+.festapp-auth-strip button{border:1px solid #71809a;background:transparent;color:#fff;border-radius:9px;padding:7px 11px}
