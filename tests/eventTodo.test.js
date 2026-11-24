@@ -11,6 +11,9 @@ test('general committee tasks are separate from every manifestation',()=>{
  assert.equal(event.reduce((sum,g)=>sum+g.total,0),1);
 });
 
+import {setDriveChecklistTemplates} from '../src/lib/eventChecklist.js';
+setDriveChecklistTemplates([{event_name:'Fanfare',template:{phases:{'Samedi (RDV 8h00)':['Mettre les barrières en place','Fin 2H00 idéalement']}}}]);
+
 test('historical Drive stages fall into avant pendant après without modifying records',()=>{
  assert.equal(todoStage({phase:'Veille'},'Marché de Noël'),'Avant');
  assert.equal(todoStage({values:['Préparer la salle','','Jour J']},'Fanfare'),'Pendant');
