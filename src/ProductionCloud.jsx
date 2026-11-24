@@ -6,12 +6,15 @@ import {saveProductionSnapshot} from './lib/supabaseProductionSync.js';
 import {saveProductionFullBackup,downloadLatestProductionFullBackup} from './lib/supabaseProductionBackup.js';
 import {makeTestSyncPayload,sameTestPayload,testSyncText,testSyncRecordCount} from './lib/testSyncPayload.js';
 
+import {decideProductionSync,readProductionBaseline,rememberProductionBaseline} from './lib/productionAutoSync.js';
+
 const connection=getFestappConnection();
 const client=getSharedFestappClient();
 const BACKUP_KEY='festapp-production-private-backup-enabled';
 const ARCHIVE_INTERVAL=15*60*1000;
+const BASELINE_KEY='festapp-production-confirmed-v1:'+connection?.spaceId;
 
-export default function ProductionCloud({data={},volunteerNeeds={},ecocupSettings,tillConfig={},onApplyRemote,onDriveCatalog,prepareCompleteBackup,photoRevision=0,readOnly=false}){
+export default function ProductionCloud({data={},volunteerNeeds={},ecocupSettings,tillConfig={},onApplyRemote,onDriveCatalog,prepareCompleteBackup,photoRevision=0,readOnly=false,pristineText=null,canApplyRemote=true}){
  const [signedIn,setSignedIn]=useState(false);
  const [remote,setRemote]=useState(null);
  const [syncOn,setSyncOn]=useState(false);
@@ -29,6 +32,12 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
   catch{return null;}
  },[data,volunteerNeeds,ecocupSettings,tillConfig]);
  const latest=useRef(live);latest.current=live;
+ const applyRef=useRef(onApplyRemote);applyRef.current=onApplyRemote;
+ const safeApply=useRef(canApplyRemote);safeApply.current=canApplyRemote;
+ function confirmBaseline(snapshot,text=testSyncText(snapshot)){
+  base.current={revision:snapshot.revision,text};
+  rememberProductionBaseline(localStorage,BASELINE_KEY,base.current);
+ }
  const pending=syncOn&&(!live||!base.current||live.text!==base.current.text);
 
  useEffect(()=>{
@@ -46,31 +55,44 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
   return ()=>{epoch.current++;};
  },[signedIn]);
 
- async function refresh(token=epoch.current){
+ async function refresh(token=epoch.current,includeCatalog=true){
   if(!client||!connection?.productionMode||lock.current)return;
   lock.current=true;setBusy(true);
   try{
    const snapshot=await readSharedSpace(client,connection.spaceId);
    if(token!==epoch.current)return;
    setRemote(snapshot);
-   try{
+   if(includeCatalog)try{
     const catalog=await readProductionPrivateDriveCatalog(client,{spaceId:connection.spaceId,productionMode:true});
     if(token===epoch.current)onDriveCatalog?.(catalog);
    }catch{if(token===epoch.current)onDriveCatalog?.(null);}
    if(token!==epoch.current)return;
-   if(readOnly){base.current=null;setSyncOn(false);setStatus('⚠ Données locales illisibles : synchronisation bloquée pour éviter une perte.');}
-   else if(latest.current&&sameTestPayload(latest.current.payload,snapshot)){
-    base.current={revision:snapshot.revision,text:latest.current.text};setSyncOn(true);
-    setStatus('✅ Les données de cet appareil et du comité sont identiques. Synchronisation active.');
+   if(readOnly||!latest.current){base.current=null;setSyncOn(false);setStatus('⚠ Données locales illisibles : synchronisation bloquée pour éviter une perte.');return;}
+   const local=latest.current;
+   const remoteText=testSyncText(snapshot);
+   const baseline=base.current||readProductionBaseline(localStorage,BASELINE_KEY);
+   const decision=decideProductionSync({localText:local.text,remoteText,remoteRevision:snapshot.revision,baseline,pristine:!!pristineText&&local.text===pristineText,remoteHasRecords:testSyncRecordCount(snapshot)>0});
+   if(decision==='same'){
+    confirmBaseline(snapshot,local.text);setSyncOn(true);
+    setStatus('✅ Fiches synchronisées automatiquement.');
+   }else if(decision==='send'){
+    confirmBaseline(snapshot,remoteText);setSyncOn(true);
+    setStatus('⏳ Modifications locales en attente d’enregistrement.');
+   }else if(decision==='receive'){
+    if(!safeApply.current||typeof applyRef.current!=='function'){
+     setSyncOn(false);setStatus('⏳ Nouvelle version disponible. Termine ta saisie pour la recevoir automatiquement.');return;
+    }
+    applyRef.current(snapshot,true);confirmBaseline(snapshot,remoteText);setSyncOn(true);
+    setStatus('✅ Dernières fiches du comité récupérées automatiquement.');
    }else{
     base.current=null;setSyncOn(false);
-    setStatus('🟠 Les données de cet appareil diffèrent de la copie commune. Choisis laquelle conserver. Rien n’a été écrasé.');
+    setStatus('🟠 Les deux copies diffèrent. Tes modifications locales sont conservées. Choisis une version uniquement après vérification.');
    }
   }catch(error){
    if(token!==epoch.current)return;
    base.current=null;setSyncOn(false);setRemote(null);onDriveCatalog?.(null);
    setStatus('⚠ '+(error?.message||'Impossible de vérifier les données partagées.')+' Tes données locales sont conservées.');
-  }finally{lock.current=false;setBusy(false);}
+  }finally{lock.current=false;setBusy(false);setTick(n=>n+1);}
  }
 
  async function save(automatic=false){
@@ -86,14 +108,14 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
    const outgoing=latest.current;
    if(!outgoing)throw new Error('Données locales invalides.');
    if(sameTestPayload(outgoing.payload,before)){
-    base.current={revision:before.revision,text:outgoing.text};setRemote(before);setSyncOn(true);
+    confirmBaseline(before,outgoing.text);setRemote(before);setSyncOn(true);
     setStatus('✅ Déjà enregistré sur Supabase.');return;
    }
    const result=await saveProductionSnapshot(client,{spaceId:connection.spaceId,expectedRevision:before.revision,payload:outgoing.payload,productionMode:true});
    const after=await readSharedSpace(client,connection.spaceId);
    if(after.revision!==result.revision||!sameTestPayload(after,outgoing.payload))
     throw new Error('Relecture du serveur différente : sauvegarde non confirmée.');
-   base.current={revision:after.revision,text:outgoing.text};setRemote(after);setSyncOn(true);
+   confirmBaseline(after,outgoing.text);setRemote(after);setSyncOn(true);
    setStatus('✅ '+testSyncRecordCount(outgoing.payload)+' fiches enregistrées sur Supabase, révision '+after.revision+'.');
   }catch(error){
    base.current=null;setSyncOn(false);
@@ -110,7 +132,7 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
    if(snapshot.revision!==remote.revision)throw new Error('La copie a changé. Vérifie les versions avant de recommencer.');
    if(typeof onApplyRemote!=='function')throw new Error('Restauration locale indisponible.');
    setSyncOn(false);onApplyRemote(snapshot);
-   base.current={revision:snapshot.revision,text:testSyncText(snapshot)};setRemote(snapshot);setSyncOn(true);
+   confirmBaseline(snapshot);setRemote(snapshot);setSyncOn(true);
    setStatus('✅ '+testSyncRecordCount(snapshot)+' fiches chargées depuis le comité. Synchronisation active.');
   }catch(error){base.current=null;setSyncOn(false);setStatus('⚠ '+(error?.message||'Chargement impossible.'));}
   finally{lock.current=false;setBusy(false);setTick(n=>n+1);}
@@ -122,26 +144,16 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
   return ()=>clearTimeout(timer);
  },[signedIn,syncOn,readOnly,live?.text,tick]);
 
+ // Refresh even after a temporary network failure. The confirmed baseline
+ // prevents a stale cache or concurrent local edits from overwriting either copy.
  useEffect(()=>{
-  if(!signedIn||!syncOn||readOnly||!client)return;
-  let active=true;
-  const timer=setInterval(async()=>{
-   if(!active||lock.current||!base.current)return;
-   lock.current=true;
-   try{
-    const next=await readSharedSpace(client,connection.spaceId);
-    if(next.revision===base.current?.revision)return;
-    if(latest.current?.text!==base.current?.text){
-     base.current=null;setSyncOn(false);setStatus('⚠ Conflit entre deux appareils. Les modifications locales sont conservées.');return;
-    }
-    if(typeof onApplyRemote!=='function')throw new Error('Chargement indisponible.');
-    onApplyRemote(next);base.current={revision:next.revision,text:testSyncText(next)};setRemote(next);
-    setStatus('✅ Modifications de l’autre appareil récupérées.');
-   }catch{base.current=null;setSyncOn(false);setStatus('⚠ Synchronisation interrompue. Vérifie les versions.');}
-   finally{lock.current=false;setTick(n=>n+1);}
-  },20000);
-  return ()=>{active=false;clearInterval(timer);};
- },[signedIn,syncOn,readOnly,onApplyRemote]);
+  if(!signedIn||readOnly||!client)return;
+  const resume=()=>{if(document.visibilityState==='visible')void refresh(epoch.current,false);};
+  const timer=setInterval(async()=>{if(document.visibilityState==='visible')await refresh(epoch.current,false);},20000);
+  window.addEventListener('online',resume);
+  document.addEventListener('visibilitychange',resume);
+  return ()=>{clearInterval(timer);window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);};
+ },[signedIn,readOnly,pristineText]);
 
  async function archive(force=false){
   if(!archiveEnabled||!client||!signedIn||!syncOn||readOnly||archiveLock.current||lock.current||typeof prepareCompleteBackup!=='function')return;
@@ -185,7 +197,7 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
  useEffect(()=>{const resume=()=>{if(document.visibilityState==='visible')setArchiveTick(n=>n+1);};document.addEventListener('visibilitychange',resume);return ()=>document.removeEventListener('visibilitychange',resume);},[]);
 
  return <section className="panel shared-access" aria-label="Sauvegarde et synchronisation du comité">
-  <div className="shared-cloud-heading"><div><span className="shared-cloud-kicker">☁️ Espace privé du comité</span><h2>Fiches et sauvegardes</h2><p>Les mêmes fiches sur ordinateur et téléphone après synchronisation.</p></div><span className={'shared-sync-pill '+(syncOn&&!pending?'ready':'offline')}>{syncOn?(pending?'⏳ Enregistrement en attente':'✅ Fiches synchronisées'):'🔒 À vérifier'}</span></div>
+  <div className="shared-cloud-heading"><div><span className="shared-cloud-kicker">☁️ Espace privé du comité</span><h2>Fiches et sauvegardes</h2><p>Les mêmes fiches sur ordinateur et téléphone, mises à jour automatiquement.</p></div><span className={'shared-sync-pill '+(syncOn&&!pending?'ready':'offline')}>{syncOn?(pending?'⏳ Enregistrement en attente':'✅ Fiches synchronisées'):'🔒 À vérifier'}</span></div>
   {!client||!connection?.productionMode?<p role="alert">Configuration de production absente : aucun accès cloud autorisé.</p>:<>
    <p>Les fiches sont enregistrées sur Supabase. Les photos originales restent sur chaque appareil, mais sont incluses dans les archives ZIP privées.</p>
    {remote&&<div className="shared-preview"><strong>Copie du comité : {testSyncRecordCount(remote)} fiches · révision {remote.revision}</strong><p>Cet appareil : {live?testSyncRecordCount(live.payload):'inconnu'} fiches.</p><div className="shared-sync-actions"><button type="button" disabled={busy||readOnly||syncOn||!live} onClick={()=>void save(false)}>☁️ Envoyer mes fiches</button><button type="button" className="secondary" disabled={busy||readOnly||syncOn} onClick={load}>📲 Récupérer la copie du comité</button><button type="button" className="secondary" disabled={busy} onClick={()=>void refresh()}>🔄 Vérifier les versions</button></div></div>}

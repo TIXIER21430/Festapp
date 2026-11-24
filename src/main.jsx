@@ -54,7 +54,8 @@ import {loadTillConfig,eventTillProducts,saveTillConfig,exportTillConfig,importT
 import {summarizeEcocups} from "./lib/ecocupDemoBalance.js";
 import {ECOCUP_DEMO_SETTINGS_KEY,serializeDemoEcocupSettings} from "./lib/ecocupDemoSettings.js";
 import {createCombinedDemoBackup,inspectCombinedEcocupSettings,inspectCombinedVolunteerNeeds,mergeMissingVolunteerNeeds} from "./lib/combinedDemoBackup.js";
-import {readDemoStorage,writeDemoStorage} from "./lib/demoStorage.js";
+import {readDemoStorage,writeDemoStorage,DEMO_STORAGE_KEY} from "./lib/demoStorage.js";
+import {makeTestSyncPayload,testSyncText} from "./lib/testSyncPayload.js";
 import {inspectDemoBackupReadiness} from "./lib/demoBackupReadiness.js";
 import {planDemoRestore} from "./lib/demoRestorePlan.js";
 import {previewRestoreImpact} from "./lib/restorePreview.js";
@@ -83,11 +84,12 @@ const eventModuleShortcuts=["tasks","shifts","shopping","recipes","equipment","p
 const eventNames=["Concours de belote","Carnaval","Chasse aux œufs","Fête des voisins","Fanfare","Vide-grenier","Saint-Laurent","Halloween","Marché de Noël"];
 const seed={events:eventNames.map((name,i)=>({id:"seed-"+i,values:[name,"",""]}))};
 function load(){
+ let fresh=false;try{fresh=localStorage.getItem(DEMO_STORAGE_KEY)===null;}catch{}
  const result=readDemoStorage(localStorage,seed);
  if(result.readOnly)return result;
  // Show the two specifically requested recipes as unapproved drafts. Never
  // replace a recipe already imported or edited by the committee.
- return {...result,data:{...result.data,recipes:addMissingRecipeDrafts(result.data.recipes||[]).recipes}};
+ return {...result,fresh,data:{...result.data,recipes:addMissingRecipeDrafts(result.data.recipes||[]).recipes}};
 }
 function App(){
  const [initialStorage]=useState(load);
@@ -379,8 +381,10 @@ function App(){
  }
  function goToHome(){if(!selectManifestation(''))return;setOrgTodosOpen(false);setSettingsOpen(false);setModuleScopeEventId('');if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>document.querySelector('[aria-label="Accueil des manifestations"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
  function openSettings(){if(!allowDiscardDraft())return;setOrgTodosOpen(false);setTillOpen(false);setReportOpen(false);setReportDraftDirty(false);setSettingsOpen(true);if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'smooth'}));}
- function applyCloudSnapshot(snapshot){
-  if(!allowDiscardDraft())throw new Error('Saisie non enregistrée : restauration annulée.');
+ const canAutoApplyCloud=!draftIsDirty&&!contactPhotoSavingRef.current&&!recordingTillSaleRef.current&&!tillEdit&&!Object.values(tillCart).some(Boolean)&&!fullZipBusy;
+ const pristineCloudText=initialStorage.fresh?testSyncText(makeTestSyncPayload({data:{...seed,recipes:addMissingRecipeDrafts([]).recipes}})):null;
+ function applyCloudSnapshot(snapshot,automatic=false){
+  if(automatic?!canAutoApplyCloud:!allowDiscardDraft())throw new Error('Saisie non enregistrée : restauration annulée.');
   if(demoReadOnly||initialTillConfig.warning)throw new Error('Données locales illisibles : restauration cloud interdite.');
   const clean=persistCloudSnapshot(localStorage,snapshot);
   setData(clean.data);setVolunteerNeeds(clean.volunteerNeeds);setEcocupSettings(clean.ecocupSettings);setTillConfig(clean.tillConfig);
@@ -645,9 +649,9 @@ function App(){
      Unmounting it when leaving Settings previously stopped auto-save, remote
      polling and private ZIP archives until Settings was opened again. */}
  <div className="festapp-cloud-host" style={{display:settingsOpen?"":"none"}}>
- <details className="festapp-sync-settings"><summary>☁️ Sauvegarde et synchronisation <span>Facultatif</span></summary>
-  <p className="note">Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée.</p>
-  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
+ <details className="festapp-sync-settings"><summary>☁️ Sauvegarde et synchronisation <span>{import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==='true'?"Automatique":"Facultatif"}</span></summary>
+  <p className="note">En cas de coupure, les saisies restent sur cet appareil. Une copie divergente est protégée avant toute synchronisation.</p>
+  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} pristineText={pristineCloudText} canApplyRemote={canAutoApplyCloud} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
  </details>
  </div>
  {settingsOpen&&<>
