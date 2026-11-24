@@ -17,7 +17,7 @@ function downloadDocument(loan){
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 export default function EquipmentLoans({data,onSave,readOnly=false}){
- const equipment=rentalEquipment(data.equipment||[]),rows=data.equipmentLoans||[],today=localDay();
+ const equipment=rentalEquipment(data.equipment||[],data.equipmentRentalLinks||[]),rows=data.equipmentLoans||[],today=localDay();
  const [mode,setMode]=useState('');
  const [customer,setCustomer]=useState(blankCustomer);
  const [contactId,setContactId]=useState('');
@@ -33,13 +33,24 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
  const [filter,setFilter]=useState('');
  const [expanded,setExpanded]=useState('');
  let loans,balances;
- try{loans=rows.map(readLoan);balances=equipment.map(e=>({...currentEquipment(e,rows,today),id:e.id,name:e.values[0]}));}
+ try{loans=rows.map(readLoan);balances=equipment.map(e=>({...currentEquipment(e,rows,today),id:e.id,name:e.values[0],inventoryId:e.inventoryId,linked:e.linked,catalogKey:e.id.slice(8)}));}
  catch(e){return <p role="alert">Impossible de lire les mouvements de matériel. Les données existantes sont conservées.</p>;}
  const live=loans.filter(l=>['reserved','out','draft'].includes(l.status));
  const count=balances.reduce((a,b)=>({available:a.available+Math.max(0,b.available??0),out:a.out+b.out,unknown:a.unknown+(b.total===null?1:0)}),{available:0,out:0,unknown:0});
  const reservedCount=loans.filter(l=>l.status==='reserved').reduce((n,l)=>n+l.items.reduce((sum,i)=>sum+i.quantity,0),0);
  const kind=mode==='rental'?'rental':'loan';
  const selectedLines=lines.map(line=>({line,record:equipment.find(r=>r.id===line.equipmentId)}));
+ function linkInventory(catalogKey,inventoryId){
+  if(readOnly)return;
+  try{
+   const links=data.equipmentRentalLinks||[];
+   if(inventoryId&&links.some(l=>l.id!==catalogKey&&l.values[1]===inventoryId))throw new Error('Cette fiche est déjà liée à une autre référence.');
+   const next=links.filter(l=>l.id!==catalogKey);
+   if(inventoryId)next.push({id:catalogKey,values:[catalogKey,inventoryId,'']});
+   onSave({...data,equipmentRentalLinks:next});
+   setError('');setMessage('Lien avec l’inventaire enregistré.');
+  }catch(e){setError(e.message);}
+ }
  function begin(next){
   setMode(next);setCustomer(blankCustomer());setContactId('');setStart(today);setEnd(today);setLines([blankLine()]);setStartTime('');setEndTime('');setNotes('');setError('');setMessage('');
  }
@@ -100,7 +111,7 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
   {count.unknown>0&&<p className="note">Quantité à vérifier sur {count.unknown} fiche(s) : elles ne sont pas comptées dans le disponible.</p>}
   <p className="note">Inventaire commun du comité, toutes manifestations confondues. Un devis seul ne bloque pas le stock. Les réservations tiennent compte des dates, et une sortie en retard reste indisponible jusqu’au retour enregistré.</p>
   <div className="festapp-loan-inventory"><h3>Disponibilités aujourd’hui</h3><label>Rechercher<input type="search" value={filter} onChange={e=>setFilter(e.target.value)} placeholder="Tables, barnums…"/></label>
-   {balances.filter(b=>b.name.toLocaleLowerCase('fr').includes(filter.toLocaleLowerCase('fr'))).map(b=><div className="festapp-loan-balance" key={b.id}><strong>{b.name}</strong><span>{b.total===null?'À vérifier':b.available+' / '+b.total+' disponibles'}</span><small>{b.out} sorti(s) · {b.reserved} réservé(s) aujourd’hui</small></div>)}
+   {balances.filter(b=>b.name.toLocaleLowerCase('fr').includes(filter.toLocaleLowerCase('fr'))).map(b=><div className="festapp-loan-balance" key={b.id}><strong>{b.name}</strong><span>{b.total===null?'À vérifier':b.available+' / '+b.total+' disponibles'}</span><small>{b.out} sorti(s) · {b.reserved} réservé(s) aujourd’hui</small><details open={!b.linked?true:undefined}><summary>{b.linked?'Fiche inventaire liée':'Associer une fiche de l’inventaire'}</summary><label>Fiche de référence<select disabled={readOnly} value={b.inventoryId} onChange={e=>linkInventory(b.catalogKey,e.target.value)}><option value="">Association automatique</option>{(data.equipment||[]).map(r=><option key={r.id} value={r.id}>{r.values[0]} — {r.values[1]||'quantité inconnue'}</option>)}</select></label><small>La quantité est toujours lue dans cette fiche, sans deuxième saisie.</small></details></div>)}
   </div>
   <label className="festapp-loan-new">＋ Nouveau prêt / location<select disabled={readOnly} value={mode} onChange={e=>{if(mode&&!window.confirm('Abandonner la saisie en cours ?'))return;begin(e.target.value);}}><option value="">Choisir une action</option><option value="immediate">Prêt immédiat</option><option value="reservation">Réserver un prêt gratuit</option><option value="rental">Créer un devis de location</option></select></label>
   {mode&&<form className="festapp-loan-form" onSubmit={e=>submit(e,mode==='immediate'?'out':mode==='reservation'?'reserved':'draft')}>
