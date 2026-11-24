@@ -1,5 +1,6 @@
 import React,{useEffect,useMemo,useRef,useState} from "react";
-import {createFestappClient,getFestappConnection} from "./lib/supabaseClient.js";
+import {getSharedFestappClient,getFestappConnection} from "./lib/supabaseClient.js";
+import ProductionCloud from "./ProductionCloud.jsx";
 import {readSharedSpace} from "./lib/supabaseSharedRead.js";
 import {saveTestSnapshot} from "./lib/supabaseTestSync.js";
 import {saveTestFullBackup,downloadLatestTestFullBackup} from "./lib/supabaseTestBackup.js";
@@ -7,11 +8,11 @@ import {readTestPrivateDriveCatalog} from "./lib/supabasePrivateDrive.js";
 import {makeTestSyncPayload,sameTestPayload,testSyncText,testSyncRecordCount} from "./lib/testSyncPayload.js";
 
 const connection=getFestappConnection();
-const client=createFestappClient();
+const client=getSharedFestappClient();
 const BACKUP_OPT_IN_KEY='festapp-test-full-backup-opt-in-v1';
 const ARCHIVE_INTERVAL_MS=15*60*1000;
 
-export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,tillConfig={},onApplyRemote,onDriveCatalog,prepareCompleteBackup,photoRevision=0,readOnly=false}){
+function TestSharedAccess({data={},volunteerNeeds={},ecocupSettings,tillConfig={},onApplyRemote,onDriveCatalog,prepareCompleteBackup,photoRevision=0,readOnly=false}){
  const [email,setEmail]=useState("");
  const [password,setPassword]=useState("");
  const [signedIn,setSignedIn]=useState(false);
@@ -286,4 +287,9 @@ export default function SharedAccess({data={},volunteerNeeds={},ecocupSettings,t
    <p className="shared-help">⚠ En cas de conflit ou de coupure, tes saisies restent locales : vérifie les versions avant de reprendre. Une sauvegarde ZIP complète est recommandée. Aucun paiement SumUp ni IA payante.</p>
   </>}
  </section>;
+}
+
+// Production uses the authenticated cloud path; TEST keeps its isolated contract.
+export default function SharedAccess(props){
+ return import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==='true'?<ProductionCloud {...props}/>:<TestSharedAccess {...props}/>;
 }
