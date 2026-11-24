@@ -3,12 +3,13 @@ import {PHOTO_CATEGORIES,listPhotoOriginals,savePhotoOriginal} from './lib/photo
 import {isTillAccountingRecord} from './lib/tillSales.js';
 import ModuleGlyph from './ModuleGlyph.jsx';
 import StockIllustration from './StockIllustration.jsx';
+import {stockGroup,stockUnit} from './lib/stockCatalog.js';
 
 const PHOTO_SCOPES=new Set(PHOTO_CATEGORIES.filter(scope=>scope!=='equipment'));
 
 export function cardSummary(category,record){
  const values=record?.values||[];
- if(category==='stock')return values[1]?'Quantité : '+values[1]:'Quantité à préciser';
+ if(category==='stock')return values[1]?'Quantité : '+values[1]+(stockUnit(values[0])?' '+stockUnit(values[0]):''):'Quantité à préciser';
  if(category==='recipes')return 'Recette du comité';
  if(category==='contacts')return values[1]||'Contact';
  if(category==='tasks')return record.done?'Terminée':'À faire';
@@ -57,15 +58,15 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
  }
 
  return <section className="festapp-card-catalog" data-category={category} aria-label="Fiches en quadrillage">
-  {records.length>0?<div className="festapp-record-grid">{records.map(record=>{
+  {records.length>0?<div className="festapp-record-grid">{records.map((record,i)=>{
    const image=photos.get(record.id);
-   return <article key={record.id} className="festapp-record-tile">
+   return <React.Fragment key={record.id}>{category==='stock'&&(i===0||stockGroup(records[i-1].values[0])!==stockGroup(record.values[0]))&&<h3 className="stock-group-heading">{stockGroup(record.values[0])}</h3>}<article key={record.id} className="festapp-record-tile">
     <button type="button" className="festapp-record-preview" aria-label={'Ouvrir '+record.values[0]} aria-expanded={selectedId===record.id} onClick={()=>{setSelectedId(record.id);setStatus('');}}>
      <span className="festapp-record-image">{image?<img src={image} alt={'Photo associée à '+record.values[0]} loading="lazy"/>:category==='stock'?<StockIllustration name={record.values[0]}/>:<span className="festapp-icon-frame" aria-hidden="true"><ModuleGlyph kind={category}/></span>}</span>
      <span className="festapp-record-copy"><strong>{record.values[0]}</strong><small>{cardSummary(category,record)}</small></span>
     </button>
     {category==='tasks'&&<label className="festapp-record-check"><input type="checkbox" checked={record.done===true} disabled={readOnly} onChange={()=>onToggleDone(record.id)}/>{record.done?'Terminée':'À faire'}</label>}
-   </article>;
+   </article></React.Fragment>;
   })}</div>:<p className="festapp-equipment-empty">Aucune fiche trouvée. Utilise « + Ajouter » pour commencer.</p>}
   {selected&&<div className="festapp-equipment-backdrop" onClick={()=>setSelectedId('')}>
    <section className="festapp-equipment-detail" role="dialog" aria-modal="true" aria-label={'Fiche : '+selected.values[0]} onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape')setSelectedId('');}}>

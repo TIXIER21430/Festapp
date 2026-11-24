@@ -1,5 +1,6 @@
 import {validateDemoData} from './demoBackup.js';
 import {validSupplier,supplierFor} from './shoppingSuppliers.js';
+import {compareStockNames} from './stockCatalog.js';
 
 export const PURCHASED='Acheté';
 export const TRANSFERRED='Transféré au stock';
@@ -28,7 +29,7 @@ export function purchaseCatalog(data,scope=''){
   products.push({key:'catalog:'+stock.id,name:row?.values[0]||stock.values[0],row});
  }
  for(const row of active)if(!used.has(row.id))products.push({key:row.id,name:row.values[0],row});
- return products;
+ return products.sort((a,b)=>compareStockNames(a.name,b.name));
 }
 export function setPurchaseQuantity(data,{scope='',rowId,name,value,newId,supplier}){
  if(supplier!==undefined&&!validSupplier(supplier))throw Error('Fournisseur invalide.');

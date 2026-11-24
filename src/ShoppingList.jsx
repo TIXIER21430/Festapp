@@ -1,5 +1,7 @@
 import React,{useState,useEffect,useRef} from 'react';
 import StockIllustration from './StockIllustration.jsx';
+import KegCreator from './KegCreator.jsx';
+import {STOCK_GROUPS,stockGroup,stockUnit} from './lib/stockCatalog.js';
 import {SUPPLIERS,supplierFor,supplierCategory,assignPurchaseSupplier,shoppingExportGroups,shoppingExportText,shoppingMailto} from './lib/shoppingSuppliers.js';
 import {makeShoppingDocx} from './lib/reportDocx.js';
 import {purchaseCatalog,inPurchaseScope,isPurchased,isTransferred,setPurchaseQuantity,setPurchaseChecked,removePurchase,preparePurchaseTransfer,purchaseFingerprint,transferPurchases,quantity,productKey} from './lib/purchaseStock.js';
@@ -8,6 +10,7 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
  const [status,setStatus]=useState('');
  const [review,setReview]=useState(null);
  const [onlyList,setOnlyList]=useState(false);
+ const [groupFilter,setGroupFilter]=useState('all');
  const [supplierFilter,setSupplierFilter]=useState('all');
  const [choices,setChoices]=useState({});
  const [exportDraft,setExportDraft]=useState(null);
@@ -23,7 +26,7 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
  const checked=active.filter(p=>isPurchased(p.row));
  const history=(data.shopping||[]).filter(r=>inPurchaseScope(r,scope)&&isTransferred(r));
  const supplierOf=p=>p.row?supplierFor(p.row):choices[p.key]||supplierFor(null,p.name);
- const visible=products.filter(p=>(!onlyList||p.row)&&productKey(p.name).includes(productKey(filter))&&(supplierFilter==='all'||supplierCategory(supplierOf(p))===supplierFilter));
+ const visible=products.filter(p=>(groupFilter==='all'||stockGroup(p.name)===groupFilter)&&(!onlyList||p.row)&&productKey(p.name).includes(productKey(filter))&&(supplierFilter==='all'||supplierCategory(supplierOf(p))===supplierFilter));
  const eventName=events.find(e=>e.id===scope)?.values[0]||'Courses générales du comité';
  const exportGroups=shoppingExportGroups(active.map(p=>p.row),{supplierFilter});
  function editSupplier(p,value){
@@ -79,16 +82,18 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
    <label>Liste<textarea rows={12} value={exportDraft.body} onChange={e=>setExportDraft(d=>({...d,body:e.target.value}))}/></label>
    <div className="shopping-toolbar"><button type="button" onClick={emailList}>✉ Envoyer par mail</button><button type="button" className="secondary" disabled={exportBusy} onClick={downloadList}>Télécharger Word</button><button type="button" className="secondary" onClick={()=>{navigator.clipboard?.writeText(exportDraft.body).then(()=>setStatus('Liste copiée.')).catch(()=>setStatus('Sélectionne et copie le texte manuellement.'));}}>Copier</button><button type="button" className="secondary" onClick={()=>setExportDraft(null)}>Fermer</button></div>
   </section>}
-  <div className="shopping-grid">{visible.map(p=>{
+  <KegCreator data={data} onSave={onSave} readOnly={readOnly||!!review}/>
+  <label>Famille de produits<select value={groupFilter} onChange={e=>setGroupFilter(e.target.value)}><option value="all">Toutes les familles</option>{STOCK_GROUPS.map(g=><option key={g}>{g}</option>)}</select></label>
+  <div className="shopping-grid">{visible.map((p,i)=>{
    const row=p.row,supplier=supplierOf(p);
-   return <article className={'shopping-product'+(row&&isPurchased(row)?' purchased':'')} key={p.key}>
+   return <React.Fragment key={p.key}>{(i===0||stockGroup(visible[i-1].name)!==stockGroup(p.name))&&<h3 className="stock-group-heading">{stockGroup(p.name)}</h3>}<article className={'shopping-product'+(row&&isPurchased(row)?' purchased':'')} key={p.key}>
     <StockIllustration name={p.name}/>
-    <div className="shopping-product-copy"><strong>{p.name}</strong><label>Quantité<input aria-label={'Quantité à acheter : '+p.name} inputMode="decimal" value={row?.values[1]||''} placeholder="—" disabled={readOnly||!!review} onChange={e=>change(()=>setPurchaseQuantity(data,{scope,rowId:row?.id,name:p.name,value:e.target.value,newId:id,supplier}))}/></label>
+    <div className="shopping-product-copy"><strong>{p.name}</strong><label>Quantité{stockUnit(p.name)?' ('+stockUnit(p.name)+')':''}<input aria-label={'Quantité à acheter : '+p.name} inputMode="decimal" value={row?.values[1]||''} placeholder="—" disabled={readOnly||!!review} onChange={e=>change(()=>setPurchaseQuantity(data,{scope,rowId:row?.id,name:p.name,value:e.target.value,newId:id,supplier}))}/></label>
      <label className="shopping-supplier-label">Fournisseur<select aria-label={'Fournisseur : '+p.name} value={supplierCategory(supplier)} disabled={readOnly||!!review} onChange={e=>editSupplier(p,e.target.value)}>{SUPPLIERS.map(s=><option key={s}>{s}</option>)}</select></label>
      {supplierCategory(supplier)==='Autre'&&<input aria-label={'Autre fournisseur : '+p.name} placeholder="Préciser (facultatif)" maxLength={110} disabled={readOnly||!!review} key={p.key+':other'} defaultValue={supplier.startsWith('Autre : ')?supplier.slice(8):''} onBlur={e=>{const value=e.target.value.trim();editSupplier(p,value?'Autre : '+value:'Autre');}}/>}
      {row&&<div className="shopping-row-actions"><label><input type="checkbox" checked={isPurchased(row)} disabled={readOnly||!!review||!(quantity(row.values[1])>0)} onChange={e=>change(()=>setPurchaseChecked(data,{scope,rowId:row.id,checked:e.target.checked}))}/> Acheté</label><button type="button" className="secondary" disabled={readOnly||!!review} aria-label={'Retirer '+p.name} onClick={()=>{if(window.confirm('Retirer '+p.name+' de cette liste ?'))change(()=>removePurchase(data,{scope,rowId:row.id}));}}>✕</button></div>}
     </div>
-   </article>;
+   </article></React.Fragment>;
   })}</div>
   {!visible.length&&<p>Aucun article à afficher.</p>}
   {!review&&<div className="shopping-transfer-bar"><button type="button" disabled={readOnly||!checked.length||!!review} onClick={startReview}>Transférer au stock ({checked.length})</button></div>}

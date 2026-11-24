@@ -21,6 +21,8 @@ import EventReport from "./EventReport.jsx";
 import BottomNavigation from "./BottomNavigation.jsx";
 import Meetings from "./Meetings.jsx";
 import ShoppingList from "./ShoppingList.jsx";
+import KegCreator from "./KegCreator.jsx";
+import {compareStockNames} from "./lib/stockCatalog.js";
 import {isMeetingRecord} from "./lib/meetings.js";
 import {createTodo} from "./lib/eventTodo.js";
 import {createReportNote,createPendingReportExpense} from "./lib/eventReport.js";
@@ -222,7 +224,7 @@ function App(){
  const filteredRecords=recordsForManifestation(data[tab]||[],tab,moduleScopeEventId).filter(r=>tab!=="archives"||!isMeetingRecord(r)).filter(r=>tab==="contacts"
   ?(contactType==="tous"||normalizeContact(r.values[1])===normalizeContact(contactType))&&[...r.values,r.email||"",r.phone||""].some(value=>normalizeContact(value).includes(normalizeContact(filter)))
   :r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
- const records=tab==="contacts"?sortContactsByName(filteredRecords):filteredRecords;
+ const records=tab==="contacts"?sortContactsByName(filteredRecords):tab==="stock"?[...filteredRecords].sort((a,b)=>compareStockNames(a.values[0],b.values[0])):filteredRecords;
  const draftIsDirty=hasUnsavedDraft({
   open:tab==="contacts"?contactFormOpen:tab==="equipment"?equipmentFormOpen:moduleFormOpen,
   form,editingId,records:data[tab]||[],eventId:recordEventId,
@@ -763,6 +765,7 @@ function App(){
  <p className="note">Choisissez un bénévole dans l’annuaire ou saisissez son nom manuellement. Seuls les contacts classés « bénévole » sont proposés. Planning local : indiquez les créneaux au format 10:00-12:30. Si un bénévole a deux créneaux qui se chevauchent sur la même manifestation, l’enregistrement est refusé. Les horaires sans date ne permettent pas de vérifier les conflits entre journées différentes.</p></details>}
  {tab==="tasks"&&<p role="status" className="note">✅ {recordsForManifestation(data.tasks||[],tab,moduleScopeEventId).filter(r=>r.done===true).length} tâche(s) terminée(s) sur {recordsForManifestation(data.tasks||[],tab,moduleScopeEventId).length}. Cochez une tâche pour la marquer comme faite ; responsable et échéance sont conservés.</p>}
  {tab==="equipment"&&<EquipmentGrid records={records} readOnly={demoReadOnly} onEdit={beginEdit} onDelete={remove} photoRevision={photoRefreshRevision} onPhotoChange={()=>setPhotoRefreshRevision(v=>v+1)}/>}
+ {tab==="stock"&&<KegCreator data={data} onSave={saveMeetingData} readOnly={demoReadOnly}/>}
  {tab==="shopping"&&<ShoppingList key={moduleScopeEventId} data={data} scope={moduleScopeEventId} events={eventOptions} filter={filter} readOnly={demoReadOnly} onSave={saveMeetingData} onScope={(id,toStock=false)=>openModule(toStock?"stock":"shopping",id)}/>}
   {tab!=="equipment"&&tab!=="shopping"&&<RecordCardGrid category={tab} fields={current.fields} records={records} readOnly={demoReadOnly} onEdit={beginEdit} onDelete={remove} onToggleDone={toggleTaskDone} onCalculateRecipe={openRecipeCalculator} photoRevision={photoRefreshRevision} onPhotoChange={()=>setPhotoRefreshRevision(v=>v+1)}/>}
  {PHOTO_CATEGORIES.includes(tab)&&tab!=="equipment"&&<details className="festapp-equipment-photo-manage"><summary>📸 Gérer les photos de cette rubrique</summary><PhotoVault scope={tab} records={recordsForManifestation(data[tab]||[],tab,moduleScopeEventId)} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision} onChange={()=>setPhotoRefreshRevision(v=>v+1)}/></details>}

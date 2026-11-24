@@ -3,9 +3,12 @@ export const SUPPLIERS=['Leclerc','DS Restauration','Cave du Ternin','Adagri','C
 const norm=name=>String(name??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/œ/g,'oe').trim();
 export function suggestedSupplier(name){
  const n=norm(name);
+ if(/^creme de (cassis|framboise|mure|pamplemousse)\b/.test(n)||/\bget\s?27\b/.test(n))return 'Leclerc';
+ if(/\b(papier aluminium|papier cuisson)\b/.test(n))return 'Centrakor';
+ if(/\b(anis|girofle|cannelle|muscade|gingembre|mandarines?|oranges?|citrons?|papillotes?|thes?|infusions?)\b/.test(n))return 'Leclerc';
  if(/\b(serviettes?|assiettes?|nappes?|couverts?|gobelets?|ecocups?|essuie[ -]?tout|sopalin|deco(?:ration)?s?|barquettes?|sacs? paninis?|pics? a chamallows)\b/.test(n))return 'Centrakor';
  if(/\b(futs?|tonnelets?)\b/.test(n)||/\b(vins?|champagnes?|cremants?)\b/.test(n)&&!/\b(cubis?|bib|bag.in.box)\b/.test(n))return 'Cave du Ternin';
- if(/\b(huiles?|frites?|andouillettes?|oignons?|cremes?|paninis?)\b/.test(n)||/\bjambon\b.*\b(entier|rotir)\b/.test(n))return 'DS Restauration';
+ if(/\b(huiles?|frites?|andouillettes?|oignons?|cremes?|paninis?)\b/.test(n)||/\bjambon\b.*\b(entier|rotir|braiser)\b/.test(n))return 'DS Restauration';
  if(/\b(coca|orangina|perrier|ice[ -]?tea|oasis|eaux?|petillante|softs?|sodas?|limonades?|jus|sirops?|liqueurs?|bieres?|canettes?|vins?|cubis?|cafes?|chocolats?|chamallows?|pains?|baguettes?|laits?|beurres?|farines?|sucres?|oeufs?|fromages?|jambons?|viandes?|fruits?|legumes?|sauces?|ketchup|mayonnaise|moutarde|sel|poivre|bonbons?)\b/.test(n))return 'Leclerc';
  return 'Autre';
 }

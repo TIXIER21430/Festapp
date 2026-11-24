@@ -1,5 +1,13 @@
 // Illustrations are built into the app, never uploaded or downloaded.
 const rules=[
+ ['liqueur',/\bget\s?27\b|^creme de (cassis|framboise|mure|pamplemousse)\b/],
+ ['winebox',/\b(cubis?|bib)\b/],
+ ['powder',/\b(chocolat en poudre|cacao en poudre)\b/],
+ ['paper',/\b(papier aluminium|papier cuisson|nappes?)\b/],
+ ['cutlery',/\b(barquettes?|assiettes?|couverts?)\b/],
+ ['sugar',/\b(anis|girofle|muscade|gingembre)\b/],
+ ['candy',/\bpapillotes?\b/],
+ ['fruit',/\bmandarines?\b/],
  ['coca',/\bcoca(?:[\s-]cola)?\b/],
  ['orangina',/\borangina\b/],
  ['perrier',/\bperrier\b/],
