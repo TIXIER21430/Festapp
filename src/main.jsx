@@ -650,7 +650,7 @@ function App(){
      polling and private ZIP archives until Settings was opened again. */}
  <div className="festapp-cloud-host" style={{display:settingsOpen?"":"none"}}>
  <details className="festapp-sync-settings"><summary>☁️ Sauvegarde et synchronisation <span>{import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==='true'?"Automatique":"Facultatif"}</span></summary>
-  <p className="note">En cas de coupure, les saisies restent sur cet appareil. Une copie divergente est protégée avant toute synchronisation.</p>
+  <p className="note">{import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==='true'?"En cas de coupure, les saisies restent sur cet appareil. Une copie divergente est protégée avant toute synchronisation.":"Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée."}</p>
   <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} pristineText={pristineCloudText} canApplyRemote={canAutoApplyCloud} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
  </details>
  </div>
