@@ -31,5 +31,16 @@ jobs:
         run: npm run build
       - name: Verify build output
         run: test -f dist/index.html
+      - name: Check public bundle has production gate and no private Drive folder IDs
+        run: |
+          grep -R -q 'Connexion au comité' dist/assets/
+          if grep -R -E -q 'drive\\.google\\.com/drive/folders/[A-Za-z0-9_-]{10,}' dist/; then
+            echo 'Private Drive folder URL was bundled into public JavaScript' >&2
+            exit 1
+          fi
+          if grep -R -E -q 'sb_secret_[A-Za-z0-9_-]+|service_role[^A-Za-z]' dist/; then
+            echo 'Potential secret/server credential was bundled' >&2
+            exit 1
+          fi
 
 # Intentionally no Supabase credentials, migrations, deploy, write permissions or artifacts.
