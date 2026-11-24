@@ -7,8 +7,12 @@ const cards=readFileSync(new URL('../src/RecordCardGrid.jsx',import.meta.url),'u
 const equipment=readFileSync(new URL('../src/EquipmentGrid.jsx',import.meta.url),'utf8');
 const styles=readFileSync(new URL('../src/style.css',import.meta.url),'utf8');
 
-test('all ordinary menus use the same photo-or-icon tile grid and tap detail',()=>{
- assert.match(app,/tab!=="equipment"&&<RecordCardGrid category=\{tab\}/);
+test('ordinary menus use the shared tile grid; shopping has its dedicated stock catalog',()=>{
+ assert.match(app,/tab!=="equipment"&&tab!=="shopping"&&<RecordCardGrid category=\{tab\}/);
+ assert.match(app,/tab==="shopping"&&<ShoppingList/);
+ const shopping=readFileSync(new URL("../src/ShoppingList.jsx",import.meta.url),"utf8");
+ assert.match(shopping,/<StockIllustration name=\{p.name\}/);
+ assert.match(shopping,/Confirmer l’entrée en stock/);
  assert.match(app,/tab==="equipment"&&<EquipmentGrid records=\{records\}/);
  assert.match(cards,/className="festapp-record-grid"/);
  assert.match(cards,/role="dialog" aria-modal="true"/);
