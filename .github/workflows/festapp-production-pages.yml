@@ -1,9 +1,8 @@
 name: FESTAPP production - GitHub Pages
 
+# GitHub Pages needs repository Pages deployment enabled first.
+# Manual only: avoid repeatedly failing deployments while hosting is configured.
 on:
-  push:
-    branches:
-      - feat/production-auth-backups-20261124
   workflow_dispatch:
 
 permissions:
