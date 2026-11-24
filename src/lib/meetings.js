@@ -2,12 +2,13 @@ import {createTodo,isValidTodoDate,todoStage} from './eventTodo.js';
 import {createReportNote} from './eventReport.js';
 import {findVolunteerConflicts,parseShiftSlot} from './volunteerPlanning.js';
 import {validateDemoData} from './demoBackup.js';
+import {planMeetingPurchases} from './meetingPurchases.js';
 
 export const MEETING_SECTIONS=[
  ['before','Avant la manifestation','Réserver le groupe'],
  ['during','Pendant la manifestation','Prévoir une personne à la friteuse'],
  ['after','Après la manifestation','Ranger le matériel'],
- ['shopping','Courses de la manifestation','Gaz ; 4 bouteilles'],
+ ['shopping','Besoins pour la manifestation','48 Coca\n25 kg de frites\n60 andouillettes'],
  ['equipment','Matériel à acheter pour le comité','Rallonges ; 2'],
  ['general','Organisation générale','Préparer le calendrier annuel'],
  ['positive','Bilan précédent : points positifs','Bonne participation'],
@@ -55,7 +56,7 @@ export function classifyMeetingNotes(m){
 }
 export function planMeeting(data,m){
  meetingRecord(m);
- const rows=[],errors=[],duplicates=[];
+ const rows=[],errors=[],duplicates=[],purchaseSummary=[];
  const event=id=>(data.events||[]).find(r=>r.id===id);
  const future=event(m.eventId),previous=event(m.previousId);
  const add=(category,row,label)=>{
@@ -76,6 +77,11 @@ export function planMeeting(data,m){
   const needsFuture=['before','during','after','shopping','shifts'].includes(key);
   const needsPrevious=['positive','negative','used'].includes(key);
   if(needsFuture&&!future||needsPrevious&&!previous){errors.push(label+' : sélectionne la manifestation correspondante.');continue;}
+  if(key==='shopping'){
+   const purchases=planMeetingPurchases(data,m.eventId,lines);
+   rows.push(...purchases.rows);errors.push(...purchases.errors);duplicates.push(...purchases.duplicates);purchaseSummary.push(...purchases.summary);
+   continue;
+  }
   for(const line of lines){
    const id='preview-'+rows.length;
    try{
@@ -99,7 +105,7 @@ export function planMeeting(data,m){
   }
  }
  if(m.nextDate)add('tasks',createTodo({id:'preview-next',title:'Prochaine réunion du comité',dueDate:m.nextDate}),'Prochaine réunion · '+m.nextDate);
- return {rows,errors,duplicates};
+ return {rows,errors,duplicates,purchaseSummary};
 }
 export function finalizeMeeting(data,id,newId){
  const m=readMeeting((data.archives||[]).find(r=>r.id===id));
@@ -108,6 +114,6 @@ export function finalizeMeeting(data,id,newId){
  if(plan.errors.length)throw new Error(plan.errors.join('\n'));
  const final={...m,status:'final',eventName:(data.events||[]).find(r=>r.id===m.eventId)?.values[0]||'',previousName:(data.events||[]).find(r=>r.id===m.previousId)?.values[0]||'',added:plan.rows.length,duplicates:plan.duplicates.length};
  const next={...data,archives:data.archives.map(r=>r.id===id?meetingRecord(final):r)};
- for(const {category,row} of plan.rows)next[category]=[...(next[category]||[]),{...row,id:newId()}];
+ for(const {category,row,replaceId} of plan.rows)next[category]=replaceId?(next[category]||[]).map(r=>r.id===replaceId?row:r):[...(next[category]||[]),{...row,id:newId()}];
  return {data:validateDemoData(next),added:plan.rows.length,duplicates:plan.duplicates.length};
 }
