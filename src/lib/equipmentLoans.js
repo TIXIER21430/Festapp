@@ -1,3 +1,4 @@
+import {rentalTerms,rentalCatalog} from './rentalCatalog.js';
 // Equipment loans are independent of inventory records. Reservations hold stock
 // over an inclusive date range; an overdue checkout holds stock until returned.
 const states=new Set(['draft','reserved','out','returned','cancelled']);
@@ -66,13 +67,18 @@ export function checkLoanAvailability(loan,equipment,rows,today=localDay(),exclu
 const euro=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR'}).format(n/100);
 export function loanDocument(loan){
  const {days,totalCents,depositCents}=loanTotals(loan);
- const type=loan.kind==='rental'?'DEVIS DE LOCATION':'BON DE PRÊT';
- return [type+' — Comité des fêtes de Liernais','Référence : '+loan.id,'Établi le '+loan.created,'',
- 'Client : '+loan.customer.name,loan.customer.address,'Téléphone : '+loan.customer.phone,'E-mail : '+loan.customer.email,'',
- 'Sortie prévue : '+loan.start,'Retour prévu : '+loan.end,'Durée : '+days+' jour(s)','','Matériel :',
- ...loan.items.map(i=>i.quantity+' × '+i.name+' — '+euro(i.priceCents)+(loan.rateMode==='day'?' / unité / jour':' / unité')),
- '', 'Total : '+euro(totalCents),'Caution (hors prix) : '+euro(depositCents),'',
- loan.notes?'Conditions / observations : '+loan.notes:'Conditions complémentaires : à convenir avant signature.',
- '', 'Bon pour accord — date et signature du client :','',
- 'Date et signature du comité :'].join('\n');
+ const rental=loan.kind==='rental';
+ const type=rental?'CONTRAT DE LOCATION MATÉRIEL':'BON DE PRÊT';
+ return [type,'Comité des fêtes de Liernais / cfliernais@gmail.com','Référence : '+loan.id,'',
+ 'Le présent contrat est conclu le '+loan.created+' entre le Comité des fêtes de Liernais (le propriétaire) et '+loan.customer.name+' (le locataire).',
+ loan.customer.address,'Téléphone : '+loan.customer.phone,'E-mail : '+loan.customer.email,'',
+ 'LISTE DU MATÉRIEL',...loan.items.map(i=>i.quantity+' × '+i.name+' — '+euro(i.priceCents)+' / unité — '+euro(i.quantity*i.priceCents*(loan.rateMode==='day'?days:1))),
+ '', 'DURÉE DE LA LOCATION','Début : '+loan.start+' à '+(loan.startTime||'à convenir'),'Fin : '+loan.end+' à '+(loan.endTime||'à convenir'),
+ '', 'MONTANT DE LA LOCATION','Le locataire s’engage à verser '+euro(totalCents)+' au propriétaire en tant que loyer pour le matériel.',
+ 'Caution totale convenue : '+euro(depositCents),
+ ...(rental?rentalTerms.flatMap(([title,body])=>['',title,body,...(title==='DÉPÔT DE GARANTIE'?rentalCatalog.map(i=>i.name+' : '+euro(i.depositCents)):[])]):[]),
+ '',loan.notes?'Observations complémentaires : '+loan.notes:'',
+ 'En foi de quoi, les parties signent le présent contrat à la date indiquée ci-dessus.',
+ '', 'Le propriétaire — Comité des fêtes de Liernais','Nom et fonction du représentant : __________________','Signature : __________________',
+ '', 'Le locataire — '+loan.customer.name,'Fonction (le cas échéant) : __________________','Signature : __________________'].join('\n');
 }
