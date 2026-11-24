@@ -4,14 +4,13 @@
 - Projet Supabase : `pomssbugayytzmmgvflg`.
 - Espace du comité : `83d56d91-ecee-4d07-8d1f-ca8fd686f0eb`.
 - Code isolé sur `feat/production-auth-backups-20261124`. Ne pas fusionner `main` automatiquement.
-- Hébergement indépendant prévu : GitHub Pages `https://tixier21430.github.io/Festapp/`. Vérifier que le workflow `FESTAPP production - GitHub Pages` a réellement réussi avant de communiquer le lien.
+- Hébergement indépendant : **non encore publié**. Deux essais de déploiement GitHub Pages ont compilé et téléversé les fichiers, mais l’étape de publication a échoué. Le workflow Pages est donc manuel en attendant la configuration de l’hébergement. Alternative préparée : Vercel via `vercel.json`, à connecter au dépôt GitHub sur cette branche.
 - **Aucune invitation aux neuf autres membres avant la recette complète du compte administrateur.**
 
 ## Configuration Auth à effectuer après déploiement
-Dans Supabase > Authentication > URL Configuration, ajouter **exactement**
-`https://tixier21430.github.io/Festapp/` aux Redirect URLs. Une fois les tests terminés, la définir comme Site URL principale. Conserver temporairement l’ancienne adresse si des liens en cours l’utilisent. Ne jamais autoriser de wildcard de redirection non maîtrisé.
+Dans Supabase > Authentication > URL Configuration, ajouter **exactement l’URL du nouvel hébergement vérifié** (GitHub Pages si déployé, ou URL Vercel) aux Redirect URLs. Une fois les tests terminés, la définir comme Site URL principale. Conserver temporairement l’ancienne adresse si des liens en cours l’utilisent. Ne jamais autoriser de wildcard de redirection non maîtrisé.
 
-Le compte administrateur déjà confirmé peut utiliser « Créer ou retrouver mon mot de passe » depuis la nouvelle page. Le lien de récupération doit revenir à GitHub Pages ; sinon revoir Redirect URLs. Aucun compte ChatGPT n’est requis sur GitHub Pages.
+Le compte administrateur déjà confirmé peut utiliser « Créer ou retrouver mon mot de passe » depuis la nouvelle page. Le lien de récupération doit revenir au nouvel hébergement ; sinon revoir Redirect URLs. Aucun compte ChatGPT n’est requis sur GitHub Pages.
 
 ## Recette avant ouverture des invitations
 1. Ouvrir la nouvelle adresse en navigation privée : vérifier que l’écran de connexion s’affiche **avant** les fiches.
