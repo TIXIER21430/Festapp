@@ -664,3 +664,15 @@ main:has(.festapp-workbench[open][data-module="stock"]) .festapp-org-overlay{z-i
 .festapp-todo-scope-list{display:grid;gap:8px;padding:8px 0 12px}.festapp-todo-scope-list>p{margin:4px 0 8px}.festapp-todo-scope-list>button{display:flex;align-items:center;justify-content:space-between;text-align:left;gap:12px;padding:12px;border:1px solid #d6dbe4;border-radius:12px;background:transparent;color:inherit;min-height:56px;width:100%}.festapp-todo-scope-list>button span{display:grid;gap:4px}.festapp-todo-scope-list>button small{opacity:.8}.festapp-todo-scope-list>button em{font-style:normal;white-space:nowrap;font-weight:600}.festapp-todo-scope-back{margin:8px 0 12px}
 
 @media(max-width:500px){.festapp-bottom-nav{gap:1px;padding-left:max(3px,env(safe-area-inset-left));padding-right:max(3px,env(safe-area-inset-right))}.festapp-bottom-nav button{padding-inline:0}.festapp-bottom-nav button small{font-size:clamp(8px,2.4vw,10px)}.festapp-bottom-nav .festapp-nav-icon{width:30px;height:30px}}
+
+.festapp-loan-panel{display:grid;gap:14px;margin-top:14px}
+.festapp-loan-summary{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}
+.festapp-loan-summary>div{background:#eef5ff;color:#233b59;border-radius:12px;padding:12px 5px;display:grid;gap:5px;text-align:center}
+.festapp-loan-summary strong{font-size:25px}.festapp-loan-summary small{font-size:11px}
+.festapp-loan-inventory,.festapp-loan-list,.festapp-loan-form{display:grid;gap:10px}
+.festapp-loan-balance,.festapp-loan-record,.festapp-loan-line{background:#f4f7fb;color:#213348;border-radius:12px;padding:12px;display:grid;gap:6px}
+.festapp-loan-balance{grid-template-columns:1fr auto;align-items:center}.festapp-loan-balance small{grid-column:1/-1}
+.festapp-loan-record-heading{display:grid;grid-template-columns:1fr auto;text-align:left;gap:6px;width:100%}.festapp-loan-record-heading small{grid-column:1/-1}
+.festapp-loan-actions{display:flex;flex-wrap:wrap;gap:6px}.festapp-loan-total{background:#dcecff;color:#17385e;padding:12px;border-radius:12px}
+.festapp-directory-actions button[aria-pressed="true"]{outline:2px solid #78baff;outline-offset:2px}
+@media(max-width:400px){.festapp-loan-balance{grid-template-columns:1fr}.festapp-loan-balance small{grid-column:auto}}
