@@ -79,9 +79,9 @@ export function loanDocument(loan){
  '', 'DURÉE DE LA LOCATION','Début : '+loan.start+' à '+(loan.startTime||'à convenir'),'Fin : '+loan.end+' à '+(loan.endTime||'à convenir'),
  '', 'MONTANT DE LA LOCATION','Le locataire s’engage à verser '+euro(totalCents)+' au propriétaire en tant que loyer pour le matériel.',
  'Caution totale convenue : '+euro(depositCents),
- ...(rental?rentalTerms.flatMap(([title,body])=>['',title,body,...(title==='DÉPÔT DE GARANTIE'?rentalCatalog.map(i=>i.name+' : '+euro(i.depositCents)):[])]):[]),
+ ...(rental?rentalTerms.flatMap(([title,body])=>['',title,body,...(title==='DÉPÔT DE GARANTIE'?loan.items.map(i=>i.quantity+' × '+i.name+' : '+euro(i.depositRateCents??rentalCatalog.find(c=>c.name===i.name)?.depositCents??0)+' / unité — '+euro(i.quantity*(i.depositRateCents??rentalCatalog.find(c=>c.name===i.name)?.depositCents??0))):[])]):[]),
  '',loan.notes?'Observations complémentaires : '+loan.notes:'',
  'En foi de quoi, les parties signent le présent contrat à la date indiquée ci-dessus.',
- '', 'Le propriétaire — Comité des fêtes de Liernais','Nom et fonction du représentant : __________________','Signature : __________________',
+ '', 'Le propriétaire — Comité des fêtes de Liernais','Nom, prénom : Jocelyn Tixier','Fonction : Président','Signature du propriétaire : __________________',
  '', 'Le locataire — '+loan.customer.name,'Fonction (le cas échéant) : __________________','Signature : __________________'].join('\n');
 }
