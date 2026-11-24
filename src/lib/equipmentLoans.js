@@ -10,7 +10,8 @@ const cents=n=>Number.isSafeInteger(n)&&n>=0&&n<=100000000;
 const clean=(s,max)=>typeof s==='string'&&s.length<=max;
 export function equipmentQuantity(record){
  const raw=String(record?.values?.[1]??'').trim();
- return /^\d+$/.test(raw)&&Number.isSafeInteger(Number(raw))?Number(raw):null;
+ const match=raw.match(/^(\d+)(?:\s*(?:u\.?|unités?|pièces?|pcs?))?$/i);
+ return match&&Number.isSafeInteger(Number(match[1]))?Number(match[1]):null;
 }
 export function readLoan(row){
  if(!row||!Array.isArray(row.values)||row.values.length!==3||!states.has(row.values[1]))throw new Error('Mouvement matériel invalide.');
@@ -33,11 +34,13 @@ export function loanTotals(loan){
  const factor=loan.rateMode==='day'?days:1;
  return {days,totalCents:loan.items.reduce((n,i)=>n+i.quantity*i.priceCents*factor,0),depositCents:loan.depositCents};
 }
+function itemMatches(record,item){return item.equipmentId===record.id||(record.aliases||[]).includes(item.equipmentId)||(record.id.startsWith('catalog-')&&item.name===record.values[0]);}
+function bookedQuantity(record,loan){return loan.items.filter(i=>itemMatches(record,i)).reduce((n,i)=>n+i.quantity,0);}
 export function currentEquipment(record,rows,today=localDay()){
  const total=equipmentQuantity(record);
  const loans=rows.map(readLoan);
- const out=loans.filter(l=>l.status==='out').reduce((n,l)=>n+(l.items.find(i=>i.equipmentId===record.id)?.quantity||0),0);
- const reserved=loans.filter(l=>l.status==='reserved'&&l.start<=today&&l.end>=today).reduce((n,l)=>n+(l.items.find(i=>i.equipmentId===record.id)?.quantity||0),0);
+ const out=loans.filter(l=>l.status==='out').reduce((n,l)=>n+bookedQuantity(record,l),0);
+ const reserved=loans.filter(l=>l.status==='reserved'&&l.start<=today&&l.end>=today).reduce((n,l)=>n+bookedQuantity(record,l),0);
  return {total,out,reserved,available:total===null?null:total-out-reserved};
 }
 export function availableForPeriod(record,rows,start,end,today=localDay(),excludeId=''){
@@ -46,7 +49,7 @@ export function availableForPeriod(record,rows,start,end,today=localDay(),exclud
  const intervals=[];
  for(const l of rows.map(readLoan)){
   if(l.id===excludeId||!['out','reserved'].includes(l.status))continue;
-  const q=l.items.find(i=>i.equipmentId===record.id)?.quantity||0;
+  const q=bookedQuantity(record,l);
   if(!q)continue;
   const a=l.status==='out'?(l.start<today?l.start:today):l.start;
   const b=l.status==='out'&&l.end<=today?'9999-12-31':l.end;
@@ -59,7 +62,7 @@ export function availableForPeriod(record,rows,start,end,today=localDay(),exclud
 }
 export function checkLoanAvailability(loan,equipment,rows,today=localDay(),excludeId=''){
  for(const item of loan.items){
-  const record=equipment.find(r=>r.id===item.equipmentId);
+  const record=equipment.find(r=>itemMatches(r,item));
   const available=record?availableForPeriod(record,rows,loan.start,loan.end,today,excludeId):null;
   if(available===null||available<item.quantity)throw new Error(item.name+' : '+(available===null?'quantité à vérifier':Math.max(0,available)+' disponible(s) sur la période')+'.');
  }
