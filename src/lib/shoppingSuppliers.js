@@ -4,6 +4,9 @@ export const SUPPLIERS=['Leclerc','DS Restauration','Cave du Ternin','Adagri','C
 const norm=name=>String(name??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/œ/g,'oe').trim();
 export function suggestedSupplier(name){
  const n=norm(name);
+ if(/^(touillettes|ruban adhesif|bracelets evenement)$/.test(n))return 'Centrakor';
+ if(/^(saucisses hot dog|saucisses|merguez)$/.test(n))return 'DS Restauration';
+ if(/^(baileys|confiture|pate|chips|saucisson \/ rosette|croissants|glaces individuelles|pate a tartiner|charbon de bois|chocolats de paques)$/.test(n))return 'Leclerc';
  if(/^creme de (cassis|framboise|mure|pamplemousse)\b/.test(n)||/\bget\s?27\b/.test(n))return 'Leclerc';
  if(/\b(papier aluminium|papier cuisson)\b/.test(n))return 'Centrakor';
  if(/\b(anis|girofle|cannelle|muscade|gingembre|mandarines?|oranges?|citrons?|papillotes?|thes?|infusions?)\b/.test(n))return 'Leclerc';

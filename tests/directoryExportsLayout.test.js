@@ -26,3 +26,8 @@ test('all exports are accessible in Plus, not attached to the current module',()
  assert.doesNotMatch(main,/className="festapp-export-actions"/);
  assert.doesNotMatch(till,/Exporter les menus/);
 });
+
+test('sponsor category is available for directory, export and editing',()=>{
+ assert.equal((main.match(/<option value="sponsor">Sponsors<\/option>/g)||[]).length,2);
+ assert.match(main,/\["bénévole","exposant","groupe","fournisseur","intervenant","sponsor"\]\.map/);
+});

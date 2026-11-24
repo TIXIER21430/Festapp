@@ -34,3 +34,14 @@ test('all catalog tiles have a display unit, including zero stock and packages',
  }
  assert.equal(formatStockQuantity('Frites','25 kg'),'25 kg');
 });
+
+test('additional catalog references use consistent groups, units and suppliers',()=>{
+ assert.equal(stockGroup('Baileys'),'Boissons');
+ assert.equal(stockGroup('Touillettes'),'Consommables');
+ assert.equal(stockGroup('Charbon de bois'),'Autres fournitures');
+ assert.equal(displayStockUnit('Sucre roux'),'kg');
+ assert.equal(displayStockUnit('Sucre en poudre'),'kg');
+ assert.equal(displayStockUnit('Saucisses'),'u');
+ assert.equal(suggestedSupplier('Saucisses hot dog'),'DS Restauration');
+ assert.equal(suggestedSupplier('Touillettes'),'Centrakor');
+});
