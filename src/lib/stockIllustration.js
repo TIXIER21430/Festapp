@@ -1,0 +1,37 @@
+// Illustrations are built into the app, never uploaded or downloaded.
+const rules=[
+ ['gas',/\b(gaz|propane|butane)\b/],
+ ['cups',/\b(eco[\s-]?cups?|gobelets?|verres?|tasses?)\b/],
+ ['napkins',/\b(serviettes?|essuie[\s-]?tout|sopalin|mouchoirs?)\b/],
+ ['bags',/\b(sacs?|sachets?|pochettes?|poubelles?)\b/],
+ ['cleaning',/\b(javel|nettoyants?|detergents?|desinfectants?|eponges?|liquide vaisselle|produits? (?:de )?menage)\b/],
+ ['cutlery',/\b(couverts?|fourchettes?|cuilleres?|couteaux?|assiettes?|barquettes?|pailles?|pics?|piques?)\b/],
+ ['keg',/\b(futs?|tonnelets?)\b/],
+ ['beer',/\b(bieres?|pression|heineken|kronenbourg|leffe|desperados|1664)\b/],
+ ['wine',/\b(vins?|cremants?|champagnes?|cidres?|roses?|kir|bourgogne|chablis|al(i|y)gote|sangria)\b/],
+ ['syrup',/\b(sirops?|grenadine|menthe|orgeat|cassis)\b/],
+ ['soda',/\b(coca(?:[\s-]cola)?|pepsi|orangina|fanta|sprite|schweppes|oasis|limonades?|sodas?|softs?|jus|ice tea|perrier|tonic)\b/],
+ ['water',/\b(eaux?|evian|cristaline|vittel|volvic|badoit)\b/],
+ ['coffee',/\b(cafes?|decafeines?|dosettes?|capsules? cafe)\b/],
+ ['tea',/\b(thes?|tisanes?|infusions?)\b/],
+ ['chocolate',/\b(chocolats?|cacao|nutella|pate a tartiner)\b/],
+ ['milk',/\b(laits?|cremes?|chantilly|beurres?)\b/],
+ ['oil',/\b(huiles?|fritures?)\b/],
+ ['fries',/\b(frites?|pommes? de terre|patates?)\b/],
+ ['sauce',/\b(sauces?|ketchup|mayonnaises?|mayo|moutardes?|harissa|vinaigrettes?)\b/],
+ ['meat',/\b(andouillettes?|saucisses?|merguez|jambons?|viandes?|steaks?|lardons?|saucissons?|chipolatas?)\b/],
+ ['bread',/\b(pains?|baguettes?|paninis?|buns?|brioches?|croissants?)\b/],
+ ['cheese',/\b(fromages?|emmental|gruyere|comte|mozzarella|raclette|cheddar)\b/],
+ ['eggs',/\b(oeufs?|œufs?)\b/],
+ ['flour',/\b(farines?|levures?|fecules?)\b/],
+ ['sugar',/\b(sucres?|sel|poivre|epices?|cannelle|vanille)\b/],
+ ['candy',/\b(bonbons?|chamallows?|guimauves?|confiseries?|marshmallows?)\b/],
+ ['fruit',/\b(citrons?|oranges?|pommes?|fruits?|bananes?|fraises?)\b/],
+ ['vegetable',/\b(oignons?|tomates?|salades?|legumes?|ail|carottes?)\b/],
+ ['battery',/\b(piles?|batteries?)\b/],
+ ['paper',/\b(affiches?|papiers?|tickets?|rouleaux?|etiquettes?|cartons?)\b/]
+];
+export function stockIllustrationKind(name){
+ const value=String(name??'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLocaleLowerCase('fr').replace(/œ/g,'oe').trim();
+ return rules.find(([,pattern])=>pattern.test(value))?.[0]||'box';
+}

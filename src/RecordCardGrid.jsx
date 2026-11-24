@@ -2,11 +2,13 @@ import React,{useEffect,useRef,useState} from 'react';
 import {PHOTO_CATEGORIES,listPhotoOriginals,savePhotoOriginal} from './lib/photoVault.js';
 import {isTillAccountingRecord} from './lib/tillSales.js';
 import ModuleGlyph from './ModuleGlyph.jsx';
+import StockIllustration from './StockIllustration.jsx';
 
 const PHOTO_SCOPES=new Set(PHOTO_CATEGORIES.filter(scope=>scope!=='equipment'));
 
 export function cardSummary(category,record){
  const values=record?.values||[];
+ if(category==='stock')return values[1]?'Quantité : '+values[1]:'Quantité à préciser';
  if(category==='recipes')return 'Recette du comité';
  if(category==='contacts')return values[1]||'Contact';
  if(category==='tasks')return record.done?'Terminée':'À faire';
@@ -54,12 +56,12 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
   finally{setBusy(false);}
  }
 
- return <section className="festapp-card-catalog" aria-label="Fiches en quadrillage">
+ return <section className="festapp-card-catalog" data-category={category} aria-label="Fiches en quadrillage">
   {records.length>0?<div className="festapp-record-grid">{records.map(record=>{
    const image=photos.get(record.id);
    return <article key={record.id} className="festapp-record-tile">
     <button type="button" className="festapp-record-preview" aria-label={'Ouvrir '+record.values[0]} aria-expanded={selectedId===record.id} onClick={()=>{setSelectedId(record.id);setStatus('');}}>
-     <span className="festapp-record-image">{image?<img src={image} alt={'Photo associée à '+record.values[0]} loading="lazy"/>:<span className="festapp-icon-frame" aria-hidden="true"><ModuleGlyph kind={category}/></span>}</span>
+     <span className="festapp-record-image">{image?<img src={image} alt={'Photo associée à '+record.values[0]} loading="lazy"/>:category==='stock'?<StockIllustration name={record.values[0]}/>:<span className="festapp-icon-frame" aria-hidden="true"><ModuleGlyph kind={category}/></span>}</span>
      <strong>{record.values[0]}</strong><small>{cardSummary(category,record)}</small>
     </button>
     {category==='tasks'&&<label className="festapp-record-check"><input type="checkbox" checked={record.done===true} disabled={readOnly} onChange={()=>onToggleDone(record.id)}/>{record.done?'Terminée':'À faire'}</label>}
@@ -68,7 +70,7 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
   {selected&&<div className="festapp-equipment-backdrop" onClick={()=>setSelectedId('')}>
    <section className="festapp-equipment-detail" role="dialog" aria-modal="true" aria-label={'Fiche : '+selected.values[0]} onClick={e=>e.stopPropagation()} onKeyDown={e=>{if(e.key==='Escape')setSelectedId('');}}>
     <div className="festapp-equipment-detail-heading"><h3>{selected.values[0]}</h3><button type="button" className="secondary" ref={closeRef} aria-label="Fermer la fiche" onClick={()=>setSelectedId('')}>✕</button></div>
-    {photos.get(selected.id)&&<img className="festapp-equipment-detail-image" src={photos.get(selected.id)} alt={'Photo de '+selected.values[0]}/>}
+    {photos.get(selected.id)?<img className="festapp-equipment-detail-image" src={photos.get(selected.id)} alt={'Photo de '+selected.values[0]}/>:category==='stock'?<div className="festapp-stock-detail-art"><StockIllustration name={selected.values[0]}/><small>Illustration indicative · ajoute une photo réelle si nécessaire.</small></div>:null}
     {category==='recipes'&&<button type="button" className="festapp-recipe-calculate-action" onClick={()=>{onCalculateRecipe?.(selected);setSelectedId('');}}>🧮 Adapter les quantités</button>}
     {fields.slice(1).map((field,i)=><p key={field}><strong>{field} :</strong> {selected.values[i+1]||'À préciser'}</p>)}
     {category==='contacts'&&<>{selected.phone&&<p><a href={'tel:'+selected.phone}>📞 {selected.phone}</a></p>}{selected.email&&<p><a href={'mailto:'+selected.email}>✉️ {selected.email}</a></p>}</>}
