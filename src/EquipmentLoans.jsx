@@ -1,5 +1,5 @@
 import React,{useState} from 'react';
-import {makeRentalPdf,rentalPdfName} from './lib/rentalPdf.js';
+import {makeRentalPdf,rentalPdfName,loadRentalImage} from './lib/rentalPdf.js';
 import {rentalEquipment} from './lib/rentalCatalog.js';
 import {availableForPeriod,checkLoanAvailability,currentEquipment,loanDocument,loanRecord,loanTotals,localDay,readLoan} from './lib/equipmentLoans.js';
 
@@ -11,8 +11,8 @@ const money=s=>{
  if(!/^\d+(?:[.,]\d{1,2})?$/.test(String(s).trim()))throw new Error('Montant invalide.');
  return Math.round(Number(String(s).replace(',','.'))*100);
 };
-function downloadDocument(loan){
- const url=URL.createObjectURL(makeRentalPdf(loan));
+function downloadDocument(loan,assets={}){
+ const url=URL.createObjectURL(makeRentalPdf(loan,assets));
  const a=document.createElement('a');a.href=url;a.download=rentalPdfName(loan);a.click();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
@@ -32,6 +32,10 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
  const [history,setHistory]=useState(false);
  const [filter,setFilter]=useState('');
  const [expanded,setExpanded]=useState('');
+ const [signature,setSignature]=useState(null);
+ const [logo,setLogo]=useState(null);
+ async function chooseImage(e,setImage){const file=e.target.files?.[0];e.target.value='';if(!file)return;try{setImage(await loadRentalImage(file));setError('');}catch(err){setError(err.message||'Image illisible.');}}
+ function pdfAssets(loan){if(loan.kind!=='rental'||!signature)return {logo};return {logo,signature:window.confirm('Apposer la signature du président sur ce contrat pour '+loan.customer.name+' ?')?signature:null};}
  let loans,balances;
  try{loans=rows.map(readLoan);balances=equipment.map(e=>({...currentEquipment(e,rows,today),id:e.id,name:e.values[0],inventoryId:e.inventoryId,linked:e.linked,catalogKey:e.id.slice(8)}));}
  catch(e){return <p role="alert">Impossible de lire les mouvements de matériel. Les données existantes sont conservées.</p>;}
@@ -98,11 +102,12 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
   if(!loan.customer.email){setError('Renseigne une adresse e-mail.');return;}
   const subject=(loan.kind==='rental'?'Contrat de location':'Bon de prêt')+' — Comité des fêtes de Liernais';
   const body='Bonjour '+loan.customer.name+',\n\nMerci de nous retourner le contrat ci-joint signé, accompagné de votre attestation d’assurance pour une location.\n\nLe Comité des fêtes de Liernais';
-  const file=new File([makeRentalPdf(loan)],rentalPdfName(loan),{type:'application/pdf'});
+  const assets=pdfAssets(loan);
+  const file=new File([makeRentalPdf(loan,assets)],rentalPdfName(loan),{type:'application/pdf'});
   if(navigator.canShare?.({files:[file]})){
    try{await navigator.share({files:[file],title:subject,text:body+'\nDestinataire : '+loan.customer.email});setMessage('Partage ouvert : sélectionne ta messagerie et vérifie le destinataire.');return;}catch(e){if(e.name==='AbortError')return;}
   }
-  downloadDocument(loan);
+  downloadDocument(loan,assets);
   setMessage('PDF téléchargé. Joins-le au mail qui s’ouvre avant de l’envoyer.');
   window.location.href='mailto:'+encodeURIComponent(loan.customer.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
  }
@@ -133,10 +138,11 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
    <button type="button" className="secondary" onClick={()=>{if(window.confirm('Abandonner la saisie ?'))begin('');}}>Annuler</button>
   </form>}
   {error&&<p role="alert">{error}</p>}{message&&<p role="status">{message}</p>}
+  <details className="festapp-optional-tool"><summary>Logo et signature du contrat</summary><p>Images conservées uniquement dans cette session. Le président doit autoriser chaque apposition de sa signature. Aucun fichier de signature ne circule dans les sauvegardes partagées.</p><label>Signature du président<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>chooseImage(e,setSignature)} disabled={readOnly}/></label>{signature&&<p>Signature chargée. <button type="button" className="secondary" onClick={()=>setSignature(null)}>Retirer</button></p>}<label>Logo du comité<input type="file" accept="image/png,image/jpeg,image/webp" onChange={e=>chooseImage(e,setLogo)} disabled={readOnly}/></label>{logo&&<p>Logo chargé. <button type="button" className="secondary" onClick={()=>setLogo(null)}>Retirer</button></p>}</details>
   <div className="festapp-loan-list"><h3>Dossiers en cours</h3>{!live.length&&<p>Aucun prêt, location ou devis en cours.</p>}
    {(history?loans:live).slice().reverse().map(l=><article key={l.id} className="festapp-loan-record"><button className="festapp-loan-record-heading" type="button" aria-expanded={expanded===l.id} onClick={()=>setExpanded(expanded===l.id?'':l.id)}><strong>{l.customer.name}</strong><span>{labels[l.status]}</span><small>{l.start} → {l.end} · {l.items.map(i=>i.quantity+' × '+i.name).join(', ')}</small>{l.status==='out'&&l.end<today&&<small>Retour en retard</small>}</button>
    {expanded===l.id&&<div><p>{l.customer.address} · {l.customer.phone} · {l.customer.email}</p><p><strong>{euro(loanTotals(l).totalCents)}</strong> · Caution {euro(l.depositCents)}</p>
-    <div className="festapp-loan-actions"><button type="button" className="secondary" onClick={()=>downloadDocument(l)}>Télécharger le PDF</button><button type="button" className="secondary" disabled={!l.customer.email} onClick={()=>emailDraft(l)}>Partager le PDF pour signature</button>{l.status==='draft'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'reserved')}>Confirmer la réservation</button>}{l.status==='reserved'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'out')}>Matériel remis</button>}{l.status==='out'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'returned')}>Matériel rendu</button>}{['draft','reserved'].includes(l.status)&&<button type="button" className="secondary" disabled={readOnly} onClick={()=>changeStatus(l,'cancelled')}>Annuler le dossier</button>}</div>
+    <div className="festapp-loan-actions"><button type="button" className="secondary" onClick={()=>downloadDocument(l,pdfAssets(l))}>Télécharger le PDF</button><button type="button" className="secondary" disabled={!l.customer.email} onClick={()=>emailDraft(l)}>Partager le PDF pour signature</button>{l.status==='draft'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'reserved')}>Confirmer la réservation</button>}{l.status==='reserved'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'out')}>Matériel remis</button>}{l.status==='out'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'returned')}>Matériel rendu</button>}{['draft','reserved'].includes(l.status)&&<button type="button" className="secondary" disabled={readOnly} onClick={()=>changeStatus(l,'cancelled')}>Annuler le dossier</button>}</div>
     <p className="note">Sur téléphone, partage le PDF avec ta messagerie. Sur ordinateur, joins le PDF téléchargé au brouillon. L’envoi automatique et la signature électronique ne sont pas connectés.</p>
    </div>}</article>)}
    <button type="button" className="secondary" onClick={()=>setHistory(v=>!v)}>{history?'Masquer l’historique':'Voir aussi les dossiers terminés'}</button>
