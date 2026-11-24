@@ -14,11 +14,18 @@ export function getFestappConnection(env=import.meta.env){
  if(env?.VITE_FESTAPP_PRODUCTION_MODE!=="true")return null;
  const key=env?.VITE_SUPABASE_PUBLISHABLE_KEY;
  if(typeof key!=="string"||!key.startsWith("sb_publishable_"))return null;
- return {url:FESTAPP_SUPABASE_URL,spaceId:FESTAPP_SPACE_ID,key,testMode:false};
+ return {url:FESTAPP_SUPABASE_URL,spaceId:FESTAPP_SPACE_ID,key,testMode:false,productionMode:true};
 }
 // Publishable keys are safe for a browser. Never use service-role or secret keys here.
 export function createFestappClient(env=import.meta.env){
  const config=getFestappConnection(env);
  if(!config)return null;
- return createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+ return createClient(config.url,config.key,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:true}});
+}
+
+// Share one auth session/refresh lock between the entry gate and the sync panel.
+let sharedClient;
+export function getSharedFestappClient(){
+ if(!sharedClient)sharedClient=createFestappClient();
+ return sharedClient;
 }
