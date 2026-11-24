@@ -3,7 +3,7 @@ function normalized(value){return String(value||"").trim().normalize("NFD").repl
 function amount(value){const raw=String(value??"").trim().replace(",",".");return /^(0|[1-9]\d*)(?:\.\d+)?$/.test(raw)&&Number.isFinite(Number(raw))?Number(raw):null;}
 export function compareShoppingWithStock(shopping,stock,eventId){
  if(!Array.isArray(shopping)||!Array.isArray(stock)||typeof eventId!=="string")throw new TypeError("Invalid inventory");
- return shopping.filter(row=>row?.eventId===eventId).map(row=>{
+ return shopping.filter(row=>row?.eventId===eventId&&!String(row.values?.[2]||"").startsWith("Transféré au stock")).map(row=>{
   const name=String(row.values?.[0]||"");
   const matches=stock.filter(item=>normalized(item?.values?.[0])===normalized(name));
   const needed=amount(row.values?.[1]);

@@ -1,5 +1,13 @@
 // Illustrations are built into the app, never uploaded or downloaded.
 const rules=[
+ ['coca',/\bcoca(?:[\s-]cola)?\b/],
+ ['orangina',/\borangina\b/],
+ ['perrier',/\bperrier\b/],
+ ['icetea',/\bice[\s-]?tea\b/],
+ ['oasis',/\boasis\b/],
+ ['sparklinglarge',/\b(?:eau\s+)?petillante\s+grande\b/],
+ ['watersmall',/\beau\s+petite\b/],
+ ['waterlarge',/\beau\s+grande\b/],
  ['gas',/\b(gaz|propane|butane)\b/],
  ['cups',/\b(eco[\s-]?cups?|gobelets?|verres?|tasses?)\b/],
  ['napkins',/\b(serviettes?|essuie[\s-]?tout|sopalin|mouchoirs?)\b/],

@@ -4,7 +4,16 @@ import {stockIllustrationKind} from './lib/stockIllustration.js';
 // Original flat-color product illustrations, deliberately unbranded.
 const bottle=(body,label,cap='#475569')=><><path d="M44 17h24v18l10 14v56q0 7-7 7H41q-7 0-7-7V49l10-14z" fill={body}/><rect x="42" y="11" width="28" height="11" rx="3" fill={cap}/><rect x="34" y="61" width="44" height="31" rx="2" fill={label}/><path d="M44 49v9m0 39v7" stroke="#fff" strokeWidth="3" opacity=".55"/></>;
 const pouch=(color,mark)=><><path d="M26 20h60l-4 19 6 69H24l6-69z" fill={color}/><path d="M30 32h52M28 98h56" fill="none" stroke="#334155" opacity=".3"/><rect x="35" y="48" width="42" height="38" rx="8" fill="#fff9ed"/>{mark}</>;
+const labeledBottle=(body,label,cap,word)=><>{bottle(body,label,cap)}<text x="56" y="80" textAnchor="middle" fill="#fff" fontSize="10" fontWeight="800">{word}</text></>;
 const drawings={
+ coca:labeledBottle('#54342b','#dc302b','#dc302b','COLA'),
+ orangina:<><path d="M46 18h20v23q23 12 23 39a33 33 0 0 1-66 0q0-27 23-39z" fill="#f4ad34"/><rect x="43" y="12" width="26" height="11" rx="3" fill="#3263ac"/><ellipse cx="56" cy="78" rx="27" ry="18" fill="#3263ac"/><text x="56" y="81" textAnchor="middle" fontSize="10" fontWeight="800" fill="#fff">ORANGE</text></>,
+ perrier:labeledBottle('#318354','#185c40','#e3ca5b','PERRIER'),
+ icetea:labeledBottle('#c9823c','#c77b25','#e4b54d','ICE TEA'),
+ oasis:labeledBottle('#f1a834','#ef7627','#e97725','OASIS'),
+ watersmall:<g transform="translate(16 26) scale(.72)">{bottle('#b6e4f6','#428acb','#428acb')}</g>,
+ waterlarge:bottle('#b6e4f6','#428acb','#428acb'),
+ sparklinglarge:<>{bottle('#9dd8c7','#269e87','#269e87')}<g fill="#fff" opacity=".85"><circle cx="48" cy="49" r="3"/><circle cx="62" cy="56" r="2"/><circle cx="53" cy="99" r="3"/><circle cx="67" cy="97" r="2"/></g></>,
  gas:<><path d="M43 22h26v14H43z" fill="#64748b"/><rect x="38" y="11" width="36" height="22" rx="5" fill="none" stroke="#475569" strokeWidth="5"/><path d="M30 50q0-17 26-17t26 17v51q0 10-10 10H40q-10 0-10-10z" fill="#e58b38"/><path d="M30 76h52v15H30z" fill="#d16a23"/><rect x="43" y="10" width="26" height="8" rx="3" fill="#334155"/><path d="M40 55v15" stroke="#ffdbb2" strokeWidth="4" strokeLinecap="round"/></>,
  cups:<><path d="M15 35h40l-5 66H20z" fill="#79c7b3"/><path d="M48 23h49l-6 85H54z" fill="#61a5e8"/><path d="M15 35h40M48 23h49" stroke="#e9ffff" strokeWidth="5"/><path d="M63 57q11-13 23 0-3 18-12 20-11-3-11-20z" fill="#fff" opacity=".8"/></>,
  napkins:<><path d="m17 76 56-22 28 23-57 27z" fill="#cbd5e1"/><path d="m17 65 56-22 28 23-57 27z" fill="#e2e8f0"/><path d="m17 54 56-22 28 23-57 27z" fill="#fff"/><path d="m44 82 57-27M44 93l57-27" stroke="#94a3b8" strokeWidth="2"/><path d="m31 54 40-15 18 15-42 18z" fill="none" stroke="#b7c9dc" strokeDasharray="3 4"/></>,
@@ -37,7 +46,7 @@ const drawings={
  paper:<><rect x="24" y="20" width="60" height="87" rx="4" fill="#b5c9df"/><rect x="31" y="14" width="60" height="87" rx="4" fill="#fff" stroke="#c2d0e0" strokeWidth="2"/><rect x="41" y="27" width="40" height="24" rx="3" fill="#8fb8e1"/><path d="M42 64h38M42 75h38M42 86h24" stroke="#a2b5c9" strokeWidth="4" strokeLinecap="round"/></>,
  box:<><path d="m17 44 39-19 39 19v45l-39 21-39-21z" fill="#d9b17e"/><path d="m56 65 39-21v45l-39 21z" fill="#bd905b"/><path d="m17 44 39 21 39-21-39-19z" fill="#efd2a7"/><path d="m37 34 39 21v16l-13 7V62L24 41z" fill="#f7e3c7"/><path d="M56 65v45" stroke="#ad8050" strokeWidth="2"/></>
 };
-const colors={gas:'#fff0dc',cups:'#e5f7f6',napkins:'#eef4fa',bags:'#f9efe1',cleaning:'#e3f6ef',cutlery:'#edf3f8',keg:'#e8eff5',beer:'#fff3dc',wine:'#f5e8ed',syrup:'#f9e9f1',soda:'#fce9e7',water:'#e3f5fc',coffee:'#f6eee4',tea:'#edf5e4',chocolate:'#f5e9df',milk:'#e8f4ff',oil:'#fff5d9',fries:'#fff2d9',sauce:'#fce9e2',meat:'#f8ebe4',bread:'#fff0dd',cheese:'#fff4d5',eggs:'#f8f0e5',flour:'#f8f1e6',sugar:'#edf5fc',candy:'#f9e9f5',fruit:'#fff1df',vegetable:'#eef5e5',battery:'#eef2f7',paper:'#eaf1fb',box:'#f5efe5'};
+const colors={coca:'#fce9e7',orangina:'#fff1d8',perrier:'#e1f4e7',icetea:'#fff0d7',oasis:'#fff1df',watersmall:'#e3f5fc',waterlarge:'#e3f5fc',sparklinglarge:'#e3f6ef',gas:'#fff0dc',cups:'#e5f7f6',napkins:'#eef4fa',bags:'#f9efe1',cleaning:'#e3f6ef',cutlery:'#edf3f8',keg:'#e8eff5',beer:'#fff3dc',wine:'#f5e8ed',syrup:'#f9e9f1',soda:'#fce9e7',water:'#e3f5fc',coffee:'#f6eee4',tea:'#edf5e4',chocolate:'#f5e9df',milk:'#e8f4ff',oil:'#fff5d9',fries:'#fff2d9',sauce:'#fce9e2',meat:'#f8ebe4',bread:'#fff0dd',cheese:'#fff4d5',eggs:'#f8f0e5',flour:'#f8f1e6',sugar:'#edf5fc',candy:'#f9e9f5',fruit:'#fff1df',vegetable:'#eef5e5',battery:'#eef2f7',paper:'#eaf1fb',box:'#f5efe5'};
 export default function StockIllustration({name}){
  const kind=stockIllustrationKind(name);
  return <svg className="festapp-stock-illustration" viewBox="0 0 160 128" role="img" aria-label={'Illustration indicative : '+name} xmlns="http://www.w3.org/2000/svg">
