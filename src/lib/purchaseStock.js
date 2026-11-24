@@ -1,4 +1,5 @@
 import {validateDemoData} from './demoBackup.js';
+import {validSupplier,supplierFor} from './shoppingSuppliers.js';
 
 export const PURCHASED='Acheté';
 export const TRANSFERRED='Transféré au stock';
@@ -29,7 +30,8 @@ export function purchaseCatalog(data,scope=''){
  for(const row of active)if(!used.has(row.id))products.push({key:row.id,name:row.values[0],row});
  return products;
 }
-export function setPurchaseQuantity(data,{scope='',rowId,name,value,newId}){
+export function setPurchaseQuantity(data,{scope='',rowId,name,value,newId,supplier}){
+ if(supplier!==undefined&&!validSupplier(supplier))throw Error('Fournisseur invalide.');
  const raw=String(value);
  if(!/^\d{0,10}(?:[.,]\d{0,3})?$/.test(raw)||raw.length>14)throw Error('Saisis une quantité numérique (3 décimales maximum).');
  const rows=data.shopping||[];
@@ -40,7 +42,7 @@ export function setPurchaseQuantity(data,{scope='',rowId,name,value,newId}){
  }
  if(!raw)return data;
  if(rows.some(r=>inPurchaseScope(r,scope)&&!isTransferred(r)&&productKey(r.values[0])===productKey(name)))throw Error('Cet article est déjà dans la liste.');
- return {...data,shopping:[...rows,{id:newId(),values:[name,raw,'À acheter'],...(scope?{eventId:scope}:{})}]};
+ return {...data,shopping:[...rows,{id:newId(),values:[name,raw,'À acheter'],supplier:supplier??supplierFor(null,name),...(scope?{eventId:scope}:{})}]};
 }
 export function setPurchaseChecked(data,{scope='',rowId,checked}){
  const row=(data.shopping||[]).find(r=>r.id===rowId&&inPurchaseScope(r,scope)&&!isTransferred(r));

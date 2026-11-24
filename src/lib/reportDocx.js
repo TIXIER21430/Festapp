@@ -106,6 +106,11 @@ export async function makeMeetingDocx({date,eventName,previousName,nextDate,sect
  return makeDocxBody(body);
 }
 
+export async function makeShoppingDocx({text}){
+ if(typeof text!=='string'||!text.trim()||text.length>60000)throw new TypeError('Liste de courses invalide ou trop longue.');
+ return makeDocxBody(para('Liste de courses','Title')+para(text));
+}
+
 async function makeDocxBody(body){
  const documentXml=xmlHeader+`<w:document xmlns:w="${NS}"><w:body>${body}<w:sectPr><w:pgSz w:w="12240" w:h="15840"/><w:pgMar w:top="1080" w:right="1000" w:bottom="1080" w:left="1000" w:header="500" w:footer="500" w:gutter="0"/></w:sectPr></w:body></w:document>`;
  const files=[

@@ -1,3 +1,4 @@
+import {validSupplier} from './shoppingSuppliers.js';
 // Offline demo backup format. Never import automatically into shared production data.
 export const DEMO_BACKUP_FORMAT = "festapp-demo-backup";
 export const DEMO_BACKUP_VERSION = 1;
@@ -21,7 +22,8 @@ export function validateDemoData(data) {
       if (own(row,"phase") && (category !== "tasks" || typeof row.phase !== "string" || row.phase.length > 200)) throw new TypeError("Invalid task phase");
       if (own(row,"email") && (category !== "contacts" || typeof row.email !== "string" || row.email.length > 320)) throw new TypeError("Invalid contact email");
       if (own(row,"phone") && (category !== "contacts" || typeof row.phone !== "string" || row.phone.length > 64)) throw new TypeError("Invalid contact phone");
-      return {...(own(row,"eventId")?{eventId:row.eventId}:{}),...(own(row,"done")?{done:row.done}:{}),...(own(row,"phase")?{phase:row.phase}:{}),...(own(row,"email")?{email:row.email}:{}),...(own(row,"phone")?{phone:row.phone}:{}),id:row.id,values:[...row.values]};
+      if (own(row,"supplier") && (category !== "shopping" || !validSupplier(row.supplier))) throw new TypeError("Invalid purchase supplier");
+      return {...(own(row,"supplier")?{supplier:row.supplier}:{}),...(own(row,"eventId")?{eventId:row.eventId}:{}),...(own(row,"done")?{done:row.done}:{}),...(own(row,"phase")?{phase:row.phase}:{}),...(own(row,"email")?{email:row.email}:{}),...(own(row,"phone")?{phone:row.phone}:{}),id:row.id,values:[...row.values]};
     });
   }
   return result;

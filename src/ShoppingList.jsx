@@ -1,11 +1,20 @@
 import React,{useState,useEffect,useRef} from 'react';
 import StockIllustration from './StockIllustration.jsx';
+import {SUPPLIERS,supplierFor,supplierCategory,assignPurchaseSupplier,shoppingExportGroups,shoppingExportText,shoppingMailto} from './lib/shoppingSuppliers.js';
+import {makeShoppingDocx} from './lib/reportDocx.js';
 import {purchaseCatalog,inPurchaseScope,isPurchased,isTransferred,setPurchaseQuantity,setPurchaseChecked,removePurchase,preparePurchaseTransfer,purchaseFingerprint,transferPurchases,quantity,productKey} from './lib/purchaseStock.js';
 
 export default function ShoppingList({data,scope='',events=[],filter='',readOnly=false,onSave,onScope}){
  const [status,setStatus]=useState('');
  const [review,setReview]=useState(null);
  const [onlyList,setOnlyList]=useState(false);
+ const [supplierFilter,setSupplierFilter]=useState('all');
+ const [choices,setChoices]=useState({});
+ const [exportDraft,setExportDraft]=useState(null);
+ const [exportBusy,setExportBusy]=useState(false);
+ const exportRef=useRef(null);
+ const exporting=!!exportDraft;
+ useEffect(()=>{if(exporting)exportRef.current?.scrollIntoView({behavior:'smooth',block:'start'});},[exporting]);
  const reviewRef=useRef(null);
  const reviewing=!!review;
  useEffect(()=>{if(reviewing)reviewRef.current?.scrollIntoView({behavior:'smooth',block:'start'});},[reviewing]);
@@ -13,7 +22,34 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
  const active=products.filter(p=>p.row);
  const checked=active.filter(p=>isPurchased(p.row));
  const history=(data.shopping||[]).filter(r=>inPurchaseScope(r,scope)&&isTransferred(r));
- const visible=products.filter(p=>(!onlyList||p.row)&&productKey(p.name).includes(productKey(filter)));
+ const supplierOf=p=>p.row?supplierFor(p.row):choices[p.key]||supplierFor(null,p.name);
+ const visible=products.filter(p=>(!onlyList||p.row)&&productKey(p.name).includes(productKey(filter))&&(supplierFilter==='all'||supplierCategory(supplierOf(p))===supplierFilter));
+ const eventName=events.find(e=>e.id===scope)?.values[0]||'Courses générales du comité';
+ const exportGroups=shoppingExportGroups(active.map(p=>p.row),{supplierFilter});
+ function editSupplier(p,value){
+  if(readOnly||review)return;
+  if(p.row)change(()=>assignPurchaseSupplier(data,{scope,rowId:p.row.id,supplier:value}));
+  else setChoices(c=>({...c,[p.key]:value}));
+ }
+ function openExport(){
+  if(!exportGroups.length){setStatus('Aucun article restant à acheter pour cette sélection.');return;}
+  setExportDraft({subject:'Liste de courses – '+eventName+(supplierFilter==='all'?'':' – '+supplierFilter),body:shoppingExportText(exportGroups,eventName),recipient:''});
+  setStatus('');
+ }
+ async function downloadList(){
+  if(exportBusy||!exportDraft)return;
+  setExportBusy(true);
+  try{
+   const blob=await makeShoppingDocx({text:exportDraft.body});
+   const url=URL.createObjectURL(blob),a=document.createElement('a');
+   a.href=url;a.download='FESTAPP-liste-de-courses.docx';document.body.appendChild(a);a.click();a.remove();
+   setTimeout(()=>URL.revokeObjectURL(url),30000);
+  }catch(e){setStatus('⚠ '+e.message);}finally{setExportBusy(false);}
+ }
+ function emailList(){
+  try{window.location.href=shoppingMailto(exportDraft);setStatus('Le message est préparé dans ta messagerie. Vérifie-le puis envoie-le.');}
+  catch(e){setStatus('⚠ '+e.message);}
+ }
  const id=()=>crypto.randomUUID();
  const save=next=>{if(readOnly)return;try{onSave(next);setStatus('');}catch(e){setStatus('⚠ '+e.message);}};
  const change=fn=>{try{save(fn());}catch(e){setStatus('⚠ '+e.message);}};
@@ -35,11 +71,21 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
   <label>Liste de courses<select value={scope} onChange={e=>{setReview(null);setStatus('');onScope(e.target.value);}}><option value="">Courses générales du comité</option>{events.map(e=><option key={e.id} value={e.id}>{e.values[0]}</option>)}</select></label>
   <p className="note">Indique la quantité à acheter directement sur les vignettes. Coche les produits achetés. Les quantités doivent utiliser la même unité que le stock (bouteilles, paquets, kg…).</p>
   <div className="shopping-toolbar"><button type="button" className="secondary" onClick={()=>onScope('',true)}>← Stock général</button><strong>{active.length} article(s) · {checked.length} acheté(s)</strong><button type="button" className="secondary" onClick={()=>setOnlyList(v=>!v)}>{onlyList?'Voir tout le catalogue':'Voir ma liste uniquement'}</button></div>
+  <div className="shopping-supplier-tools"><label>Afficher les fournisseurs<select value={supplierFilter} onChange={e=>{setSupplierFilter(e.target.value);setExportDraft(null);}}><option value="all">Tous les fournisseurs</option>{SUPPLIERS.map(s=><option key={s}>{s}</option>)}</select></label><button type="button" className="secondary" disabled={!exportGroups.length||!!review} onClick={openExport}>📄 Éditer / envoyer la liste</button></div>
+  {exportDraft&&<section ref={exportRef} className="shopping-review" aria-label="Éditer la liste de courses">
+   <h3>Liste à transmettre</h3><p>Uniquement les articles restant à acheter, regroupés par fournisseur. Le texte peut être modifié sans changer les quantités enregistrées.</p>
+   <label>Destinataire (facultatif)<input type="email" value={exportDraft.recipient} onChange={e=>setExportDraft(d=>({...d,recipient:e.target.value}))} placeholder="Adresse e-mail"/></label>
+   <label>Objet<input value={exportDraft.subject} onChange={e=>setExportDraft(d=>({...d,subject:e.target.value}))}/></label>
+   <label>Liste<textarea rows={12} value={exportDraft.body} onChange={e=>setExportDraft(d=>({...d,body:e.target.value}))}/></label>
+   <div className="shopping-toolbar"><button type="button" onClick={emailList}>✉ Envoyer par mail</button><button type="button" className="secondary" disabled={exportBusy} onClick={downloadList}>Télécharger Word</button><button type="button" className="secondary" onClick={()=>{navigator.clipboard?.writeText(exportDraft.body).then(()=>setStatus('Liste copiée.')).catch(()=>setStatus('Sélectionne et copie le texte manuellement.'));}}>Copier</button><button type="button" className="secondary" onClick={()=>setExportDraft(null)}>Fermer</button></div>
+  </section>}
   <div className="shopping-grid">{visible.map(p=>{
-   const row=p.row;
+   const row=p.row,supplier=supplierOf(p);
    return <article className={'shopping-product'+(row&&isPurchased(row)?' purchased':'')} key={p.key}>
     <StockIllustration name={p.name}/>
-    <div className="shopping-product-copy"><strong>{p.name}</strong><label>Quantité<input aria-label={'Quantité à acheter : '+p.name} inputMode="decimal" value={row?.values[1]||''} placeholder="—" disabled={readOnly||!!review} onChange={e=>change(()=>setPurchaseQuantity(data,{scope,rowId:row?.id,name:p.name,value:e.target.value,newId:id}))}/></label>
+    <div className="shopping-product-copy"><strong>{p.name}</strong><label>Quantité<input aria-label={'Quantité à acheter : '+p.name} inputMode="decimal" value={row?.values[1]||''} placeholder="—" disabled={readOnly||!!review} onChange={e=>change(()=>setPurchaseQuantity(data,{scope,rowId:row?.id,name:p.name,value:e.target.value,newId:id,supplier}))}/></label>
+     <label className="shopping-supplier-label">Fournisseur<select aria-label={'Fournisseur : '+p.name} value={supplierCategory(supplier)} disabled={readOnly||!!review} onChange={e=>editSupplier(p,e.target.value)}>{SUPPLIERS.map(s=><option key={s}>{s}</option>)}</select></label>
+     {supplierCategory(supplier)==='Autre'&&<input aria-label={'Autre fournisseur : '+p.name} placeholder="Préciser (facultatif)" maxLength={110} disabled={readOnly||!!review} key={p.key+':other'} defaultValue={supplier.startsWith('Autre : ')?supplier.slice(8):''} onBlur={e=>{const value=e.target.value.trim();editSupplier(p,value?'Autre : '+value:'Autre');}}/>}
      {row&&<div className="shopping-row-actions"><label><input type="checkbox" checked={isPurchased(row)} disabled={readOnly||!!review||!(quantity(row.values[1])>0)} onChange={e=>change(()=>setPurchaseChecked(data,{scope,rowId:row.id,checked:e.target.checked}))}/> Acheté</label><button type="button" className="secondary" disabled={readOnly||!!review} aria-label={'Retirer '+p.name} onClick={()=>{if(window.confirm('Retirer '+p.name+' de cette liste ?'))change(()=>removePurchase(data,{scope,rowId:row.id}));}}>✕</button></div>}
     </div>
    </article>;
@@ -56,6 +102,6 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
    <button type="button" disabled={readOnly} onClick={confirmTransfer}>Confirmer l’entrée en stock</button> <button type="button" className="secondary" onClick={()=>{setReview(null);setStatus('');}}>Annuler / modifier la liste</button>
   </section>}
   {status&&<p role="status" className="note">{status}</p>}
-  {history.length>0&&<details className="festapp-optional-tool"><summary>Historique des achats transférés ({history.length})</summary>{history.map(r=><p key={r.id}><strong>{r.values[0]}</strong> · {r.values[1]} · {r.values[2]}</p>)}</details>}
+  {history.length>0&&<details className="festapp-optional-tool"><summary>Historique des achats transférés ({history.length})</summary>{history.map(r=><p key={r.id}><strong>{r.values[0]}</strong> · {r.values[1]} · {supplierFor(r)} · {r.values[2]}</p>)}</details>}
  </section>;
 }
