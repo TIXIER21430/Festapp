@@ -614,7 +614,7 @@ function App(){
   window.requestAnimationFrame(()=>moduleSearchRef.current?.focus());
  }
  return <main>
- <header><div>🎆 FEST'APP <small>Comité des fêtes de Liernais</small></div><span className="demo">Mode démonstration</span></header>
+ <header><div>🎆 FEST'APP <small>Comité des fêtes de Liernais</small></div><span className="demo">{import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==="true"?"Espace privé du comité":"Mode démonstration"}</span></header>
  {storageWarning&&<p role="alert" className="note">⚠ {storageWarning}</p>}
  {initialNeedsStorage.warning&&<p role="alert" className="note">⚠ {initialNeedsStorage.warning}</p>}
  {initialEcocupStorage.warning&&<p role="alert" className="note">⚠ {initialEcocupStorage.warning}</p>}
