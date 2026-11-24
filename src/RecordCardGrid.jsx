@@ -62,7 +62,7 @@ export default function RecordCardGrid({category,fields,records=[],readOnly=fals
    return <article key={record.id} className="festapp-record-tile">
     <button type="button" className="festapp-record-preview" aria-label={'Ouvrir '+record.values[0]} aria-expanded={selectedId===record.id} onClick={()=>{setSelectedId(record.id);setStatus('');}}>
      <span className="festapp-record-image">{image?<img src={image} alt={'Photo associée à '+record.values[0]} loading="lazy"/>:category==='stock'?<StockIllustration name={record.values[0]}/>:<span className="festapp-icon-frame" aria-hidden="true"><ModuleGlyph kind={category}/></span>}</span>
-     <strong>{record.values[0]}</strong><small>{cardSummary(category,record)}</small>
+     <span className="festapp-record-copy"><strong>{record.values[0]}</strong><small>{cardSummary(category,record)}</small></span>
     </button>
     {category==='tasks'&&<label className="festapp-record-check"><input type="checkbox" checked={record.done===true} disabled={readOnly} onChange={()=>onToggleDone(record.id)}/>{record.done?'Terminée':'À faire'}</label>}
    </article>;

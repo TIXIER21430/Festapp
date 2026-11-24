@@ -633,3 +633,20 @@ footer{display:none}
 
 /* Stock: lightweight product illustrations, real photos take precedence. */
 .festapp-stock-illustration{display:block;width:100%;height:100%;max-height:100%;object-fit:contain}.festapp-card-catalog[data-category="stock"] .festapp-record-image{aspect-ratio:5/4}.festapp-card-catalog[data-category="stock"] .festapp-record-preview small{font-size:14px;font-weight:800}.festapp-stock-detail-art{max-width:240px;margin:0 auto 12px;text-align:center}.festapp-stock-detail-art small{display:block;margin-top:5px;font-size:12px;color:#52667a}
+
+/* Compact stock list: image size is independent of viewport width. */
+.festapp-record-copy{display:flex;flex-direction:column;gap:5px;min-width:0}
+.festapp-card-catalog[data-category="stock"] .festapp-record-grid{grid-template-columns:1fr;gap:8px}
+.festapp-card-catalog[data-category="stock"] .festapp-record-preview{display:grid;grid-template-columns:60px minmax(0,1fr);align-items:center;gap:10px;padding:7px;min-height:74px;border-radius:12px}
+.festapp-card-catalog[data-category="stock"] .festapp-record-tile{border-radius:12px}
+.festapp-card-catalog[data-category="stock"] .festapp-record-image{width:60px;height:60px;aspect-ratio:1;border-radius:9px;box-shadow:none}
+.festapp-card-catalog[data-category="stock"] .festapp-record-image img{object-fit:contain}
+.festapp-card-catalog[data-category="stock"] .festapp-record-preview strong{font-size:14px;line-height:1.25}
+.festapp-card-catalog[data-category="stock"] .festapp-record-preview small{font-size:12px;line-height:1.25}
+@media(min-width:500px){.festapp-card-catalog[data-category="stock"] .festapp-record-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(min-width:1000px){.festapp-card-catalog[data-category="stock"] .festapp-record-grid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+/* The full-screen workbench previously covered the fixed bottom navigation. */
+.festapp-workbench[open][data-module="stock"]{bottom:calc(88px + env(safe-area-inset-bottom));height:auto;box-shadow:none;padding-bottom:12px;scroll-padding-top:72px}
+main:has(.festapp-workbench[open][data-module="stock"]) .festapp-bottom-nav{z-index:225}
+main:has(.festapp-workbench[open][data-module="stock"]) .festapp-org-overlay{z-index:224}
+.festapp-workbench[open][data-module="stock"] .festapp-equipment-backdrop{bottom:calc(88px + env(safe-area-inset-bottom))}
