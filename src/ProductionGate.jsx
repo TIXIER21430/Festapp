@@ -1,6 +1,7 @@
 import React,{useEffect,useMemo,useState} from 'react';
 import {getFestappConnection,getSharedFestappClient} from './lib/supabaseClient.js';
 import {readSharedSpace} from './lib/supabaseSharedRead.js';
+import {loadPrivateDriveChecklists,setDriveChecklistTemplates} from './lib/eventChecklist.js';
 
 // The URL fragment is examined only locally. Never log or transmit invite tokens.
 const landingType=typeof window==='undefined'?'':new URLSearchParams(window.location.hash.replace(/^#/,'')).get('type');
@@ -36,10 +37,10 @@ export default function ProductionGate({children}){
 
  useEffect(()=>{
   if(!production||!client||!config?.productionMode||session===undefined)return;
-  if(!session?.user?.id){setStage('login');return;}
+  if(!session?.user?.id){setDriveChecklistTemplates();setStage('login');return;}
   let active=true;
   setStage('checking');
-  readSharedSpace(client,config.spaceId).then(()=>{
+  readSharedSpace(client,config.spaceId).then(()=>loadPrivateDriveChecklists(client,config.spaceId)).then(()=>{
    if(active){setStage('ready');setMessage('');}
   }).catch(error=>{
    if(active){setStage('forbidden');setMessage(error?.message||'Accès au comité non autorisé.');}
@@ -87,7 +88,7 @@ export default function ProductionGate({children}){
  }
 
  if(!production)return children;
- if(stage==='ready'&&!requiresPassword)return <><div className="festapp-auth-strip"><span>🔒 Espace privé du Comité des fêtes de Liernais</span><button type="button" onClick={logout} disabled={busy}>Déconnexion</button></div>{children}</>;
+ if(stage==='ready'&&session?.user?.id&&!requiresPassword)return <><div className="festapp-auth-strip"><span>🔒 Espace privé du Comité des fêtes de Liernais</span><button type="button" onClick={logout} disabled={busy}>Déconnexion</button></div>{children}</>;
  return <main className="festapp-auth-page"><section className="festapp-auth-card">
   <h1>🎆 FEST’APP</h1><p>Comité des fêtes de Liernais · accès réservé aux membres autorisés.</p>
   {stage==='configuration'&&<p role="alert">Configuration Supabase de production absente. L’application reste fermée pour protéger les données.</p>}
