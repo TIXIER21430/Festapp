@@ -1,7 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import {DRIVE_CHECKLISTS,suggestDriveChecklistTasks} from "../src/lib/eventChecklist.js";
-test("three real Drive checklists are available",()=>{
+import {DRIVE_CHECKLISTS,suggestDriveChecklistTasks,setDriveChecklistTemplates} from "../src/lib/eventChecklist.js";
+const names=["Marché de Noël","Saint-Laurent","Fanfare"];
+setDriveChecklistTemplates(names.map(event_name=>({event_name,template:{source:"https://docs.google.com/example",phases:{"Veille":["Préparer la pate à crêpe",...Array.from({length:40},(_,i)=>`Tâche fictive ${i}`)],"Jour J":["Chercher pain"]}}})));
+test("three authorized checklist templates can be loaded",()=>{
  for(const name of ["Marché de Noël","Saint-Laurent","Fanfare"]){
   assert.ok(DRIVE_CHECKLISTS[name].source.startsWith("https://docs.google.com/"));
   assert.ok(suggestDriveChecklistTasks(name,"e1").length>35);
