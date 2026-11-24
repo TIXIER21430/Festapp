@@ -38,3 +38,10 @@ test('finalizing meeting adds only missing quantities, updates existing row, pre
  assert.equal(result.data.shopping.length,3);assert.deepEqual(result.data.stock,stock);
  assert.throws(()=>finalizeMeeting(result.data,m.id,()=>String(++n)),/déjà validée/);
 });
+
+test('ordinary dictation supports multiple explicit quantities and preserves decimal commas',()=>{
+ const p=planMeetingPurchases({stock},'event',['Il faut 48 Coca, 25,5 kg de frites et 60 andouillettes']);
+ assert.deepEqual(p.errors,[]);assert.equal(p.summary.length,3);
+ assert.equal(p.summary.find(r=>r.name==='Frites').additional,20.5);
+ assert.ok(planMeetingPurchases({stock},'event',['48 Coca et Orangina']).errors.length);
+});

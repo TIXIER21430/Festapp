@@ -59,6 +59,7 @@ export function parseMeetingNeed(line,stock=[]){
  if(!name||name.length>200||n===null||n<=0)throw Error('Indique un produit et une quantité positive.');
  // Match a full catalog name before interpreting a unit word in the product.
  const target=resolveName(name,stock);
+ if(!target&&/\b(?:et|puis)\b|[,;]|\d+\s+(?:kg|litres?|bouteilles?|pieces?)\b/i.test(name))throw Error('Plusieurs produits ou quantité ambiguë : précise chaque produit.');
  const canonical=target?.values[0]||name;
  const expected=stockUnit(canonical);
  let needed=n;
@@ -76,7 +77,8 @@ export function parseMeetingNeed(line,stock=[]){
 export function planMeetingPurchases(data,eventId,lines){
  const stock=(data.stock||[]).filter(r=>!r.eventId),shopping=(data.shopping||[]).filter(r=>inPurchaseScope(r,eventId)&&!isTransferred(r));
  const needs=new Map(),errors=[],duplicates=[],rows=[],summary=[];
- for(const line of lines){
+ // Accept ordinary dictation with several explicit quantities, without splitting decimal commas.
+ for(const line of lines.flatMap(line=>line.includes(';')?[line]:line.split(/(?:,\s+|\s+et\s+|\s+puis\s+)(?=\d)/i))){
   try{
    const item=parseMeetingNeed(line,stock);
    const old=needs.get(item.key);
