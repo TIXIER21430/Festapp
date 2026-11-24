@@ -224,7 +224,7 @@ function App(){
  const filteredRecords=recordsForManifestation(data[tab]||[],tab,moduleScopeEventId).filter(r=>tab!=="archives"||!isMeetingRecord(r)).filter(r=>tab==="contacts"
   ?(contactType==="tous"||normalizeContact(r.values[1])===normalizeContact(contactType))&&[...r.values,r.email||"",r.phone||""].some(value=>normalizeContact(value).includes(normalizeContact(filter)))
   :r.values.join(" ").toLocaleLowerCase().includes(filter.toLocaleLowerCase()));
- const records=tab==="contacts"?sortContactsByName(filteredRecords):tab==="stock"?[...filteredRecords].sort((a,b)=>compareStockNames(a.values[0],b.values[0])):filteredRecords;
+ const records=tab==="stock"?[...filteredRecords].sort((a,b)=>compareStockNames(a.values[0],b.values[0])):tab==="contacts"?sortContactsByName(filteredRecords):filteredRecords;
  const draftIsDirty=hasUnsavedDraft({
   open:tab==="contacts"?contactFormOpen:tab==="equipment"?equipmentFormOpen:moduleFormOpen,
   form,editingId,records:data[tab]||[],eventId:recordEventId,
