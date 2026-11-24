@@ -61,7 +61,7 @@ test('production app mounts only after Supabase member verification',()=>{
  const cloud=repoFile('src/ProductionCloud.jsx');
  assert.match(app,/<ProductionGate><App\/><\/ProductionGate>/);
  assert.match(gate,/readSharedSpace\(client,config\.spaceId\)/);
- assert.match(gate,/stage==='ready'&&!requiresPassword/);
+ assert.match(gate,/stage==='ready'&&session\?\.user\?\.id&&!requiresPassword/);
  assert.match(gate,/resetPasswordForEmail/);
  assert.match(gate,/updateUser\(\{password:newPassword\}\)/);
  assert.match(cloud,/saveProductionSnapshot/);
