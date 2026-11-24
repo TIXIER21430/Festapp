@@ -13,6 +13,27 @@ async function sha256(blob){
  return Array.from(new Uint8Array(hash),value=>value.toString(16).padStart(2,'0')).join('');
 }
 
+// Retention is calculated and enforced by Storage RLS on the server.
+ // Only run after the newly uploaded archive has been read back and hash-checked.
+export async function rotateVerifiedProductionBackups(client,{spaceId,userId,verifiedPath,files}){
+ const folder=spaceId+'/'+userId+'/';
+ const validPath=path=>typeof path==='string'&&path.startsWith(folder)&&/^\d{4}-\d{2}-\d{2}T\d{2}-\d{2}-\d{2}-\d{3}Z-[0-9a-f-]{36}\.zip$/i.test(path.slice(folder.length));
+ if(client?.supabaseUrl!==FESTAPP_SUPABASE_URL||spaceId!==FESTAPP_SPACE_ID||!UUID.test(userId||'')||!validPath(verifiedPath)||!client.rpc||!files?.remove)return {rotationPending:true,removed:0};
+ try{
+  const {data,error}=await client.rpc('festapp_backup_rotation_candidates');
+  if(error||!Array.isArray(data)||data.some(row=>!validPath(row?.path)||row.path===verifiedPath))return {rotationPending:true,removed:0};
+  const paths=[...new Set(data.map(row=>row.path))];
+  let removed=0;
+  for(let offset=0;offset<paths.length;offset+=100){
+   const batch=paths.slice(offset,offset+100);
+   const result=await files.remove(batch);
+   if(result.error)return {rotationPending:true,removed};
+   removed+=Array.isArray(result.data)?result.data.length:0;
+  }
+  return {rotationPending:removed!==paths.length,removed};
+ }catch{return {rotationPending:true,removed:0};}
+}
+
 export async function saveProductionFullBackup(client,{spaceId,backup,productionMode}={}){
  // Reject a wrong project/space before even asking for a session or touching Storage.
  if(productionMode!==true||client?.supabaseUrl!==FESTAPP_SUPABASE_URL||spaceId!==FESTAPP_SPACE_ID)
@@ -35,7 +56,8 @@ export async function saveProductionFullBackup(client,{spaceId,backup,production
  const {data:download,error:readError}=await files.download(path);
  if(readError||!(download instanceof Blob)||download.size!==backup.size||await sha256(download)!==hash)
   throw new Error('Archive distante non vérifiée : conserve le ZIP sur ton appareil.');
- return {path,bytes:backup.size,sha256:hash,verified:true};
+ const rotation=await rotateVerifiedProductionBackups(client,{spaceId,userId,verifiedPath:path,files});
+ return {path,bytes:backup.size,sha256:hash,verified:true,...rotation};
 }
 
 // Recovery is a download only. Never replace local records or photographs here.
