@@ -24,6 +24,7 @@ export default function BottomNavigation({onHome,onMeetings,meetingsOpen=false,o
     ['meetings','📝','Réunions',onMeetings],
     ['contacts','👥','Annuaire',()=>onOpenModule('contacts')],
     ['stock','📦','Stock',()=>onOpenModule('stock')],
+    ['equipment','🧰','Matériel',()=>onOpenModule('equipment')],
     ['settings','⚙️','Plus',onSettings]
    ].map(([key,icon,label,action])=><button type="button" key={key} onClick={action} className={(key==='todo'&&orgTodosOpen)||(key==='meetings'&&meetingsOpen)||(key==='settings'&&settingsOpen)?'active':''} aria-label={key==='todo'?'À faire — comité et manifestations':key==='settings'?'Plus et réglages':label} aria-expanded={key==='todo'?orgTodosOpen:key==='settings'?settingsOpen:undefined}><span className="festapp-nav-icon" aria-hidden="true"><ModuleGlyph kind={key==='todo'?'tasks':key==='meetings'?'report':key}/></span><small>{label}</small></button>)}
   </nav>
