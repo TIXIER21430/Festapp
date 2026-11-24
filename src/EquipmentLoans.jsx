@@ -1,4 +1,5 @@
 import React,{useState} from 'react';
+import {makeRentalPdf,rentalPdfName} from './lib/rentalPdf.js';
 import {rentalEquipment} from './lib/rentalCatalog.js';
 import {availableForPeriod,checkLoanAvailability,currentEquipment,loanDocument,loanRecord,loanTotals,localDay,readLoan} from './lib/equipmentLoans.js';
 
@@ -11,8 +12,8 @@ const money=s=>{
  return Math.round(Number(String(s).replace(',','.'))*100);
 };
 function downloadDocument(loan){
- const url=URL.createObjectURL(new Blob([loanDocument(loan)],{type:'text/plain;charset=utf-8'}));
- const a=document.createElement('a');a.href=url;a.download='FESTAPP-'+(loan.kind==='rental'?'devis':'pret')+'-'+loan.id+'.txt';a.click();
+ const url=URL.createObjectURL(makeRentalPdf(loan));
+ const a=document.createElement('a');a.href=url;a.download=rentalPdfName(loan);a.click();
  setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 export default function EquipmentLoans({data,onSave,readOnly=false}){
@@ -25,7 +26,6 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
  const [lines,setLines]=useState([blankLine()]);
  const [startTime,setStartTime]=useState('');
  const [endTime,setEndTime]=useState('');
- const [deposit,setDeposit]=useState('');
  const [notes,setNotes]=useState('');
  const [error,setError]=useState('');
  const [message,setMessage]=useState('');
@@ -41,7 +41,7 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
  const kind=mode==='rental'?'rental':'loan';
  const selectedLines=lines.map(line=>({line,record:equipment.find(r=>r.id===line.equipmentId)}));
  function begin(next){
-  setMode(next);setCustomer(blankCustomer());setContactId('');setStart(today);setEnd(today);setLines([blankLine()]);setStartTime('');setEndTime('');setDeposit(next==='rental'?'':'0');setNotes('');setError('');setMessage('');
+  setMode(next);setCustomer(blankCustomer());setContactId('');setStart(today);setEnd(today);setLines([blankLine()]);setStartTime('');setEndTime('');setNotes('');setError('');setMessage('');
  }
  function pickContact(id){
   setContactId(id);const c=(data.contacts||[]).find(c=>c.id===id);
@@ -50,7 +50,7 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
  function updateLine(index,key,value){setLines(old=>old.map((line,i)=>i===index?{...line,[key]:value}:line));}
  function value(){
   return {version:1,kind,start:mode==='immediate'?today:start,end,created:today,customer:Object.fromEntries(Object.entries(customer).map(([k,v])=>[k,v.trim()])),rateMode:'flat',startTime,endTime,
-  depositCents:money(deposit),notes:notes.trim(),
+  depositCents:kind==='rental'?selectedLines.reduce((n,{line,record})=>n+Number(line.quantity)*(record?.depositCents??0),0):0,notes:notes.trim(),
   items:selectedLines.map(({line,record})=>({equipmentId:line.equipmentId,name:record?.values[0]||'',quantity:Number(line.quantity),priceCents:kind==='loan'?0:record?.priceCents,depositRateCents:record?.depositCents}))};
  }
  let estimate=null;
@@ -83,10 +83,16 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
    setMessage(labels[status]+' : '+loan.customer.name);
   }catch(err){setError(err.message||'Enregistrement impossible.');}
  }
- function emailDraft(loan){
+ async function emailDraft(loan){
   if(!loan.customer.email){setError('Renseigne une adresse e-mail.');return;}
   const subject=(loan.kind==='rental'?'Contrat de location':'Bon de prêt')+' — Comité des fêtes de Liernais';
-  const body='Bonjour '+loan.customer.name+',\n\nVoici notre proposition. Merci de nous retourner votre accord signé avant la remise du matériel.\n\n'+loanDocument(loan);
+  const body='Bonjour '+loan.customer.name+',\n\nMerci de nous retourner le contrat ci-joint signé, accompagné de votre attestation d’assurance pour une location.\n\nLe Comité des fêtes de Liernais';
+  const file=new File([makeRentalPdf(loan)],rentalPdfName(loan),{type:'application/pdf'});
+  if(navigator.canShare?.({files:[file]})){
+   try{await navigator.share({files:[file],title:subject,text:body+'\nDestinataire : '+loan.customer.email});setMessage('Partage ouvert : sélectionne ta messagerie et vérifie le destinataire.');return;}catch(e){if(e.name==='AbortError')return;}
+  }
+  downloadDocument(loan);
+  setMessage('PDF téléchargé. Joins-le au mail qui s’ouvre avant de l’envoyer.');
   window.location.href='mailto:'+encodeURIComponent(loan.customer.email)+'?subject='+encodeURIComponent(subject)+'&body='+encodeURIComponent(body);
  }
  return <section className="festapp-loan-panel" aria-label="Prêts et locations de matériel">
@@ -106,10 +112,10 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
    {selectedLines.map(({line,record},i)=>{
     const avail=record?availableForPeriod(record,rows,mode==='immediate'?today:start,end,today):null;
     const exceeded=avail!==null&&Number(line.quantity)>avail;
-    return <div className="festapp-loan-line" key={i}><label>Matériel<select value={line.equipmentId} required onChange={e=>updateLine(i,'equipmentId',e.target.value)}><option value="">Sélectionner</option>{equipment.filter(r=>r.id===line.equipmentId||!lines.some((l,j)=>i!==j&&l.equipmentId===r.id)).map(r=><option value={r.id} key={r.id}>{r.values[0]}</option>)}</select></label><label>Quantité<input type="number" required min="1" max="100000" step="1" value={line.quantity} onChange={e=>updateLine(i,'quantity',e.target.value)}/></label>{kind==='rental'&&record&&<p>Tarif : {euro(record.priceCents)} / unité · Caution indiquée : {euro(record.depositCents)}</p>}{record&&<small role={exceeded?'alert':'status'}>{avail===null?'Quantité ou dates à vérifier':Math.max(0,avail)+' disponible(s) sur la période'}{exceeded?' — quantité insuffisante':''}</small>}{lines.length>1&&<button type="button" className="secondary" onClick={()=>setLines(old=>old.filter((_,j)=>j!==i))}>Retirer la ligne</button>}</div>;
+    return <div className="festapp-loan-line" key={i}><label>Matériel<select value={line.equipmentId} required onChange={e=>updateLine(i,'equipmentId',e.target.value)}><option value="">Sélectionner</option>{equipment.filter(r=>r.id===line.equipmentId||!lines.some((l,j)=>i!==j&&l.equipmentId===r.id)).map(r=><option value={r.id} key={r.id}>{r.values[0]}</option>)}</select></label><label>Quantité<input type="number" required min="1" max="100000" step="1" value={line.quantity} onChange={e=>updateLine(i,'quantity',e.target.value)}/></label>{kind==='rental'&&record&&<p>Tarif : {euro(record.priceCents)} / unité · Caution unitaire : {euro(record.depositCents)} · Caution ligne : {euro(record.depositCents*(Number(line.quantity)||0))}</p>}{record&&<small role={exceeded?'alert':'status'}>{avail===null?'Quantité ou dates à vérifier':Math.max(0,avail)+' disponible(s) sur la période'}{exceeded?' — quantité insuffisante':''}</small>}{lines.length>1&&<button type="button" className="secondary" onClick={()=>setLines(old=>old.filter((_,j)=>j!==i))}>Retirer la ligne</button>}</div>;
    })}
    <button type="button" className="secondary" disabled={lines.length>=equipment.length} onClick={()=>setLines(old=>[...old,blankLine()])}>＋ Ajouter un matériel</button>
-   <label>Caution totale convenue (€)<input required inputMode="decimal" value={deposit} onChange={e=>setDeposit(e.target.value)}/></label>{kind==='rental'&&<p className="note">Le modèle ne précise pas si les cautions sont unitaires ou forfaitaires. Montant total à confirmer manuellement.</p>}
+   {kind==='rental'&&<p className="note">Caution calculée automatiquement : quantité × caution unitaire pour chaque matériel.</p>}
    <label>Conditions / observations<textarea rows={3} value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Transport, restitution, conditions convenues…"/></label>
    {estimate&&<p className="festapp-loan-total"><strong>Total : {euro(estimate.totalCents)}</strong> · Caution : {euro(estimate.depositCents)} · {estimate.days} jour(s)</p>}
    <button type="submit" disabled={readOnly}>{mode==='immediate'?'Enregistrer la sortie':mode==='reservation'?'Réserver le matériel':'Enregistrer le devis'}</button>
@@ -119,8 +125,8 @@ export default function EquipmentLoans({data,onSave,readOnly=false}){
   <div className="festapp-loan-list"><h3>Dossiers en cours</h3>{!live.length&&<p>Aucun prêt, location ou devis en cours.</p>}
    {(history?loans:live).slice().reverse().map(l=><article key={l.id} className="festapp-loan-record"><button className="festapp-loan-record-heading" type="button" aria-expanded={expanded===l.id} onClick={()=>setExpanded(expanded===l.id?'':l.id)}><strong>{l.customer.name}</strong><span>{labels[l.status]}</span><small>{l.start} → {l.end} · {l.items.map(i=>i.quantity+' × '+i.name).join(', ')}</small>{l.status==='out'&&l.end<today&&<small>Retour en retard</small>}</button>
    {expanded===l.id&&<div><p>{l.customer.address} · {l.customer.phone} · {l.customer.email}</p><p><strong>{euro(loanTotals(l).totalCents)}</strong> · Caution {euro(l.depositCents)}</p>
-    <div className="festapp-loan-actions"><button type="button" className="secondary" onClick={()=>downloadDocument(l)}>Télécharger le document</button><button type="button" className="secondary" disabled={!l.customer.email} onClick={()=>emailDraft(l)}>Préparer le mail pour signature</button>{l.status==='draft'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'reserved')}>Confirmer la réservation</button>}{l.status==='reserved'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'out')}>Matériel remis</button>}{l.status==='out'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'returned')}>Matériel rendu</button>}{['draft','reserved'].includes(l.status)&&<button type="button" className="secondary" disabled={readOnly} onClick={()=>changeStatus(l,'cancelled')}>Annuler le dossier</button>}</div>
-    <p className="note">Le mail est un brouillon à envoyer manuellement. La signature électronique et son suivi ne sont pas connectés.</p>
+    <div className="festapp-loan-actions"><button type="button" className="secondary" onClick={()=>downloadDocument(l)}>Télécharger le PDF</button><button type="button" className="secondary" disabled={!l.customer.email} onClick={()=>emailDraft(l)}>Partager le PDF pour signature</button>{l.status==='draft'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'reserved')}>Confirmer la réservation</button>}{l.status==='reserved'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'out')}>Matériel remis</button>}{l.status==='out'&&<button type="button" disabled={readOnly} onClick={()=>changeStatus(l,'returned')}>Matériel rendu</button>}{['draft','reserved'].includes(l.status)&&<button type="button" className="secondary" disabled={readOnly} onClick={()=>changeStatus(l,'cancelled')}>Annuler le dossier</button>}</div>
+    <p className="note">Sur téléphone, partage le PDF avec ta messagerie. Sur ordinateur, joins le PDF téléchargé au brouillon. L’envoi automatique et la signature électronique ne sont pas connectés.</p>
    </div>}</article>)}
    <button type="button" className="secondary" onClick={()=>setHistory(v=>!v)}>{history?'Masquer l’historique':'Voir aussi les dossiers terminés'}</button>
   </div>
