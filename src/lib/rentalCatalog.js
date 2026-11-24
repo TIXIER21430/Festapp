@@ -17,7 +17,9 @@ export function rentalEquipment(records,links=[]){
   const assigned=new Set(links.filter(l=>l.id!==t.id).map(l=>l.values[1]));
   const candidates=records.filter(r=>!assigned.has(r.id)&&t.pattern.test(normalize(r.values?.[0])));
   const exact=candidates.filter(r=>normalize(r.values[0])===normalize(t.name));
-  const matches=exact.length===1?exact:candidates;
+  // Confirmed by the committee: the wooden brewery tables are the rentable eight-seat tables.
+  const preferred=t.id==='table'?candidates.filter(r=>/^tables?\s+(?:de\s+)?brasserie\s+(?:en\s+)?bois$/.test(normalize(r.values[0]))):[];
+  const matches=preferred.length===1?preferred:exact.length===1?exact:candidates;
   const r=explicit?records.find(r=>r.id===explicit.values[1]&&!assigned.has(r.id)):matches.length===1?matches[0]:null;
   return {...t,id:'catalog-'+t.id,inventoryId:r?.id||'',aliases:r?[r.id]:[],values:[t.name,r?.values?.[1]??'',r?.values?.[2]??''],linked:!!r,ambiguous:!explicit&&matches.length>1};
  });
