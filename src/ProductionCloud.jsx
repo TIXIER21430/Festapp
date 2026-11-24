@@ -7,7 +7,7 @@ import {saveProductionSnapshot} from './lib/supabaseProductionSync.js';
 import {saveProductionFullBackup,downloadLatestProductionFullBackup} from './lib/supabaseProductionBackup.js';
 import {makeTestSyncPayload,sameTestPayload,testSyncText,testSyncRecordCount} from './lib/testSyncPayload.js';
 
-import {decideProductionSync,readProductionBaseline,rememberProductionBaseline} from './lib/productionAutoSync.js';
+import {decideProductionSync,readProductionBaseline,rememberProductionBaseline,recoverUnknownBaseline} from './lib/productionAutoSync.js';
 
 const connection=getFestappConnection();
 const client=getSharedFestappClient();
@@ -15,7 +15,7 @@ const BACKUP_KEY='festapp-production-private-backup-enabled';
 const ARCHIVE_INTERVAL=15*60*1000;
 const BASELINE_KEY='festapp-production-confirmed-v1:'+connection?.spaceId;
 
-export default function ProductionCloud({data={},volunteerNeeds={},ecocupSettings,tillConfig={},onApplyRemote,onDriveCatalog,prepareCompleteBackup,photoRevision=0,readOnly=false,pristineText=null,canApplyRemote=true}){
+export default function ProductionCloud({data={},volunteerNeeds={},ecocupSettings,tillConfig={},onApplyRemote,onDriveCatalog,prepareCompleteBackup,photoRevision=0,readOnly=false,pristineText=null,canApplyRemote=true,onSyncStatus}){
  const [signedIn,setSignedIn]=useState(false);
  const [remote,setRemote]=useState(null);
  const [syncOn,setSyncOn]=useState(false);
@@ -40,6 +40,7 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
   rememberProductionBaseline(localStorage,BASELINE_KEY,base.current);
  }
  const pending=syncOn&&(!live||!base.current||live.text!==base.current.text);
+ useEffect(()=>{onSyncStatus?.(pending?'⏳ Fiches : enregistrement en cours':status);},[pending,status,onSyncStatus]);
 
  useEffect(()=>{
   if(!client||!connection?.productionMode)return;
@@ -72,7 +73,13 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
    const local=latest.current;
    const remoteText=testSyncText(snapshot);
    const baseline=base.current||readProductionBaseline(localStorage,BASELINE_KEY);
-   const decision=decideProductionSync({localText:local.text,remoteText,remoteRevision:snapshot.revision,baseline,pristine:!!pristineText&&local.text===pristineText,remoteHasRecords:testSyncRecordCount(snapshot)>0});
+   let decision=decideProductionSync({localText:local.text,remoteText,remoteRevision:snapshot.revision,baseline,pristine:!!pristineText&&local.text===pristineText,remoteHasRecords:testSyncRecordCount(snapshot)>0});
+   decision=await recoverUnknownBaseline({decision,baseline,localPayload:local.payload,verifyPrevious:async payload=>{
+    const {data,error}=await client.rpc('festapp_matches_previous_snapshot',{p_space_id:connection.spaceId,p_payload:payload});
+    return !error&&data===true;
+   }});
+   // A local edit made while the historical check was running must not be lost.
+   if(token!==epoch.current||latest.current?.text!==local.text)return;
    if(decision==='same'){
     confirmBaseline(snapshot,local.text);setSyncOn(true);
     setStatus('✅ Fiches synchronisées automatiquement.');
@@ -150,11 +157,14 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
  useEffect(()=>{
   if(!signedIn||readOnly||!client)return;
   const resume=()=>{if(document.visibilityState==='visible')void refresh(epoch.current,false);};
-  const timer=setInterval(async()=>{if(document.visibilityState==='visible')await refresh(epoch.current,false);},20000);
+  const timer=setInterval(async()=>{if(document.visibilityState==='visible')await refresh(epoch.current,false);},8000);
   window.addEventListener('online',resume);
+  window.addEventListener('focus',resume);
   document.addEventListener('visibilitychange',resume);
-  return ()=>{clearInterval(timer);window.removeEventListener('online',resume);document.removeEventListener('visibilitychange',resume);};
+  return ()=>{clearInterval(timer);window.removeEventListener('online',resume);window.removeEventListener('focus',resume);document.removeEventListener('visibilitychange',resume);};
  },[signedIn,readOnly,pristineText]);
+ // Refresh records immediately after receiving a photo or finishing an unsaved draft.
+ useEffect(()=>{if(signedIn&&!readOnly&&canApplyRemote)void refresh(epoch.current,false);},[signedIn,readOnly,canApplyRemote,photoRevision]);
 
  async function archive(force=false){
   if(!archiveEnabled||!client||!signedIn||!syncOn||readOnly||archiveLock.current||lock.current||typeof prepareCompleteBackup!=='function')return;

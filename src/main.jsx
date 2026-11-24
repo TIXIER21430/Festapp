@@ -178,6 +178,7 @@ function App(){
  const [fullZipPreview,setFullZipPreview]=useState("");
  const [fullZipBusy,setFullZipBusy]=useState(false);
  const [photoRefreshRevision,setPhotoRefreshRevision]=useState(0);
+ const [cloudSyncStatus,setCloudSyncStatus]=useState("Fiches : vérification…");
  const [reviewRestoreRevision,setReviewRestoreRevision]=useState(0);
  const [formError,setFormError]=useState("");
  const [ecocupSettings,setEcocupSettings]=useState(initialEcocupStorage.settings);
@@ -383,7 +384,8 @@ function App(){
  function goToHome(){if(!selectManifestation(''))return;setOrgTodosOpen(false);setSettingsOpen(false);setModuleScopeEventId('');if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>document.querySelector('[aria-label="Accueil des manifestations"]')?.scrollIntoView({behavior:'smooth',block:'start'}));}
  function openSettings(){if(!allowDiscardDraft())return;setOrgTodosOpen(false);setTillOpen(false);setReportOpen(false);setReportDraftDirty(false);setSettingsOpen(true);if(moduleWorkbenchRef.current)moduleWorkbenchRef.current.open=false;window.requestAnimationFrame(()=>window.scrollTo({top:0,behavior:'smooth'}));}
  const canAutoApplyCloud=!draftIsDirty&&!contactPhotoSavingRef.current&&!recordingTillSaleRef.current&&!tillEdit&&!Object.values(tillCart).some(Boolean)&&!fullZipBusy;
- const pristineCloudText=initialStorage.fresh?testSyncText(makeTestSyncPayload({data:{...seed,recipes:addMissingRecipeDrafts([]).recipes}})):null;
+ // The exact default seed is also safe on a device that has already reopened the app.
+ const pristineCloudText=testSyncText(makeTestSyncPayload({data:{...seed,recipes:addMissingRecipeDrafts([]).recipes}}));
  function applyCloudSnapshot(snapshot,automatic=false){
   if(automatic?!canAutoApplyCloud:!allowDiscardDraft())throw new Error('Saisie non enregistrée : restauration annulée.');
   if(demoReadOnly||initialTillConfig.warning)throw new Error('Données locales illisibles : restauration cloud interdite.');
@@ -619,6 +621,7 @@ function App(){
   window.requestAnimationFrame(()=>moduleSearchRef.current?.focus());
  }
  return <main>
+ {import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==='true'&&<small role="status" style={{display:'block',padding:'4px 12px',textAlign:'center'}}>{cloudSyncStatus}</small>}
  <ProductionPhotoSync photoRevision={photoRefreshRevision} onChange={()=>setPhotoRefreshRevision(v=>v+1)} readOnly={demoReadOnly}/>
  <header><div>🎆 FEST'APP <small>Comité des fêtes de Liernais</small></div><span className="demo">{import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==="true"?"Espace privé du comité":"Mode démonstration"}</span></header>
  {storageWarning&&<p role="alert" className="note">⚠ {storageWarning}</p>}
@@ -653,7 +656,7 @@ function App(){
  <div className="festapp-cloud-host" style={{display:settingsOpen?"":"none"}}>
  <details className="festapp-sync-settings"><summary>☁️ Sauvegarde et synchronisation <span>{import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==='true'?"Automatique":"Facultatif"}</span></summary>
   <p className="note">{import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==='true'?"En cas de coupure, les saisies restent sur cet appareil. Une copie divergente est protégée avant toute synchronisation.":"Les saisies restent sur cet appareil tant que la synchronisation n’est pas activée et vérifiée."}</p>
-  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} pristineText={pristineCloudText} canApplyRemote={canAutoApplyCloud} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
+  <SharedAccess data={data} volunteerNeeds={volunteerNeeds} ecocupSettings={ecocupSettings} tillConfig={tillConfig} onApplyRemote={applyCloudSnapshot} pristineText={pristineCloudText} canApplyRemote={canAutoApplyCloud} onSyncStatus={setCloudSyncStatus} onDriveCatalog={setDriveCatalog} prepareCompleteBackup={prepareCompleteBackup} photoRevision={photoRefreshRevision} readOnly={demoReadOnly||!!initialTillConfig.warning}/>
  </details>
  </div>
  {settingsOpen&&<>

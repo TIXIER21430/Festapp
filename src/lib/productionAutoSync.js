@@ -19,3 +19,10 @@ export function readProductionBaseline(storage,key){
 export function rememberProductionBaseline(storage,key,baseline){
  try{storage.setItem(key,JSON.stringify(baseline));return true;}catch{return false;}
 }
+
+// A missing browser baseline can be recovered only from an exact, server-confirmed
+// historical snapshot. Never use this path for a known baseline or unsent edits.
+export async function recoverUnknownBaseline({decision,baseline,localPayload,verifyPrevious}){
+ if(decision!=='conflict'||baseline||!localPayload||typeof verifyPrevious!=='function')return decision;
+ try{return await verifyPrevious(localPayload)===true?'receive':decision;}catch{return decision;}
+}

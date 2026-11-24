@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import {decideProductionSync,readProductionBaseline,rememberProductionBaseline} from '../src/lib/productionAutoSync.js';
+import {decideProductionSync,readProductionBaseline,rememberProductionBaseline,recoverUnknownBaseline} from '../src/lib/productionAutoSync.js';
 const decide=(localText,remoteText,remoteRevision,baseline,extra={})=>decideProductionSync({localText,remoteText,remoteRevision,baseline,...extra});
 const base={revision:'2',text:'confirmed'};
 test('identical copies automatically resume',()=>assert.equal(decide('same','same','3',null),'same'));
@@ -25,4 +25,13 @@ test('baseline storage is recoverable and failure is conservative',()=>{
  assert.deepEqual(readProductionBaseline(storage,'key'),base);
  map.set('key','broken');assert.equal(readProductionBaseline(storage,'key'),null);
  assert.equal(rememberProductionBaseline({setItem(){throw Error('quota')}},'key',base),false);
+});
+
+test('a previously opened device with the exact default seed can receive without a browser baseline',()=>assert.equal(decide('seed','cloud','6',null,{pristine:true,remoteHasRecords:true}),'receive'));
+test('missing baseline recovers only exact historical copies, never known unsent changes',async()=>{
+ const input={decision:'conflict',baseline:null,localPayload:{data:{contacts:[]}},verifyPrevious:async()=>true};
+ assert.equal(await recoverUnknownBaseline(input),'receive');
+ assert.equal(await recoverUnknownBaseline({...input,verifyPrevious:async()=>false}),'conflict');
+ assert.equal(await recoverUnknownBaseline({...input,baseline:base,verifyPrevious:async()=>{throw Error('must not call');}}),'conflict');
+ assert.equal(await recoverUnknownBaseline({...input,verifyPrevious:async()=>{throw Error('network');}}),'conflict');
 });
