@@ -1,8 +1,9 @@
+import {readLoan} from './equipmentLoans.js';
 import {validSupplier} from './shoppingSuppliers.js';
 // Offline demo backup format. Never import automatically into shared production data.
 export const DEMO_BACKUP_FORMAT = "festapp-demo-backup";
 export const DEMO_BACKUP_VERSION = 1;
-const allowed = new Set(["events","tasks","shopping","stock","ecocups","contacts","shifts","feedback","recipes","finance","equipment","posts","archives"]);
+const allowed = new Set(["events","tasks","shopping","stock","ecocups","contacts","shifts","feedback","recipes","finance","equipment","equipmentLoans","posts","archives"]);
 const own = (obj,key) => Object.prototype.hasOwnProperty.call(obj,key);
 export function validateDemoData(data) {
   if (!data || typeof data !== "object" || Array.isArray(data)) throw new TypeError("Invalid demo data");
@@ -17,6 +18,7 @@ export function validateDemoData(data) {
         throw new TypeError("Invalid demo record");
       }
       ids.add(row.id);
+      if(category==='equipmentLoans')readLoan(row);
       if (own(row,"eventId") && (typeof row.eventId !== "string" || row.eventId.length > 200)) throw new TypeError("Invalid event link");
       if (own(row,"done") && (category !== "tasks" || typeof row.done !== "boolean")) throw new TypeError("Invalid task completion");
       if (own(row,"phase") && (category !== "tasks" || typeof row.phase !== "string" || row.phase.length > 200)) throw new TypeError("Invalid task phase");
