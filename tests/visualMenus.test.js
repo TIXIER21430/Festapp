@@ -13,7 +13,8 @@ test('ordinary menus use the shared tile grid; shopping has its dedicated stock 
  const shopping=readFileSync(new URL("../src/ShoppingList.jsx",import.meta.url),"utf8");
  assert.match(shopping,/<StockIllustration name=\{p.name\}/);
  assert.match(shopping,/Confirmer l’entrée en stock/);
- assert.match(app,/tab==="equipment"&&<EquipmentGrid records=\{records\}/);
+ assert.match(app,/tab==="equipment"&&equipmentView==="inventory"&&<EquipmentGrid records=\{records\}/);
+ assert.match(app,/tab==="equipment"&&equipmentView==="loans"&&<EquipmentLoans/);
  assert.match(cards,/className="festapp-record-grid"/);
  assert.match(cards,/role="dialog" aria-modal="true"/);
  assert.match(cards,/ModuleGlyph kind=\{category\}/);
