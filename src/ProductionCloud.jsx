@@ -1,4 +1,5 @@
 import React,{useEffect,useMemo,useRef,useState} from 'react';
+import ProductionMemberInvites from './ProductionMemberInvites.jsx';
 import {getFestappConnection,getSharedFestappClient} from './lib/supabaseClient.js';
 import {readSharedSpace} from './lib/supabaseSharedRead.js';
 import {readProductionPrivateDriveCatalog} from './lib/supabaseProductionDrive.js';
@@ -203,6 +204,7 @@ export default function ProductionCloud({data={},volunteerNeeds={},ecocupSetting
    {remote&&<div className="shared-preview"><strong>Copie du comité : {testSyncRecordCount(remote)} fiches · révision {remote.revision}</strong><p>Cet appareil : {live?testSyncRecordCount(live.payload):'inconnu'} fiches.</p><div className="shared-sync-actions"><button type="button" disabled={busy||readOnly||syncOn||!live} onClick={()=>void save(false)}>☁️ Envoyer mes fiches</button><button type="button" className="secondary" disabled={busy||readOnly||syncOn} onClick={load}>📲 Récupérer la copie du comité</button><button type="button" className="secondary" disabled={busy} onClick={()=>void refresh()}>🔄 Vérifier les versions</button></div></div>}
    {status&&<p role="status" className={syncOn?'shared-sync-ok':'shared-sync-warning'}>{status}</p>}
    {signedIn&&<div className="shared-preview"><strong>📦 ZIP privé avec photos et documents locaux</strong><p>Une archive est créée après synchronisation et à chaque changement, avec au moins 15 minutes entre deux archives, lorsque l’application est ouverte.</p><div className="shared-sync-actions"><button type="button" className="secondary" disabled={archiveBusy||busy||readOnly||pending||!syncOn} onClick={()=>void archive(true)}>☁️ Archiver maintenant</button><button type="button" className="secondary" disabled={archiveBusy} onClick={download}>📥 Télécharger mon dernier ZIP</button><button type="button" className="secondary" onClick={()=>{try{localStorage.setItem(BACKUP_KEY,archiveEnabled?'no':'yes');}catch{}setArchiveEnabled(!archiveEnabled);}}>{archiveEnabled?'Désactiver archives automatiques':'Activer archives automatiques'}</button></div>{archiveStatus&&<p role="status">{archiveStatus}</p>}</div>}
+   {signedIn&&<ProductionMemberInvites/>}
    <p className="shared-help">⚠ Une connexion et des droits de membre sont obligatoires. En cas de conflit, rien n’est écrasé automatiquement. Les ZIP restent privés et sont accessibles à leur auteur.</p>
   </>}
  </section>;
