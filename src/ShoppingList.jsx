@@ -34,7 +34,7 @@ export default function ShoppingList({data,scope='',events=[],filter='',readOnly
  return <section className="festapp-shopping" aria-label="Liste de courses">
   <label>Liste de courses<select value={scope} onChange={e=>{setReview(null);setStatus('');onScope(e.target.value);}}><option value="">Courses générales du comité</option>{events.map(e=><option key={e.id} value={e.id}>{e.values[0]}</option>)}</select></label>
   <p className="note">Indique la quantité à acheter directement sur les vignettes. Coche les produits achetés. Les quantités doivent utiliser la même unité que le stock (bouteilles, paquets, kg…).</p>
-  <div className="shopping-toolbar"><strong>{active.length} article(s) · {checked.length} acheté(s)</strong><button type="button" className="secondary" onClick={()=>setOnlyList(v=>!v)}>{onlyList?'Voir tout le catalogue':'Voir ma liste uniquement'}</button></div>
+  <div className="shopping-toolbar"><button type="button" className="secondary" onClick={()=>onScope(scope,true)}>← Stock</button><strong>{active.length} article(s) · {checked.length} acheté(s)</strong><button type="button" className="secondary" onClick={()=>setOnlyList(v=>!v)}>{onlyList?'Voir tout le catalogue':'Voir ma liste uniquement'}</button></div>
   <div className="shopping-grid">{visible.map(p=>{
    const row=p.row;
    return <article className={'shopping-product'+(row&&isPurchased(row)?' purchased':'')} key={p.key}>

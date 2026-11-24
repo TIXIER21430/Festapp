@@ -242,6 +242,7 @@ function App(){
   e.preventDefault();
   if(demoReadOnly){setFormError("Mode lecture seule : les données locales existantes sont protégées.");return;}
   if(!form[0].trim())return;
+  if(tab==="shopping"&&form[2].trim().startsWith("Transféré au stock")){setFormError("Utilise le bouton de transfert pour enregistrer un achat dans le stock.");return;}
   let details={};
   if(tab==="contacts"){
    if(!form[1].trim()){setFormError("Choisissez une catégorie pour ce contact.");return;}
@@ -762,7 +763,7 @@ function App(){
  <p className="note">Choisissez un bénévole dans l’annuaire ou saisissez son nom manuellement. Seuls les contacts classés « bénévole » sont proposés. Planning local : indiquez les créneaux au format 10:00-12:30. Si un bénévole a deux créneaux qui se chevauchent sur la même manifestation, l’enregistrement est refusé. Les horaires sans date ne permettent pas de vérifier les conflits entre journées différentes.</p></details>}
  {tab==="tasks"&&<p role="status" className="note">✅ {recordsForManifestation(data.tasks||[],tab,moduleScopeEventId).filter(r=>r.done===true).length} tâche(s) terminée(s) sur {recordsForManifestation(data.tasks||[],tab,moduleScopeEventId).length}. Cochez une tâche pour la marquer comme faite ; responsable et échéance sont conservés.</p>}
  {tab==="equipment"&&<EquipmentGrid records={records} readOnly={demoReadOnly} onEdit={beginEdit} onDelete={remove} photoRevision={photoRefreshRevision} onPhotoChange={()=>setPhotoRefreshRevision(v=>v+1)}/>}
- {tab==="shopping"&&<ShoppingList key={moduleScopeEventId} data={data} scope={moduleScopeEventId} events={eventOptions} filter={filter} readOnly={demoReadOnly} onSave={saveMeetingData} onScope={id=>openModule("shopping",id)}/>}
+ {tab==="shopping"&&<ShoppingList key={moduleScopeEventId} data={data} scope={moduleScopeEventId} events={eventOptions} filter={filter} readOnly={demoReadOnly} onSave={saveMeetingData} onScope={(id,toStock=false)=>openModule(toStock?"stock":"shopping",id)}/>}
   {tab!=="equipment"&&tab!=="shopping"&&<RecordCardGrid category={tab} fields={current.fields} records={records} readOnly={demoReadOnly} onEdit={beginEdit} onDelete={remove} onToggleDone={toggleTaskDone} onCalculateRecipe={openRecipeCalculator} photoRevision={photoRefreshRevision} onPhotoChange={()=>setPhotoRefreshRevision(v=>v+1)}/>}
  {PHOTO_CATEGORIES.includes(tab)&&tab!=="equipment"&&<details className="festapp-equipment-photo-manage"><summary>📸 Gérer les photos de cette rubrique</summary><PhotoVault scope={tab} records={recordsForManifestation(data[tab]||[],tab,moduleScopeEventId)} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision} onChange={()=>setPhotoRefreshRevision(v=>v+1)}/></details>}
  {tab==="equipment"&&<details className="festapp-equipment-photo-manage"><summary>📸 Voir toutes les photos du matériel</summary><PhotoVault scope="equipment" records={recordsForManifestation(data.equipment||[],"equipment",moduleScopeEventId)} readOnly={demoReadOnly} photoRefreshRevision={photoRefreshRevision} onChange={()=>setPhotoRefreshRevision(v=>v+1)}/></details>}
