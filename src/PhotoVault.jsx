@@ -32,7 +32,7 @@ export default function PhotoVault({scope,records=[],readOnly=false,photoRefresh
   finally{try{await refresh();}catch(err){setStatus("⚠ Photos enregistrées mais liste non disponible : "+err.message);}if(saved>0)onChange?.();setBusy(false);}
  }
  async function remove(photo){
-  if(readOnly||busy||!window.confirm("Supprimer définitivement cette photo locale ? Téléchargez d’abord l’original si vous voulez la garder."))return;
+  if(readOnly||busy||!window.confirm("Supprimer cette photo ? En production, la suppression sera répercutée sur les appareils du comité. Téléchargez d’abord l’original si vous voulez la garder."))return;
   setBusy(true);
   try{await deletePhotoOriginal(photo.id);await refresh();onChange?.();setStatus("Photo locale supprimée.");}
   catch(err){setStatus("⚠ "+err.message);}
@@ -48,6 +48,6 @@ export default function PhotoVault({scope,records=[],readOnly=false,photoRefresh
   {status&&<p role="status">{status}</p>}
   <div className="photo-gallery">{photos.map(photo=><OriginalCard key={photo.id} photo={photo} title={records.find(r=>r.id===photo.recordId)?.values[0]} onDelete={remove} readOnly={readOnly||busy}/>)}</div>
   {!photos.length&&<p>Pas encore de photo dans cette rubrique.</p>}
-  <p className="photo-warning">⚠ Les photos ne sont <strong>pas incluses dans la sauvegarde JSON</strong> : le ZIP complet se télécharge dans « Plus → Exports » et conserve les originaux. Aucun envoi vers Supabase, Facebook ou une IA.</p>
+  <p className="photo-warning">⚠ Les photos ne sont <strong>pas incluses dans la sauvegarde JSON</strong> : le ZIP complet se télécharge dans « Plus → Exports » et conserve les originaux. {import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==='true'?"Les originaux sont partagés uniquement avec les membres autorisés.":"Aucun envoi vers Supabase, Facebook ou une IA."}</p>
  </section>;
 }

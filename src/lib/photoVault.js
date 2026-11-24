@@ -1,4 +1,4 @@
-// Offline originals. Images are never sent to Supabase, Facebook, or an AI provider.
+// Offline originals; production shares them only with authorized committee members.
 export const MAX_PHOTO_BYTES=12_000_000;
 export const MAX_PHOTOS_PER_SCOPE=100;
 export const MAX_PHOTOS_TOTAL=500;
@@ -47,11 +47,11 @@ async function transact(mode,perform){
 export async function listPhotoOriginals(scope){
  if(!SCOPES.has(scope))throw new TypeError("Rubrique photo inconnue.");
  const all=await transact("readonly",store=>store.getAll());
- return all.filter(row=>row.scope===scope&&row.blob instanceof Blob).sort((a,b)=>b.addedAt.localeCompare(a.addedAt));
+ return all.filter(row=>!row.deletedAt&&row.scope===scope&&row.blob instanceof Blob).sort((a,b)=>b.addedAt.localeCompare(a.addedAt));
 }
 
 export async function listAllPhotoOriginals(){
- const all=await transact("readonly",store=>store.getAll());
+ const all=(await transact("readonly",store=>store.getAll())).filter(row=>!row.deletedAt);
  if(!Array.isArray(all)||all.some(row=>!row||!SCOPES.has(row.scope)||!(row.blob instanceof Blob)||row.size!==row.blob.size))throw new Error("Certaines photos locales sont illisibles : export complet refusé pour éviter un oubli.");
  return all.sort((a,b)=>a.scope.localeCompare(b.scope)||a.addedAt.localeCompare(b.addedAt));
 }
@@ -68,7 +68,7 @@ export async function savePhotoOriginal(file,scope,recordId=""){
   let quotaError="";
   const request=store.getAll();
   request.onsuccess=()=>{
-   const existing=request.result;
+   const existing=request.result.filter(row=>!row.deletedAt);
    if(existing.length>=MAX_PHOTOS_TOTAL)quotaError="Limite de 500 photos locales atteinte : téléchargez un ZIP complet avant de libérer de la place.";
    else if(existing.filter(photo=>photo.scope===scope).length>=MAX_PHOTOS_PER_SCOPE)quotaError="Limite de 100 photos locales par rubrique atteinte : téléchargez un ZIP complet avant de libérer de la place.";
    if(quotaError){tx.abort();return;}
@@ -116,5 +116,31 @@ export async function rollbackRestoredPhotoOriginals(ids){
 
 export async function deletePhotoOriginal(id){
  if(typeof id!=="string"||!id)throw new TypeError("Photo inconnue.");
+ if(import.meta.env?.VITE_FESTAPP_PRODUCTION_MODE==='true')return markPhotoDeleted(id);
  await transact("readwrite",store=>store.delete(id));
+}
+
+// A deletion marker is durable and prevents a stale device from resurrecting a photo.
+export async function listPhotoSyncRows(){return transact('readonly',store=>store.getAll());}
+export async function markPhotoDeleted(id,deletedAt=new Date().toISOString()){
+ const db=await openDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE);
+  const get=store.get(id);let changed=false;
+  get.onsuccess=()=>{const old=get.result;if(old?.deletedAt)return;store.put({id,deletedAt});changed=true;};
+  tx.oncomplete=()=>{db.close();resolve(changed);};
+  tx.onabort=tx.onerror=()=>{db.close();reject(new Error('Suppression locale non enregistrée.'));};
+ });
+}
+export async function cacheSharedPhoto(photo){
+ const meta=validatePhotoInput({name:photo.fileName,type:photo.type,size:photo.size},photo.scope,photo.recordId);
+ if(!(photo.blob instanceof Blob)||photo.blob.size!==meta.size)throw new Error('Photo distante invalide.');
+ const db=await openDb();
+ return new Promise((resolve,reject)=>{
+  const tx=db.transaction(STORE,'readwrite'),store=tx.objectStore(STORE);
+  const get=store.get(photo.id);let changed=false;
+  get.onsuccess=()=>{if(get.result)return;store.add({...meta,id:photo.id,addedAt:photo.addedAt,blob:photo.blob});changed=true;};
+  tx.oncomplete=()=>{db.close();resolve(changed);};
+  tx.onabort=tx.onerror=()=>{db.close();reject(new Error('Photo distante non conservée sur cet appareil.'));};
+ });
 }

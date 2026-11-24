@@ -5,6 +5,7 @@ import SharedAccess from "./SharedAccess.jsx";
 import ProductionGate from "./ProductionGate.jsx";
 import {persistCloudSnapshot} from "./lib/supabaseCloudImport.js";
 import PhotoVault from "./PhotoVault.jsx";
+import ProductionPhotoSync from "./ProductionPhotoSync.jsx";
 import EquipmentGrid from "./EquipmentGrid.jsx";
 import RecordCardGrid from "./RecordCardGrid.jsx";
 import VolunteerPhotoPicker from "./VolunteerPhotoPicker.jsx";
@@ -618,6 +619,7 @@ function App(){
   window.requestAnimationFrame(()=>moduleSearchRef.current?.focus());
  }
  return <main>
+ <ProductionPhotoSync photoRevision={photoRefreshRevision} onChange={()=>setPhotoRefreshRevision(v=>v+1)} readOnly={demoReadOnly}/>
  <header><div>🎆 FEST'APP <small>Comité des fêtes de Liernais</small></div><span className="demo">{import.meta.env.VITE_FESTAPP_PRODUCTION_MODE==="true"?"Espace privé du comité":"Mode démonstration"}</span></header>
  {storageWarning&&<p role="alert" className="note">⚠ {storageWarning}</p>}
  {initialNeedsStorage.warning&&<p role="alert" className="note">⚠ {initialNeedsStorage.warning}</p>}
